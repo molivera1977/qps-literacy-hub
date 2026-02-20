@@ -288,7 +288,7 @@
 
     function playFullWord(text) {
         return new Promise((resolve) => {
-            const audio = new Audio(`audio/${text.toLowerCase().trim()}.m4a`);
+            const audio = new Audio(`${text.toLowerCase().trim()}.m4a`);
             let hasHandled = false;
             const doFallback = () => { if(!hasHandled) { hasHandled = true; speakComputer(text).then(resolve); } };
             audio.onended = () => { if(!hasHandled) { hasHandled = true; resolve(); } };
