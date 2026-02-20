@@ -76,7 +76,7 @@
         button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; background: #95a5a6; }
 
         .nonsense-color { color: var(--nonsense); }
-        .helper-text { font-size: 0.9rem; color: #94a3b8; margin-top: 10px; }
+        .helper-text { font-size: 0.9rem; color: #94a3b8; margin-top: 10px; font-weight: bold; transition: 0.3s; }
         .home-btn { position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #bdc3c7; }
         .home-btn:hover { color: var(--primary); }
     </style>
@@ -244,33 +244,25 @@
 
     function playAudioChunk(chunkName) {
         return new Promise((resolve) => {
-            let fileName = chunkName.toLowerCase().trim(); // Auto-removes accidental spaces
+            let fileName = chunkName.toLowerCase().trim();
             const lv = document.getElementById('levelPicker').value;
             
-            // SECRET OVERRIDE 1: The "Y" Sounds
-            if (fileName === "y" && (lv === "9c" || lv === "10")) {
-                fileName = "y-ee"; 
-            }
+            if (fileName === "y" && (lv === "9c" || lv === "10")) { fileName = "y-ee"; }
+            if (fileName === "re") { fileName = (lv === "10") ? "re-long" : "re-short"; }
+            if (fileName === "o" && lv === "9c") { fileName = "o-schwa"; }
 
-            // SECRET OVERRIDE 2: The "RE" Sounds
-            if (fileName === "re") {
-                if (lv === "10") {
-                    fileName = "re-long"; // return, replay
-                } else {
-                    fileName = "re-short"; // segregate
-                }
-            }
-            
-            // SECRET OVERRIDE 3: The "O" Schwa Sound
-            if (fileName === "o" && lv === "9c") {
-                fileName = "o-schwa"; // evaporate
-            }
-
-            const audio = new Audio(`audio/${fileName}.m4a`);
+            // Look for file in root folder
+            const audio = new Audio(`${fileName}.m4a`);
             audio.onended = resolve;
             audio.onerror = () => { 
-                console.log(`Audio missing: ${chunkName} (searched for ${fileName}.m4a)`); 
-                resolve(); 
+                // ERROR DETECTOR: Flash a red message on the screen if file is missing
+                const msgEl = document.getElementById('learnMsg');
+                msgEl.innerHTML = `<span style="color:red; font-weight:bold;">⚠️ Missing audio file: ${fileName}.m4a</span>`;
+                setTimeout(() => {
+                    msgEl.innerText = "The computer will read the full word after you hear the sounds.";
+                }, 3000);
+                
+                resolve(); // Keep moving even if it errors
             };
             audio.play().catch(() => resolve());
         });
