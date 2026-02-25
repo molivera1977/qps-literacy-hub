@@ -246,23 +246,31 @@
         return new Promise((resolve) => {
             let fileName = chunkName.toLowerCase().trim();
             const lv = document.getElementById('levelPicker').value;
+            const currentWord = wordBank[lv][learnIndex].w;
             
+            // Overrides for specific tricky files
             if (fileName === "y" && (lv === "9c" || lv === "10")) { fileName = "y-ee"; }
             if (fileName === "re") { fileName = (lv === "10") ? "re-long" : "re-short"; }
             if (fileName === "o" && lv === "9c") { fileName = "o-schwa"; }
+            if (fileName === "ar" && lv === "10") { fileName = "ar-air"; }
+            if (fileName === "tain" && lv === "10") { fileName = "tain-ten"; }
+            
+            // The "able" fix: Only use the long A sound for the word "unable"
+            if (fileName === "able" && currentWord === "unable") { 
+                fileName = "able-long"; 
+            }
 
-            // Look for file in root folder
+            // Look for file directly in the main folder alongside index.html
             const audio = new Audio(`${fileName}.m4a`);
             audio.onended = resolve;
             audio.onerror = () => { 
-                // ERROR DETECTOR: Flash a red message on the screen if file is missing
                 const msgEl = document.getElementById('learnMsg');
                 msgEl.innerHTML = `<span style="color:red; font-weight:bold;">⚠️ Missing audio file: ${fileName}.m4a</span>`;
                 setTimeout(() => {
                     msgEl.innerText = "The computer will read the full word after you hear the sounds.";
                 }, 3000);
                 
-                resolve(); // Keep moving even if it errors
+                resolve(); 
             };
             audio.play().catch(() => resolve());
         });
