@@ -70,7 +70,7 @@
         .chunk.active { background: var(--learning); color: white; transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 
         select { width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #ddd; font-size: 1rem; margin-bottom: 15px; font-weight: bold; color: var(--primary);}
-        option:disabled { color: #95a5a6; font-style: italic; background: #f1f5f9; } /* Makes blocked levels look obvious */
+        option:disabled { color: #95a5a6; font-style: italic; background: #f1f5f9; }
         
         button.btn-test { background: var(--accent); color: white; width: 100%; padding: 15px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; }
         button.btn-learn { background: var(--learning); color: white; padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; margin: 5px; }
@@ -97,6 +97,7 @@
         
         .option-chunk { padding: 20px 40px; background: var(--primary); color: white; font-size: 2.5rem; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.2);}
         .option-chunk:hover { transform: scale(1.05); background: var(--games); }
+        .option-chunk:disabled { transform: none; cursor: not-allowed; }
         
         .game-feedback { font-size: 1.5rem; font-weight: bold; margin: 15px 0; min-height: 2rem; }
     </style>
@@ -211,7 +212,7 @@
         </div>
 
         <div id="game1Container">
-            <button class="btn-games" onclick="playFullWord(currentGame1Word.w)">🔊 Hear Full Word</button>
+            <button id="hearGame1Btn" class="btn-games" onclick="playGame1Sounds()">🔊 Hear Sounds</button>
             <p class="helper-text">Tap the chunks below to build the word!</p>
             
             <p style="font-size:0.8rem; font-weight:bold; color:#7f8c8d; margin-bottom: 2px;">BUILD ZONE</p>
@@ -228,7 +229,7 @@
         </div>
 
         <div id="game2Container" style="display:none;">
-            <button class="btn-games" onclick="playAudioChunk(currentGame2Chunk)">🔊 Hear Mystery Sound</button>
+            <button id="hearGame2Btn" class="btn-games" onclick="playGame2Sound()">🔊 Hear Mystery Sound</button>
             <p class="helper-text">Which chunk makes the sound you just heard?</p>
             
             <div id="optionsArea" class="pool-area" style="border:none; background:transparent;"></div>
@@ -258,10 +259,8 @@
             if (isGames) {
                 const words = wordBank[lv];
                 if (isGame1) {
-                    // Game 1: Needs non-sentence words with multiple chunks
                     isValid = words.some(w => !w.isSentence && w.c && w.c.length > 1);
                 } else {
-                    // Game 2: Needs non-sentences and at least 3 unique chunks to populate options
                     const nonSentences = words.filter(w => !w.isSentence);
                     let uniqueChunks = [];
                     nonSentences.forEach(w => w.c.forEach(c => { if(!uniqueChunks.includes(c)) uniqueChunks.push(c); }));
@@ -274,10 +273,7 @@
             if (isValid && !firstValid) firstValid = lv;
         });
 
-        // Auto-switch away from a disabled level
-        if (!currentValid && firstValid) {
-            picker.value = firstValid;
-        }
+        if (!currentValid && firstValid) { picker.value = firstValid; }
     }
 
     function enterApp(mode) {
@@ -310,7 +306,7 @@
             willSwitchGame = true;
         }
 
-        updateDropdownOptions(); // Run our new smart filter
+        updateDropdownOptions(); 
 
         if (willSwitchGame) {
             const isGame2 = document.getElementById('btnGame2').classList.contains('active');
@@ -379,11 +375,12 @@
 
             const audio = new Audio(`${fileName}.m4a`);
             audio.onended = resolve;
-            audio.onerror = resolve; // Fail silently for games to keep flow going
+            audio.onerror = resolve; 
             audio.play().catch(() => resolve());
         });
     }
 
+    // Still here for the Learning Lab only
     function speakComputer(text) {
         return new Promise((resolve) => {
             const msg = new SpeechSynthesisUtterance(text);
@@ -399,6 +396,34 @@
             audio.onended = () => { if(!hasHandled) { hasHandled = true; resolve(); } };
             audio.onerror = doFallback; audio.play().catch(doFallback);
         });
+    }
+
+    // --- SPAM-PROOF GAME AUDIO ---
+    async function playGame1Sounds() {
+        if(!currentGame1Word) return;
+        
+        const btn = document.getElementById('hearGame1Btn');
+        if(btn && btn.disabled) return; 
+        if(btn) btn.disabled = true;
+        
+        for (let i = 0; i < currentGame1Word.c.length; i++) {
+            await playAudioChunk(currentGame1Word.c[i]);
+            await new Promise(r => setTimeout(r, 150)); 
+        }
+        
+        if(btn) btn.disabled = false; 
+    }
+
+    async function playGame2Sound() {
+        if(!currentGame2Chunk) return;
+        
+        const btn = document.getElementById('hearGame2Btn');
+        if(btn && btn.disabled) return; 
+        if(btn) btn.disabled = true;
+        
+        await playAudioChunk(currentGame2Chunk);
+        
+        if(btn) btn.disabled = false; 
     }
 
     // --- LEARNING LAB & ASSESSMENT LOGIC ---
@@ -496,16 +521,16 @@
         document.getElementById(`btnGame${num}`).classList.add('active'); 
         document.getElementById(`game${num}Container`).style.display = 'block';
         
-        updateDropdownOptions(); // Crucial: Re-evaluates what is disabled
+        updateDropdownOptions(); 
         
         if(num === 1) loadGame1(); else loadGame2();
     }
 
     function loadGame1() {
         const lv = document.getElementById('levelPicker').value;
-        const validWords = wordBank[lv].filter(w => !w.isSentence && w.c.length > 1); // Needs >1 chunk to build
+        const validWords = wordBank[lv].filter(w => !w.isSentence && w.c.length > 1); 
         
-        if(validWords.length === 0) return; // Fallback guard, though disabled dropdown should stop this
+        if(validWords.length === 0) return; 
 
         currentGame1Word = validWords[Math.floor(Math.random() * validWords.length)];
         currentGame1State = new Array(currentGame1Word.c.length).fill(null);
@@ -516,9 +541,13 @@
         const poolArea = document.getElementById('poolArea');
         buildArea.innerHTML = ''; poolArea.innerHTML = '';
         document.getElementById('game1Feedback').innerText = '';
-        document.getElementById('checkBtn1').style.display = 'block'; document.getElementById('nextBtn1').style.display = 'none';
+        
+        const checkBtn = document.getElementById('checkBtn1');
+        checkBtn.style.display = 'block'; 
+        checkBtn.disabled = false; 
+        
+        document.getElementById('nextBtn1').style.display = 'none';
 
-        // Create empty slots
         for(let i = 0; i < currentGame1Word.c.length; i++) {
             const slot = document.createElement('div');
             slot.className = 'game-chunk slot';
@@ -528,7 +557,6 @@
             buildArea.appendChild(slot);
         }
 
-        // Create draggable chunks
         shuffledChunks.forEach((chunk, i) => {
             const block = document.createElement('div');
             block.className = 'game-chunk';
@@ -538,17 +566,17 @@
             poolArea.appendChild(block);
         });
         
-        playFullWord(currentGame1Word.w);
+        playGame1Sounds(); 
     }
 
     function moveChunkToBuild(blockId, chunkText) {
         const emptyIndex = currentGame1State.findIndex(val => val === null);
         if(emptyIndex !== -1) {
             currentGame1State[emptyIndex] = { id: blockId, text: chunkText };
-            document.getElementById(blockId).style.display = 'none'; // Hide from pool
+            document.getElementById(blockId).style.display = 'none'; 
             
             const slot = document.getElementById(`slot-${emptyIndex}`);
-            slot.className = 'game-chunk'; // Make it look solid
+            slot.className = 'game-chunk'; 
             slot.innerText = chunkText;
             playAudioChunk(chunkText);
         }
@@ -557,7 +585,7 @@
     function returnChunk(slotIndex) {
         if(currentGame1State[slotIndex] !== null) {
             const blockData = currentGame1State[slotIndex];
-            document.getElementById(blockData.id).style.display = 'block'; // Show in pool again
+            document.getElementById(blockData.id).style.display = 'block'; 
             
             const slot = document.getElementById(`slot-${slotIndex}`);
             slot.className = 'game-chunk slot';
@@ -566,24 +594,34 @@
         }
     }
 
-    function checkGame1() {
+    async function checkGame1() {
         if(currentGame1State.includes(null)) {
             document.getElementById('game1Feedback').innerHTML = "<span style='color:var(--learning)'>Fill all the slots first!</span>";
             return;
         }
         
+        const checkBtn = document.getElementById('checkBtn1');
+        checkBtn.disabled = true; // Lock the check button
+
         const userSpelling = currentGame1State.map(b => b.text).join("");
         const correctSpelling = currentGame1Word.c.join("");
         
         if(userSpelling === correctSpelling) {
             document.getElementById('game1Feedback').innerHTML = "<span style='color:var(--success)'>🎉 Correct! You built it!</span>";
-            document.getElementById('checkBtn1').style.display = 'none';
-            document.getElementById('nextBtn1').style.display = 'block';
-            playFullWord(currentGame1Word.w);
+            checkBtn.style.display = 'none';
+            checkBtn.disabled = false; // reset for next time
+            
+            const nextBtn = document.getElementById('nextBtn1');
+            nextBtn.style.display = 'block';
+            nextBtn.disabled = true; // Lock Next button while audio plays
+            
+            await playGame1Sounds(); 
+            
+            nextBtn.disabled = false; // Unlock Next button
         } else {
             document.getElementById('game1Feedback').innerHTML = "<span style='color:var(--danger)'>Oops! Try a different order.</span>";
-            // Auto return all pieces for them to try again
             for(let i=0; i<currentGame1State.length; i++) { returnChunk(i); }
+            checkBtn.disabled = false; // Unlock Check button for retry
         }
     }
 
@@ -592,16 +630,13 @@
         const validWords = wordBank[lv].filter(w => !w.isSentence);
         if(validWords.length === 0) return;
 
-        // Get a pool of all unique chunks in this level
         let allChunks = [];
         validWords.forEach(w => w.c.forEach(chunk => { if(!allChunks.includes(chunk)) allChunks.push(chunk); }));
         
-        if(allChunks.length < 3) return; // Guard clause
+        if(allChunks.length < 3) return; 
 
-        // Pick one target chunk
         currentGame2Chunk = allChunks[Math.floor(Math.random() * allChunks.length)];
         
-        // Pick 2 wrong options
         let options = [currentGame2Chunk];
         while(options.length < 3) {
             let randomChunk = allChunks[Math.floor(Math.random() * allChunks.length)];
@@ -622,22 +657,36 @@
             optionsArea.appendChild(btn);
         });
 
-        playAudioChunk(currentGame2Chunk);
+        playGame2Sound();
     }
 
-    function checkGame2(selectedChunk, btnElement) {
-        if(document.getElementById('nextBtn2').style.display === 'block') return; // Prevent clicking after win
+    async function checkGame2(selectedChunk, btnElement) {
+        if(document.getElementById('nextBtn2').style.display === 'block') return; 
+
+        // Disable all options temporarily to prevent spam clicking
+        const allOptions = document.querySelectorAll('.option-chunk');
+        allOptions.forEach(btn => btn.disabled = true);
 
         if(selectedChunk === currentGame2Chunk) {
             btnElement.style.background = 'var(--success)';
             document.getElementById('game2Feedback').innerHTML = "🌟 Amazing! You found it!";
-            document.getElementById('nextBtn2').style.display = 'block';
-            playAudioChunk(currentGame2Chunk);
+            
+            const nextBtn = document.getElementById('nextBtn2');
+            nextBtn.style.display = 'block';
+            nextBtn.disabled = true; // Lock Next button while audio plays
+            
+            await playGame2Sound();
+            
+            nextBtn.disabled = false; // Unlock Next button
+            allOptions.forEach(btn => btn.disabled = false); // Unlock chunks
         } else {
             btnElement.style.background = 'var(--danger)';
             btnElement.style.opacity = '0.5';
             document.getElementById('game2Feedback').innerHTML = "Not quite. Listen again!";
-            setTimeout(() => playAudioChunk(currentGame2Chunk), 500);
+            
+            await playGame2Sound();
+            
+            allOptions.forEach(btn => btn.disabled = false); // Unlock chunks
         }
     }
 </script>
