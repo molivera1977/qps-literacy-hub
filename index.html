@@ -7,7 +7,7 @@
     <style>
         :root {
             --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c;
-            --learning: #f39c12; --nonsense: #8e44ad; --bg: #001f3f; 
+            --learning: #f39c12; --nonsense: #8e44ad; --games: #e84393; --bg: #001f3f; 
         }
 
         body { 
@@ -45,6 +45,7 @@
         .tab { flex: 1; padding: 12px; cursor: pointer; border-radius: 10px; font-weight: bold; background: #f8f9fa; color: #7f8c8d; transition: 0.3s;}
         .tab.active-test { background: var(--accent); color: white; }
         .tab.active-learn { background: var(--learning); color: white; }
+        .tab.active-games { background: var(--games); color: white; }
 
         .view-section { display: none; }
         .view-section.active { display: block; }
@@ -53,7 +54,7 @@
         .word-main { font-size: 5rem; font-weight: 800; margin: 0; letter-spacing: 2px; transition: 0.3s; line-height: 1.2; color: var(--primary); }
         .sentence-mode { font-size: 2.5rem; font-weight: 600; letter-spacing: 1px; text-align: left; line-height: 1.4; }
         
-        /* SCORING UI */
+        /* SCORING & BUTTONS */
         .score-controls { display: flex; gap: 15px; justify-content: center; margin-top: 10px; }
         .btn-score { padding: 15px 30px; border-radius: 10px; font-size: 1.5rem; border: none; cursor: pointer; transition: 0.2s; width: 120px; }
         .btn-correct { background: var(--success); color: white; }
@@ -64,21 +65,40 @@
         .badge-pass { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
         .badge-fail { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
 
-        /* CHUNKS */
         #chunkDisplay { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 15px; min-height: 3.5rem; }
         .chunk { padding: 5px 15px; border-radius: 8px; background: #e2e8f0; color: #64748b; font-size: 2.5rem; font-weight: bold; }
         .chunk.active { background: var(--learning); color: white; transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 
         select { width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #ddd; font-size: 1rem; margin-bottom: 15px; font-weight: bold; color: var(--primary);}
+        option:disabled { color: #95a5a6; font-style: italic; background: #f1f5f9; } /* Makes blocked levels look obvious */
         
         button.btn-test { background: var(--accent); color: white; width: 100%; padding: 15px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; }
         button.btn-learn { background: var(--learning); color: white; padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; margin: 5px; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; background: #95a5a6; }
+        button.btn-games { background: var(--games); color: white; padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; margin: 5px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; background: #95a5a6 !important; }
 
         .nonsense-color { color: var(--nonsense); }
         .helper-text { font-size: 0.9rem; color: #94a3b8; margin-top: 10px; font-weight: bold; transition: 0.3s; }
         .home-btn { position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #bdc3c7; }
         .home-btn:hover { color: var(--primary); }
+
+        /* GAMES UI */
+        .game-nav { display: flex; gap: 10px; margin-bottom: 15px; }
+        .btn-game-toggle { flex: 1; padding: 12px; background: #e2e8f0; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: var(--primary); font-size: 1.1rem; transition: 0.2s;}
+        .btn-game-toggle.active { background: var(--games); color: white; }
+        
+        .build-area, .pool-area { display: flex; gap: 10px; min-height: 80px; padding: 15px; border: 2px dashed #cbd5e1; border-radius: 10px; margin-bottom: 15px; justify-content: center; flex-wrap: wrap; background: #f8fbfd; align-items: center;}
+        .build-area { background: #fffbeb; border-color: #fde68a; }
+        .pool-area { background: #f0fdf4; border-color: #bbf7d0; }
+        
+        .game-chunk { padding: 12px 25px; background: var(--accent); color: white; font-size: 2rem; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; user-select: none; }
+        .game-chunk:hover { transform: scale(1.05); background: #2980b9; }
+        .game-chunk.slot { background: transparent; border: 2px dashed #94a3b8; color: transparent; box-shadow: none; cursor: default; }
+        
+        .option-chunk { padding: 20px 40px; background: var(--primary); color: white; font-size: 2.5rem; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.2);}
+        .option-chunk:hover { transform: scale(1.05); background: var(--games); }
+        
+        .game-feedback { font-size: 1.5rem; font-weight: bold; margin: 15px 0; min-height: 2rem; }
     </style>
 </head>
 <body>
@@ -92,6 +112,11 @@
             <div class="icon">🎧</div>
             <h3>Learning Lab</h3>
             <p>Practice blending.</p>
+        </div>
+        <div class="menu-card" onclick="enterApp('games')">
+            <div class="icon">🎮</div>
+            <h3>Game Zone</h3>
+            <p>Interactive practice.</p>
         </div>
         <div class="menu-card" onclick="enterApp('test')">
             <div class="icon">📝</div>
@@ -107,6 +132,7 @@
     <div class="tabs">
         <div id="tabTest" class="tab" onclick="switchTab('test')">Assessment Mode</div>
         <div id="tabLearn" class="tab" onclick="switchTab('learn')">Learning Lab</div>
+        <div id="tabGames" class="tab" onclick="switchTab('games')">Game Zone</div>
     </div>
 
     <select id="levelPicker" onchange="resetAll()">
@@ -157,9 +183,7 @@
             <div id="testType" class="helper-text">Assessment Mode</div>
             <div id="resultBadge" style="display:none;"></div>
         </div>
-        
         <button id="startTest" class="btn-test" onclick="startTest()">START ASSESSMENT</button>
-        
         <div id="scoreControls" class="score-controls" style="display:none;">
             <button class="btn-score btn-wrong" onclick="markScore(false)">❌</button>
             <button class="btn-score btn-correct" onclick="markScore(true)">✅</button>
@@ -176,15 +200,86 @@
                 <button id="blendBtn" class="btn-learn" onclick="playBlending()">🔊 HEAR IT</button>
                 <button id="nextLearnBtn" class="btn-learn" style="background:#34495e" onclick="nextLearn()">NEXT ➡️</button>
             </div>
-            <p id="learnMsg" class="helper-text">
-                The computer will read the full word after you hear the sounds.
-            </p>
+            <p id="learnMsg" class="helper-text">The computer will read the full word after you hear the sounds.</p>
+        </div>
+    </div>
+
+    <div id="gamesSection" class="view-section">
+        <div class="game-nav">
+            <button id="btnGame1" class="btn-game-toggle active" onclick="switchGame(1)">🧩 Word Builder</button>
+            <button id="btnGame2" class="btn-game-toggle" onclick="switchGame(2)">👂 Sound Match</button>
+        </div>
+
+        <div id="game1Container">
+            <button class="btn-games" onclick="playFullWord(currentGame1Word.w)">🔊 Hear Full Word</button>
+            <p class="helper-text">Tap the chunks below to build the word!</p>
+            
+            <p style="font-size:0.8rem; font-weight:bold; color:#7f8c8d; margin-bottom: 2px;">BUILD ZONE</p>
+            <div id="buildArea" class="build-area"></div>
+            
+            <p style="font-size:0.8rem; font-weight:bold; color:#7f8c8d; margin-bottom: 2px;">YOUR BLOCKS</p>
+            <div id="poolArea" class="pool-area"></div>
+            
+            <div id="game1Feedback" class="game-feedback"></div>
+            <div style="display:flex; justify-content: center;">
+                <button id="checkBtn1" class="btn-games" style="background:var(--success)" onclick="checkGame1()">Check Answer ✅</button>
+                <button id="nextBtn1" class="btn-games" style="background:#34495e; display:none;" onclick="loadGame1()">Next Word ➡️</button>
+            </div>
+        </div>
+
+        <div id="game2Container" style="display:none;">
+            <button class="btn-games" onclick="playAudioChunk(currentGame2Chunk)">🔊 Hear Mystery Sound</button>
+            <p class="helper-text">Which chunk makes the sound you just heard?</p>
+            
+            <div id="optionsArea" class="pool-area" style="border:none; background:transparent;"></div>
+            
+            <div id="game2Feedback" class="game-feedback"></div>
+            <div style="display:flex; justify-content: center;">
+                <button id="nextBtn2" class="btn-games" style="background:#34495e; display:none;" onclick="loadGame2()">Next Sound ➡️</button>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // --- NAVIGATION ---
+    // --- NAVIGATION & DROPDOWN MANAGEMENT ---
+    function updateDropdownOptions() {
+        const picker = document.getElementById('levelPicker');
+        const isGames = document.getElementById('gamesSection').classList.contains('active');
+        const isGame1 = document.getElementById('btnGame1').classList.contains('active');
+        
+        let firstValid = null;
+        let currentValid = true;
+
+        Array.from(picker.options).forEach(opt => {
+            const lv = opt.value;
+            let isValid = true;
+
+            if (isGames) {
+                const words = wordBank[lv];
+                if (isGame1) {
+                    // Game 1: Needs non-sentence words with multiple chunks
+                    isValid = words.some(w => !w.isSentence && w.c && w.c.length > 1);
+                } else {
+                    // Game 2: Needs non-sentences and at least 3 unique chunks to populate options
+                    const nonSentences = words.filter(w => !w.isSentence);
+                    let uniqueChunks = [];
+                    nonSentences.forEach(w => w.c.forEach(c => { if(!uniqueChunks.includes(c)) uniqueChunks.push(c); }));
+                    isValid = uniqueChunks.length >= 3;
+                }
+            }
+
+            opt.disabled = !isValid;
+            if (!isValid && picker.value === lv) currentValid = false;
+            if (isValid && !firstValid) firstValid = lv;
+        });
+
+        // Auto-switch away from a disabled level
+        if (!currentValid && firstValid) {
+            picker.value = firstValid;
+        }
+    }
+
     function enterApp(mode) {
         document.getElementById('welcomeView').style.display = 'none';
         document.getElementById('appView').style.display = 'block';
@@ -199,17 +294,45 @@
 
     function switchTab(mode) {
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active-test', 'active-learn'));
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active-test', 'active-learn', 'active-games'));
 
+        let willSwitchGame = false;
+        
         if(mode === 'test') {
             document.getElementById('testSection').classList.add('active');
             document.getElementById('tabTest').classList.add('active-test');
-        } else {
+        } else if (mode === 'learn') {
             document.getElementById('learnSection').classList.add('active');
             document.getElementById('tabLearn').classList.add('active-learn');
-            setupLearn();
+        } else if (mode === 'games') {
+            document.getElementById('gamesSection').classList.add('active');
+            document.getElementById('tabGames').classList.add('active-games');
+            willSwitchGame = true;
         }
-        resetAll(false); 
+
+        updateDropdownOptions(); // Run our new smart filter
+
+        if (willSwitchGame) {
+            const isGame2 = document.getElementById('btnGame2').classList.contains('active');
+            switchGame(isGame2 ? 2 : 1);
+        } else {
+            resetAll(false); 
+        }
+    }
+
+    function resetAll(resetView = true) {
+        document.getElementById('testWord').innerText = "READY?"; document.getElementById('testWord').className = 'word-main';
+        document.getElementById('startTest').innerText = "START ASSESSMENT"; document.getElementById('startTest').style.display = 'block';
+        document.getElementById('scoreControls').style.display = 'none'; document.getElementById('resultBadge').style.display = 'none';
+        
+        if(document.getElementById('learnSection').classList.contains('active')) { 
+            setupLearn(); 
+        } else if (document.getElementById('gamesSection').classList.contains('active')) { 
+            const isGame2 = document.getElementById('btnGame2').classList.contains('active');
+            if(isGame2) loadGame2(); else loadGame1(); 
+        } else { 
+            document.getElementById('testType').innerText = "Assessment Mode"; 
+        }
     }
 
     // --- WORD BANK ---
@@ -235,43 +358,28 @@
         "10": [ {w: "discount", c:["dis","count"], n: false}, {w: "dismiss", c:["dis","miss"], n: false}, {w: "nonsense", c:["non","sense"], n: false}, {w: "nonstop", c:["non","stop"], n: false}, {w: "index", c:["in","dex"], n: false}, {w: "intent", c:["in","tent"], n: false}, {w: "prefix", c:["pre","fix"], n: false}, {w: "prepare", c:["pre","pare"], n: false}, {w: "return", c:["re","turn"], n: false}, {w: "replay", c:["re","play"], n: false}, {w: "unable", c:["un","able"], n: false}, {w: "uncertain", c:["un","cer","tain"], n: false}, {w: "confident", c:["con","fi","dent"], n: false}, {w: "concert", c:["con","cert"], n: false}, {w: "station", c:["sta","tion"], n: false}, {w: "motion", c:["mo","tion"], n: false}, {w: "famous", c:["fa","mous"], n: false}, {w: "joyous", c:["joy","ous"], n: false}, {w: "coolness", c:["cool","ness"], n: false}, {w: "wildness", c:["wild","ness"], n: false}, {w: "portable", c:["port","able"], n: false}, {w: "drinkable", c:["drink","able"], n: false}, {w: "fastest", c:["fast","est"], n: false}, {w: "dampest", c:["damp","est"], n: false}, {w: "mouthful", c:["mouth","ful"], n: false}, {w: "fearful", c:["fear","ful"], n: false}, {w: "honorary", c:["hon","or","ar","y"], n: false}, {w: "literary", c:["lit","er","ar","y"], n: false}, {w: "instrument", c:["in","stru","ment"], n: false}, {w: "fragment", c:["frag","ment"], n: false} ]
     };
 
-    let testIndex = 0;
-    let learnIndex = 0;
-    let activeTestWords = [];
-    let currentScore = 0;
+    let testIndex = 0; let learnIndex = 0; let activeTestWords = []; let currentScore = 0;
+    let currentGame1Word = null; let currentGame1State = []; let currentGame2Chunk = "";
 
     // --- AUDIO ENGINE ---
-
     function playAudioChunk(chunkName) {
         return new Promise((resolve) => {
             let fileName = chunkName.toLowerCase().trim();
             const lv = document.getElementById('levelPicker').value;
-            const currentWord = wordBank[lv][learnIndex].w;
-            
-            // Overrides for specific tricky files
+            let currentWord = "";
+            if(document.getElementById('learnSection').classList.contains('active')) currentWord = wordBank[lv][learnIndex].w;
+            if(document.getElementById('gamesSection').classList.contains('active') && currentGame1Word) currentWord = currentGame1Word.w;
+
             if (fileName === "y" && (lv === "9c" || lv === "10")) { fileName = "y-ee"; }
             if (fileName === "re") { fileName = (lv === "10") ? "re-long" : "re-short"; }
             if (fileName === "o" && lv === "9c") { fileName = "o-schwa"; }
             if (fileName === "ar" && lv === "10") { fileName = "ar-air"; }
             if (fileName === "tain" && lv === "10") { fileName = "tain-ten"; }
-            
-            // The "able" fix: Only use the long A sound for the word "unable"
-            if (fileName === "able" && currentWord === "unable") { 
-                fileName = "able-long"; 
-            }
+            if (fileName === "able" && currentWord === "unable") { fileName = "able-long"; }
 
-            // Look for file directly in the main folder alongside index.html
             const audio = new Audio(`${fileName}.m4a`);
             audio.onended = resolve;
-            audio.onerror = () => { 
-                const msgEl = document.getElementById('learnMsg');
-                msgEl.innerHTML = `<span style="color:red; font-weight:bold;">⚠️ Missing audio file: ${fileName}.m4a</span>`;
-                setTimeout(() => {
-                    msgEl.innerText = "The computer will read the full word after you hear the sounds.";
-                }, 3000);
-                
-                resolve(); 
-            };
+            audio.onerror = resolve; // Fail silently for games to keep flow going
             audio.play().catch(() => resolve());
         });
     }
@@ -279,10 +387,7 @@
     function speakComputer(text) {
         return new Promise((resolve) => {
             const msg = new SpeechSynthesisUtterance(text);
-            msg.rate = 1.0; 
-            msg.onend = resolve;
-            msg.onerror = resolve;
-            window.speechSynthesis.speak(msg);
+            msg.rate = 1.0; msg.onend = resolve; msg.onerror = resolve; window.speechSynthesis.speak(msg);
         });
     }
 
@@ -292,12 +397,11 @@
             let hasHandled = false;
             const doFallback = () => { if(!hasHandled) { hasHandled = true; speakComputer(text).then(resolve); } };
             audio.onended = () => { if(!hasHandled) { hasHandled = true; resolve(); } };
-            audio.onerror = doFallback;
-            audio.play().catch(doFallback);
+            audio.onerror = doFallback; audio.play().catch(doFallback);
         });
     }
 
-    // --- LEARNING LAB LOGIC ---
+    // --- LEARNING LAB & ASSESSMENT LOGIC ---
     function setupLearn() { learnIndex = 0; showLearnWord(); }
 
     function showLearnWord() {
@@ -305,29 +409,18 @@
         const wordObj = wordBank[lv][learnIndex];
         const chunkContainer = document.getElementById('chunkDisplay');
         const wordEl = document.getElementById('learnWord');
-        const blendBtn = document.getElementById('blendBtn');
-        const nextBtn = document.getElementById('nextLearnBtn');
         const msg = document.getElementById('learnMsg');
 
-        blendBtn.disabled = false;
-        nextBtn.disabled = false;
-        chunkContainer.innerHTML = '';
-        wordEl.innerText = wordObj.w;
+        document.getElementById('blendBtn').disabled = false; document.getElementById('nextLearnBtn').disabled = false;
+        chunkContainer.innerHTML = ''; wordEl.innerText = wordObj.w;
 
         if (wordObj.isSentence) {
-            wordEl.className = 'word-main sentence-mode';
-            wordEl.style.opacity = "1";
-            msg.innerText = "Click to hear the sentence.";
+            wordEl.className = 'word-main sentence-mode'; wordEl.style.opacity = "1"; msg.innerText = "Click to hear the sentence.";
         } else {
-            wordEl.className = wordObj.n ? 'word-main nonsense-color' : 'word-main';
-            wordEl.style.opacity = "0.2";
+            wordEl.className = wordObj.n ? 'word-main nonsense-color' : 'word-main'; wordEl.style.opacity = "0.2";
             msg.innerText = "Listen to the chunks, then the word.";
             wordObj.c.forEach((chunk, i) => {
-                const span = document.createElement('span');
-                span.className = 'chunk';
-                span.id = `chunk-${i}`;
-                span.innerText = chunk;
-                chunkContainer.appendChild(span);
+                const span = document.createElement('span'); span.className = 'chunk'; span.id = `chunk-${i}`; span.innerText = chunk; chunkContainer.appendChild(span);
             });
         }
     }
@@ -336,117 +429,215 @@
         const lv = document.getElementById('levelPicker').value;
         const wordObj = wordBank[lv][learnIndex];
         const wordEl = document.getElementById('learnWord');
-        const playBtn = document.getElementById('blendBtn');
-        const nextBtn = document.getElementById('nextLearnBtn');
         
-        playBtn.disabled = true;
-        nextBtn.disabled = true;
+        document.getElementById('blendBtn').disabled = true; document.getElementById('nextLearnBtn').disabled = true;
 
-        if(wordObj.isSentence) {
-            await speakComputer(wordObj.w);
-        } else {
+        if(wordObj.isSentence) { await speakComputer(wordObj.w); } 
+        else {
             wordEl.style.opacity = "0.2";
             for (let i = 0; i < wordObj.c.length; i++) {
-                const chunkSpan = document.getElementById(`chunk-${i}`);
-                chunkSpan.classList.add('active');
-                await playAudioChunk(wordObj.c[i]); 
-                chunkSpan.classList.remove('active');
+                const chunkSpan = document.getElementById(`chunk-${i}`); chunkSpan.classList.add('active');
+                await playAudioChunk(wordObj.c[i]); chunkSpan.classList.remove('active');
                 await new Promise(r => setTimeout(r, 100)); 
             }
             await new Promise(r => setTimeout(r, 200));
-            wordEl.style.opacity = "1";
-            await playFullWord(wordObj.w);
+            wordEl.style.opacity = "1"; await playFullWord(wordObj.w);
         }
-        
-        playBtn.disabled = false;
-        nextBtn.disabled = false;
+        document.getElementById('blendBtn').disabled = false; document.getElementById('nextLearnBtn').disabled = false;
     }
 
     function nextLearn() {
-        const lv = document.getElementById('levelPicker').value;
-        learnIndex = (learnIndex + 1) % wordBank[lv].length;
-        showLearnWord();
+        const lv = document.getElementById('levelPicker').value; learnIndex = (learnIndex + 1) % wordBank[lv].length; showLearnWord();
     }
 
-    // --- ASSESSMENT LOGIC (WITH SCORING) ---
     function startTest() {
         const lv = document.getElementById('levelPicker').value;
-        if(wordBank[lv][0].isSentence) {
-            activeTestWords = [...wordBank[lv]];
-        } else {
-            activeTestWords = [...wordBank[lv]].sort(() => Math.random() - 0.5);
-        }
-        testIndex = 0;
-        currentScore = 0;
-        
-        document.getElementById('startTest').style.display = 'none';
-        document.getElementById('scoreControls').style.display = 'flex';
-        document.getElementById('resultBadge').style.display = 'none';
-        
+        activeTestWords = wordBank[lv][0].isSentence ? [...wordBank[lv]] : [...wordBank[lv]].sort(() => Math.random() - 0.5);
+        testIndex = 0; currentScore = 0;
+        document.getElementById('startTest').style.display = 'none'; document.getElementById('scoreControls').style.display = 'flex'; document.getElementById('resultBadge').style.display = 'none';
         showTestWord();
     }
 
     function showTestWord() {
         if(testIndex < activeTestWords.length) {
             const wordObj = activeTestWords[testIndex];
-            const el = document.getElementById('testWord');
-            el.innerText = wordObj.w;
+            const el = document.getElementById('testWord'); el.innerText = wordObj.w;
             if (wordObj.isSentence) {
-                el.className = 'word-main sentence-mode';
-                document.getElementById('testType').innerText = `Item ${testIndex + 1} of ${activeTestWords.length}`;
+                el.className = 'word-main sentence-mode'; document.getElementById('testType').innerText = `Item ${testIndex + 1} of ${activeTestWords.length}`;
             } else {
-                el.className = wordObj.n ? 'word-main nonsense-color' : 'word-main';
-                document.getElementById('testType').innerText = `Word ${testIndex + 1} of ${activeTestWords.length} (${wordObj.n ? "Nonsense" : "Real"})`;
+                el.className = wordObj.n ? 'word-main nonsense-color' : 'word-main'; document.getElementById('testType').innerText = `Word ${testIndex + 1} of ${activeTestWords.length} (${wordObj.n ? "Nonsense" : "Real"})`;
             }
-        } else {
-            finishTest();
-        }
+        } else { finishTest(); }
     }
 
-    function markScore(isCorrect) {
-        if(isCorrect) currentScore++;
-        testIndex++;
-        showTestWord();
-    }
+    function markScore(isCorrect) { if(isCorrect) currentScore++; testIndex++; showTestWord(); }
 
     function finishTest() {
-        document.getElementById('testWord').className = 'word-main';
-        document.getElementById('scoreControls').style.display = 'none';
-        
-        const total = activeTestWords.length;
-        const percent = Math.round((currentScore / total) * 100);
-        let badgeHTML = "";
-
-        if (percent >= 80) {
-            badgeHTML = `<div class="result-badge badge-pass">🛡️ MASTERY (${currentScore}/${total})</div>`;
-            document.getElementById('testWord').innerText = "GREAT JOB!";
-            document.getElementById('testType').innerText = "Student is ready for the next level.";
-        } else {
-            badgeHTML = `<div class="result-badge badge-fail">⚠️ NEEDS PRACTICE (${currentScore}/${total})</div>`;
-            document.getElementById('testWord').innerText = "KEEP TRYING";
-            document.getElementById('testType').innerText = "Review previous skills before moving on.";
-        }
-
+        document.getElementById('testWord').className = 'word-main'; document.getElementById('scoreControls').style.display = 'none';
+        const total = activeTestWords.length; const percent = Math.round((currentScore / total) * 100);
         const badgeEl = document.getElementById('resultBadge');
-        badgeEl.innerHTML = badgeHTML;
-        badgeEl.style.display = 'block';
-        
-        document.getElementById('startTest').innerText = "RESTART TEST";
-        document.getElementById('startTest').style.display = 'block';
+        if (percent >= 80) {
+            badgeEl.innerHTML = `<div class="result-badge badge-pass">🛡️ MASTERY (${currentScore}/${total})</div>`;
+            document.getElementById('testWord').innerText = "GREAT JOB!"; document.getElementById('testType').innerText = "Student is ready for the next level.";
+        } else {
+            badgeEl.innerHTML = `<div class="result-badge badge-fail">⚠️ NEEDS PRACTICE (${currentScore}/${total})</div>`;
+            document.getElementById('testWord').innerText = "KEEP TRYING"; document.getElementById('testType').innerText = "Review previous skills before moving on.";
+        }
+        badgeEl.style.display = 'block'; document.getElementById('startTest').innerText = "RESTART TEST"; document.getElementById('startTest').style.display = 'block';
     }
 
-    function resetAll(resetView = true) {
-        document.getElementById('testWord').innerText = "READY?";
-        document.getElementById('testWord').className = 'word-main';
-        document.getElementById('startTest').innerText = "START ASSESSMENT";
-        document.getElementById('startTest').style.display = 'block';
-        document.getElementById('scoreControls').style.display = 'none';
-        document.getElementById('resultBadge').style.display = 'none';
+    // --- GAMES LOGIC ---
+    function switchGame(num) {
+        document.getElementById('btnGame1').classList.remove('active'); 
+        document.getElementById('btnGame2').classList.remove('active');
+        document.getElementById('game1Container').style.display = 'none'; 
+        document.getElementById('game2Container').style.display = 'none';
         
-        if(document.getElementById('learnSection').classList.contains('active')) {
-            setupLearn();
+        document.getElementById(`btnGame${num}`).classList.add('active'); 
+        document.getElementById(`game${num}Container`).style.display = 'block';
+        
+        updateDropdownOptions(); // Crucial: Re-evaluates what is disabled
+        
+        if(num === 1) loadGame1(); else loadGame2();
+    }
+
+    function loadGame1() {
+        const lv = document.getElementById('levelPicker').value;
+        const validWords = wordBank[lv].filter(w => !w.isSentence && w.c.length > 1); // Needs >1 chunk to build
+        
+        if(validWords.length === 0) return; // Fallback guard, though disabled dropdown should stop this
+
+        currentGame1Word = validWords[Math.floor(Math.random() * validWords.length)];
+        currentGame1State = new Array(currentGame1Word.c.length).fill(null);
+        
+        let shuffledChunks = [...currentGame1Word.c].sort(() => Math.random() - 0.5);
+        
+        const buildArea = document.getElementById('buildArea');
+        const poolArea = document.getElementById('poolArea');
+        buildArea.innerHTML = ''; poolArea.innerHTML = '';
+        document.getElementById('game1Feedback').innerText = '';
+        document.getElementById('checkBtn1').style.display = 'block'; document.getElementById('nextBtn1').style.display = 'none';
+
+        // Create empty slots
+        for(let i = 0; i < currentGame1Word.c.length; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'game-chunk slot';
+            slot.id = `slot-${i}`;
+            slot.innerText = "___";
+            slot.onclick = () => returnChunk(i);
+            buildArea.appendChild(slot);
+        }
+
+        // Create draggable chunks
+        shuffledChunks.forEach((chunk, i) => {
+            const block = document.createElement('div');
+            block.className = 'game-chunk';
+            block.id = `poolblock-${i}`;
+            block.innerText = chunk;
+            block.onclick = () => moveChunkToBuild(block.id, chunk);
+            poolArea.appendChild(block);
+        });
+        
+        playFullWord(currentGame1Word.w);
+    }
+
+    function moveChunkToBuild(blockId, chunkText) {
+        const emptyIndex = currentGame1State.findIndex(val => val === null);
+        if(emptyIndex !== -1) {
+            currentGame1State[emptyIndex] = { id: blockId, text: chunkText };
+            document.getElementById(blockId).style.display = 'none'; // Hide from pool
+            
+            const slot = document.getElementById(`slot-${emptyIndex}`);
+            slot.className = 'game-chunk'; // Make it look solid
+            slot.innerText = chunkText;
+            playAudioChunk(chunkText);
+        }
+    }
+
+    function returnChunk(slotIndex) {
+        if(currentGame1State[slotIndex] !== null) {
+            const blockData = currentGame1State[slotIndex];
+            document.getElementById(blockData.id).style.display = 'block'; // Show in pool again
+            
+            const slot = document.getElementById(`slot-${slotIndex}`);
+            slot.className = 'game-chunk slot';
+            slot.innerText = "___";
+            currentGame1State[slotIndex] = null;
+        }
+    }
+
+    function checkGame1() {
+        if(currentGame1State.includes(null)) {
+            document.getElementById('game1Feedback').innerHTML = "<span style='color:var(--learning)'>Fill all the slots first!</span>";
+            return;
+        }
+        
+        const userSpelling = currentGame1State.map(b => b.text).join("");
+        const correctSpelling = currentGame1Word.c.join("");
+        
+        if(userSpelling === correctSpelling) {
+            document.getElementById('game1Feedback').innerHTML = "<span style='color:var(--success)'>🎉 Correct! You built it!</span>";
+            document.getElementById('checkBtn1').style.display = 'none';
+            document.getElementById('nextBtn1').style.display = 'block';
+            playFullWord(currentGame1Word.w);
         } else {
-            document.getElementById('testType').innerText = "Assessment Mode";
+            document.getElementById('game1Feedback').innerHTML = "<span style='color:var(--danger)'>Oops! Try a different order.</span>";
+            // Auto return all pieces for them to try again
+            for(let i=0; i<currentGame1State.length; i++) { returnChunk(i); }
+        }
+    }
+
+    function loadGame2() {
+        const lv = document.getElementById('levelPicker').value;
+        const validWords = wordBank[lv].filter(w => !w.isSentence);
+        if(validWords.length === 0) return;
+
+        // Get a pool of all unique chunks in this level
+        let allChunks = [];
+        validWords.forEach(w => w.c.forEach(chunk => { if(!allChunks.includes(chunk)) allChunks.push(chunk); }));
+        
+        if(allChunks.length < 3) return; // Guard clause
+
+        // Pick one target chunk
+        currentGame2Chunk = allChunks[Math.floor(Math.random() * allChunks.length)];
+        
+        // Pick 2 wrong options
+        let options = [currentGame2Chunk];
+        while(options.length < 3) {
+            let randomChunk = allChunks[Math.floor(Math.random() * allChunks.length)];
+            if(!options.includes(randomChunk)) options.push(randomChunk);
+        }
+        options.sort(() => Math.random() - 0.5);
+
+        const optionsArea = document.getElementById('optionsArea');
+        optionsArea.innerHTML = '';
+        document.getElementById('game2Feedback').innerText = '';
+        document.getElementById('nextBtn2').style.display = 'none';
+
+        options.forEach(chunk => {
+            const btn = document.createElement('button');
+            btn.className = 'option-chunk';
+            btn.innerText = chunk;
+            btn.onclick = () => checkGame2(chunk, btn);
+            optionsArea.appendChild(btn);
+        });
+
+        playAudioChunk(currentGame2Chunk);
+    }
+
+    function checkGame2(selectedChunk, btnElement) {
+        if(document.getElementById('nextBtn2').style.display === 'block') return; // Prevent clicking after win
+
+        if(selectedChunk === currentGame2Chunk) {
+            btnElement.style.background = 'var(--success)';
+            document.getElementById('game2Feedback').innerHTML = "🌟 Amazing! You found it!";
+            document.getElementById('nextBtn2').style.display = 'block';
+            playAudioChunk(currentGame2Chunk);
+        } else {
+            btnElement.style.background = 'var(--danger)';
+            btnElement.style.opacity = '0.5';
+            document.getElementById('game2Feedback').innerHTML = "Not quite. Listen again!";
+            setTimeout(() => playAudioChunk(currentGame2Chunk), 500);
         }
     }
 </script>
