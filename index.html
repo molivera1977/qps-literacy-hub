@@ -4,209 +4,366 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QPS Literacy Hub 2.0 | Teacher Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Lexend for the interface (built for reading ease); Andika for the words
+           students read — single-story a and g, the shapes early readers learn. */
         :root {
-            --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c;
-            --learning: #f39c12; --nonsense: #8e44ad; --games: #e84393; --bg: #001f3f;
-            --mastery-threshold: 80;
+            --ink: #1f2a44; --ink-soft: #5b6478; --ink-faint: #8a93a6;
+            --paper: #fffaf2; --surface: #ffffff; --line: #ece3d3; --line-strong: #dccfb8;
+            --test: #2f6fde; --test-dark: #1f4fa8; --test-tint: #eaf1ff;
+            --learning: #f08a24; --learning-dark: #b8620f; --learning-tint: #fff2e3;
+            --games: #d6336c; --games-dark: #a3204f; --games-tint: #ffeaf1;
+            --success: #1f9d55; --success-dark: #157a40; --danger: #e03131; --danger-dark: #a82222;
+            --nonsense: #7b3fe4; --slate: #3d4a66; --slate-dark: #27324a;
+            --accent: var(--test);
+            --primary: var(--ink);
+            --radius-lg: 24px; --radius-md: 16px; --radius-sm: 12px;
+            --font-ui: 'Lexend', 'Segoe UI', system-ui, sans-serif;
+            --font-read: 'Andika', 'Lexend', 'Segoe UI', system-ui, sans-serif;
+            --ease: cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         * { box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg);
-            background-image: linear-gradient(180deg, #001f3f 0%, #001226 100%);
+            font-family: var(--font-ui);
+            color: var(--ink);
+            background-color: #f6efe3;
+            background-image:
+                radial-gradient(circle at 1px 1px, rgba(31, 42, 68, 0.07) 1px, transparent 0),
+                linear-gradient(180deg, #fbf5ea 0%, #f2e8d8 100%);
+            background-size: 22px 22px, 100% 100%;
             min-height: 100vh;
-            display: flex; justify-content: center; padding: 20px; margin: 0; align-items: flex-start;
+            display: flex; justify-content: center; align-items: flex-start;
+            padding: 24px 16px; margin: 0;
         }
 
         .hub-container {
-            background: white; padding: 2.5rem; border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            max-width: 900px; width: 100%; text-align: center; position: relative;
+            background: var(--surface);
+            padding: 28px 32px 32px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--line);
+            box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 24px 48px -24px rgba(60, 44, 20, 0.35), 0 2px 6px rgba(60, 44, 20, 0.08);
+            max-width: 920px; width: 100%; text-align: center; position: relative;
         }
 
-        /* VERSION BADGE */
+        /* TOP BAR (app view) */
+        .top-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+        .top-bar .brand { order: 1; }
+        .top-bar .tabs { order: 2; flex: 1; margin: 0; }
+        .top-bar .home-btn { order: 3; }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+        .brand-mark {
+            width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+            background: var(--ink); color: #fff; font-family: var(--font-read); font-weight: 700; font-size: 1.15rem;
+            box-shadow: 0 3px 0 #0e1527;
+        }
         .version-badge {
-            position: absolute; top: 15px; left: 20px;
-            background: linear-gradient(135deg, #3498db, #8e44ad);
-            color: white; font-size: 0.7rem; font-weight: 800;
-            padding: 3px 10px; border-radius: 20px; letter-spacing: 1px;
+            font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; color: var(--ink-soft);
+            background: var(--paper); border: 1px solid var(--line); padding: 3px 10px; border-radius: 999px;
         }
 
         /* WELCOME SCREEN */
-        #welcomeView { display: block; }
+        #welcomeView { display: block; padding-top: 36px; }
         #appView { display: none; }
 
-        .welcome-title { font-size: 2.5rem; color: var(--primary); margin-bottom: 10px; font-weight: 800; }
-        .welcome-sub { font-size: 1.1rem; color: #7f8c8d; margin-bottom: 40px; }
-
-        .menu-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
-        .menu-card {
-            background: #f8fbfd; border: 2px solid #e2e8f0; border-radius: 15px;
-            padding: 30px; width: 200px; cursor: pointer; transition: all 0.2s ease; text-align: center;
-            /* FIX: semantic button-like element with proper focus */
+        .welcome-head { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 30px; }
+        .welcome-title { font-size: clamp(2.2rem, 1.4rem + 3vw, 3.2rem); color: var(--ink); margin: 0; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; }
+        .welcome-title .tile-word { display: inline-flex; gap: 6px; margin-right: 10px; vertical-align: middle; }
+        .welcome-title .tile {
+            display: inline-grid; place-items: center; width: 1.25em; height: 1.25em; font-size: 0.8em;
+            border-radius: 12px; color: #fff; font-family: var(--font-read); font-weight: 700;
         }
-        .menu-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: var(--accent); }
-        .menu-card:focus { outline: 3px solid var(--accent); outline-offset: 3px; }
-        .menu-card h3 { margin: 15px 0 5px 0; color: var(--primary); }
-        .icon { font-size: 3rem; }
+        .tile.t1 { background: var(--test); box-shadow: 0 4px 0 var(--test-dark); transform: rotate(-4deg); }
+        .tile.t2 { background: var(--learning); box-shadow: 0 4px 0 var(--learning-dark); transform: translateY(-3px); }
+        .tile.t3 { background: var(--games); box-shadow: 0 4px 0 var(--games-dark); transform: rotate(4deg); }
+        .welcome-sub { font-size: 1.25rem; color: var(--ink-soft); margin: 0; }
+
+        .menu-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+        .menu-card {
+            --card: var(--test); --card-dark: var(--test-dark); --card-tint: var(--test-tint);
+            font: inherit; color: inherit; text-align: left;
+            background: var(--surface); border: 2px solid var(--line); border-radius: 20px;
+            padding: 22px 20px 20px; cursor: pointer; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; gap: 6px;
+            box-shadow: 0 4px 0 var(--line-strong);
+            transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), border-color 0.2s;
+        }
+        .menu-card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; background: var(--card); }
+        .menu-card.learn { --card: var(--learning); --card-dark: var(--learning-dark); --card-tint: var(--learning-tint); }
+        .menu-card.games { --card: var(--games); --card-dark: var(--games-dark); --card-tint: var(--games-tint); }
+        .menu-card:hover { transform: translateY(-4px); border-color: var(--card); box-shadow: 0 8px 0 var(--card-dark); }
+        .menu-card:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--card-dark); }
+        .menu-card:focus-visible { outline: 4px solid var(--card); outline-offset: 4px; }
+        .menu-card h3 { margin: 10px 0 0; color: var(--ink); font-size: 1.45rem; font-weight: 700; }
+        .menu-card p { margin: 0; color: var(--ink-soft); font-size: 1.1rem; line-height: 1.4; }
+        .icon {
+            font-size: 2.2rem; width: 64px; height: 64px; border-radius: 18px;
+            display: grid; place-items: center; background: var(--card-tint);
+        }
+        .lock-chip {
+            position: absolute; top: 18px; right: 16px;
+            font-size: 0.85rem; font-weight: 600; color: var(--test-dark);
+            background: var(--test-tint); border: 1px solid #cddcfb; border-radius: 999px; padding: 4px 10px;
+        }
+        .menu-card.teacher { background: linear-gradient(180deg, #fff 0%, #f7faff 100%); }
 
         /* APP UI */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .tab { flex: 1; padding: 12px; cursor: pointer; border-radius: 10px; font-weight: bold; background: #f8f9fa; color: #7f8c8d; transition: 0.3s; border: none; font-size: 0.95rem; }
-        .tab:focus { outline: 3px solid var(--accent); outline-offset: 2px; }
-        .tab.active-test { background: var(--accent); color: white; }
-        .tab.active-learn { background: var(--learning); color: white; }
-        .tab.active-games { background: var(--games); color: white; }
+        .tabs { display: flex; gap: 6px; padding: 5px; margin-bottom: 18px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; }
+        .tab {
+            flex: 1; padding: 10px 10px; cursor: pointer; border-radius: 13px; white-space: nowrap; font: inherit; font-weight: 600; font-size: 1.05rem;
+            background: transparent; color: var(--ink-soft); border: none;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        .tab:hover { background: #fff; color: var(--ink); }
+        .tab:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+        .tab.active-test { background: var(--test); color: white; box-shadow: 0 3px 0 var(--test-dark); }
+        .tab.active-learn { background: var(--learning); color: white; box-shadow: 0 3px 0 var(--learning-dark); }
+        .tab.active-games { background: var(--games); color: white; box-shadow: 0 3px 0 var(--games-dark); }
+        .tab-lock { font-size: 0.85em; margin-left: 4px; opacity: 0.85; }
 
         .view-section { display: none; }
-        .view-section.active { display: block; }
+        .view-section.active { display: block; animation: rise 0.35s var(--ease); }
+        @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-        .display-box { background: #f8fbfd; min-height: 250px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 15px; margin: 20px 0; border: 2px dashed #cbd5e1; padding: 20px; }
-        /* FIX: word-break for mobile overflow */
-        .word-main { font-size: 5rem; font-weight: 800; margin: 0; letter-spacing: 2px; transition: 0.3s; line-height: 1.2; color: var(--primary); word-break: break-word; overflow-wrap: anywhere; }
-        .sentence-mode { font-size: 2.5rem; font-weight: 600; letter-spacing: 1px; text-align: left; line-height: 1.4; }
+        .display-box {
+            min-height: 230px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border-radius: 20px; margin: 16px 0 18px; padding: 24px 20px;
+            background: var(--paper); border: 2px solid var(--line);
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.9);
+        }
+        #testSection .display-box { background: var(--test-tint); border-color: #d3e0fb; }
+        #learnSection .display-box { background: var(--learning-tint); border-color: #fbdcb8; }
+        .word-main {
+            font-family: var(--font-read); font-size: clamp(3rem, 1.5rem + 6vw, 5.5rem); font-weight: 700; margin: 0;
+            letter-spacing: 0.02em; line-height: 1.15; color: var(--ink);
+            word-break: break-word; overflow-wrap: anywhere; transition: opacity 0.3s;
+        }
+        .sentence-mode { font-size: clamp(1.7rem, 1rem + 2.6vw, 2.6rem); font-weight: 700; letter-spacing: 0.01em; text-align: center; line-height: 1.45; max-width: 30ch; }
 
         /* SCORING & BUTTONS */
-        .score-controls { display: flex; gap: 15px; justify-content: center; margin-top: 10px; }
-        .btn-score { padding: 15px 30px; border-radius: 10px; font-size: 1.5rem; border: none; cursor: pointer; transition: 0.2s; width: 120px; }
-        .btn-correct { background: var(--success); color: white; }
-        .btn-wrong { background: var(--danger); color: white; }
-        .btn-correct:hover, .btn-wrong:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .score-controls { display: flex; gap: 16px; justify-content: center; margin-top: 4px; }
+        .btn-score {
+            padding: 16px 0; border-radius: var(--radius-md); font-size: 1.15rem; font-weight: 700; font-family: inherit;
+            border: none; cursor: pointer; width: 190px; color: white;
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            transition: transform 0.15s var(--ease), box-shadow 0.15s;
+        }
+        .btn-score .mark { font-size: 1.5rem; line-height: 1; }
+        .btn-correct { background: var(--success); box-shadow: 0 5px 0 var(--success-dark); }
+        .btn-wrong { background: var(--danger); box-shadow: 0 5px 0 var(--danger-dark); }
+        .btn-correct:hover, .btn-wrong:hover { transform: translateY(-2px); }
+        .btn-correct:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--success-dark); }
+        .btn-wrong:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--danger-dark); }
 
-        .result-badge { font-size: 1.5rem; font-weight: bold; padding: 10px 20px; border-radius: 50px; display: inline-block; margin-top: 10px; }
-        .badge-pass { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
-        .badge-fail { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+        .result-badge { font-size: 1.35rem; font-weight: 700; padding: 10px 22px; border-radius: 999px; display: inline-block; margin-top: 14px; }
+        .badge-pass { background: #dcf5e6; color: #11592f; border: 2px solid #a7e0bd; }
+        .badge-fail { background: #fde4e4; color: #7a1a1a; border: 2px solid #f4b7b7; }
 
-        #chunkDisplay { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 15px; min-height: 3.5rem; }
-        .chunk { padding: 5px 15px; border-radius: 8px; background: #e2e8f0; color: #64748b; font-size: 2.5rem; font-weight: bold; }
-        .chunk.active { background: var(--learning); color: white; transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #chunkDisplay { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 18px; min-height: 3.5rem; }
+        .chunk {
+            padding: 6px 18px; border-radius: var(--radius-sm); background: #fff; color: var(--ink-faint);
+            font-family: var(--font-read); font-size: 2.5rem; font-weight: 700;
+            border: 2px solid var(--line); box-shadow: 0 4px 0 var(--line-strong);
+            transition: transform 0.2s var(--ease), background 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+        .chunk.active { background: var(--learning); color: white; border-color: var(--learning); box-shadow: 0 4px 0 var(--learning-dark); transform: translateY(-4px) scale(1.08); }
 
-        select { width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #ddd; font-size: 1rem; margin-bottom: 15px; font-weight: bold; color: var(--primary); }
+        .level-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+        .level-row label { font-weight: 600; color: var(--ink-soft); font-size: 1rem; white-space: nowrap; }
+        select {
+            width: 100%; padding: 12px 44px 12px 16px; border-radius: var(--radius-sm);
+            border: 2px solid var(--line-strong); font: inherit; font-size: 1.05rem; font-weight: 600; color: var(--ink);
+            background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%231f2a44' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 16px center;
+            appearance: none; cursor: pointer;
+        }
+        select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
         option:disabled { color: #95a5a6; font-style: italic; background: #f1f5f9; }
 
-        button.btn-test { background: var(--accent); color: white; width: 100%; padding: 15px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; }
-        button.btn-learn { background: var(--learning); color: white; padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; margin: 5px; }
-        button.btn-games { background: var(--games); color: white; padding: 15px 25px; font-size: 1.1rem; border: none; border-radius: 8px; cursor: pointer; margin: 5px; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; background: #95a5a6 !important; }
+        button.btn-test, button.btn-learn, button.btn-games, .btn-next {
+            font-family: inherit; font-weight: 700; color: white; border: none; cursor: pointer;
+            border-radius: var(--radius-md); transition: transform 0.15s var(--ease), box-shadow 0.15s, filter 0.15s;
+        }
+        button.btn-test { background: var(--test); box-shadow: 0 5px 0 var(--test-dark); width: 100%; padding: 16px; font-size: 1.2rem; letter-spacing: 0.02em; }
+        button.btn-learn { background: var(--learning); box-shadow: 0 5px 0 var(--learning-dark); padding: 15px 26px; font-size: 1.2rem; margin: 6px; }
+        button.btn-games { background: var(--games); box-shadow: 0 5px 0 var(--games-dark); padding: 15px 26px; font-size: 1.2rem; margin: 6px; }
+        .btn-next { background: var(--slate) !important; box-shadow: 0 5px 0 var(--slate-dark) !important; }
+        .btn-check { background: var(--success) !important; box-shadow: 0 5px 0 var(--success-dark) !important; }
+        button.btn-test:hover, button.btn-learn:hover, button.btn-games:hover { transform: translateY(-2px); filter: brightness(1.04); }
+        button.btn-test:active, button.btn-learn:active, button.btn-games:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
+        button.btn-test:focus-visible, button.btn-learn:focus-visible, button.btn-games:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; background: #9aa3b2 !important; box-shadow: 0 5px 0 #7c8494 !important; }
 
         .nonsense-color { color: var(--nonsense); }
-        .helper-text { font-size: 0.9rem; color: #94a3b8; margin-top: 10px; font-weight: bold; transition: 0.3s; }
+        .helper-text { font-size: 1.2rem; color: var(--ink-soft); margin-top: 12px; font-weight: 500; transition: 0.3s; }
 
-        /* HOME BUTTON - improved visibility */
+        /* HOME BUTTON */
         .home-btn {
-            position: absolute; top: 15px; right: 20px;
-            background: #f1f5f9; border: 2px solid #e2e8f0;
-            border-radius: 8px; padding: 6px 12px;
-            font-size: 0.85rem; font-weight: 700; cursor: pointer;
-            color: var(--primary); display: flex; align-items: center; gap: 5px;
-            transition: 0.2s;
+            background: #fff; border: 2px solid var(--line-strong);
+            border-radius: var(--radius-sm); padding: 8px 14px;
+            font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
+            color: var(--ink); display: flex; align-items: center; gap: 6px;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
         }
-        .home-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
-        .home-btn:focus { outline: 3px solid var(--accent); }
+        .home-btn:hover { background: var(--ink); color: white; border-color: var(--ink); }
+        .home-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
         /* GAMES UI */
-        .game-nav { display: flex; gap: 10px; margin-bottom: 15px; }
-        .btn-game-toggle { flex: 1; padding: 12px; background: #e2e8f0; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: var(--primary); font-size: 1.1rem; transition: 0.2s; }
-        .btn-game-toggle.active { background: var(--games); color: white; }
+        .game-nav { display: flex; gap: 10px; margin: 12px 0; }
+        .btn-game-toggle {
+            flex: 1; padding: 12px; background: var(--games-tint); border: 2px solid #f6c7d7; border-radius: var(--radius-sm);
+            cursor: pointer; font: inherit; font-weight: 700; color: var(--games-dark); font-size: 1.15rem; transition: 0.2s;
+        }
+        .btn-game-toggle:hover { border-color: var(--games); }
+        .btn-game-toggle.active { background: var(--games); border-color: var(--games); color: white; box-shadow: 0 4px 0 var(--games-dark); }
+        .btn-game-toggle:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
 
-        .build-area, .pool-area { display: flex; gap: 10px; min-height: 80px; padding: 15px; border: 2px dashed #cbd5e1; border-radius: 10px; margin-bottom: 15px; justify-content: center; flex-wrap: wrap; background: #f8fbfd; align-items: center; }
-        .build-area { background: #fffbeb; border-color: #fde68a; }
-        .pool-area { background: #f0fdf4; border-color: #bbf7d0; }
+        .game-prompt { display: flex; align-items: center; justify-content: center; gap: 8px 16px; flex-wrap: wrap; }
+        .game-prompt .helper-text { margin: 0; }
+        .zone-label { font-size: 1rem; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-faint); margin: 8px 0 4px; text-transform: uppercase; }
+        .build-area, .pool-area {
+            display: flex; gap: 12px; min-height: 84px; padding: 12px; border-radius: 18px; margin-bottom: 8px;
+            justify-content: center; flex-wrap: wrap; align-items: center;
+        }
+        .build-area { background: #fff8e6; border: 2px dashed #f2cf7c; }
+        .pool-area { background: var(--paper); border: 2px solid var(--line); }
 
-        .game-chunk { padding: 12px 25px; background: var(--accent); color: white; font-size: 2rem; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; user-select: none; border: none; }
-        .game-chunk:hover { transform: scale(1.05); background: #2980b9; }
-        .game-chunk.slot { background: transparent; border: 2px dashed #94a3b8; color: transparent; box-shadow: none; cursor: default; }
+        .game-chunk {
+            padding: 12px 24px; background: #fff; color: var(--ink); font-family: var(--font-read); font-size: 2.1rem;
+            border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; user-select: none;
+            border: 2px solid var(--line-strong); box-shadow: 0 5px 0 var(--line-strong);
+            transition: transform 0.15s var(--ease), box-shadow 0.15s;
+        }
+        .game-chunk:hover { transform: translateY(-3px); box-shadow: 0 8px 0 var(--line-strong); }
+        .game-chunk:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--line-strong); }
+        .build-area .game-chunk:not(.slot) { background: var(--games); color: #fff; border-color: var(--games); box-shadow: 0 5px 0 var(--games-dark); }
+        .game-chunk.slot { background: rgba(255,255,255,0.6); border: 2px dashed #d9b45c; color: transparent; box-shadow: none; cursor: default; transform: none; }
 
-        .option-chunk { padding: 20px 40px; background: var(--primary); color: white; font-size: 2.5rem; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.2); border: none; }
-        .option-chunk:hover { transform: scale(1.05); background: var(--games); }
+        .option-chunk {
+            padding: 20px 40px; background: #fff; color: var(--ink); font-family: var(--font-read); font-size: 2.6rem;
+            border-radius: 18px; cursor: pointer; font-weight: 700;
+            border: 2px solid var(--line-strong); box-shadow: 0 6px 0 var(--line-strong);
+            transition: transform 0.15s var(--ease), box-shadow 0.15s, background 0.15s, color 0.15s;
+        }
+        .option-chunk:hover { transform: translateY(-3px); background: var(--games); color: #fff; border-color: var(--games); box-shadow: 0 9px 0 var(--games-dark); }
         .option-chunk:disabled { transform: none; cursor: not-allowed; }
 
-        .game-feedback { font-size: 1.5rem; font-weight: bold; margin: 15px 0; min-height: 2rem; }
+        .game-feedback { font-size: 1.5rem; font-weight: 700; margin: 14px 0; min-height: 2rem; }
 
-        /* ===================== NEW IN 2.0 ===================== */
-
-        /* STUDENT NAME INPUT */
-        .student-bar {
-            display: flex; gap: 10px; align-items: center; margin-bottom: 15px;
-            background: #f8fbfd; border: 2px solid #e2e8f0; border-radius: 10px; padding: 10px 15px;
+        /* STUDENT NAME + MASTERY (teacher controls) */
+        .teacher-controls { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; margin-top: 4px; }
+        .student-bar, .mastery-bar {
+            display: flex; gap: 10px; align-items: center;
+            background: #fff; border: 2px solid var(--line); border-radius: var(--radius-sm); padding: 10px 14px;
         }
-        .student-bar label { font-weight: 700; color: var(--primary); font-size: 0.9rem; white-space: nowrap; }
+        .student-bar:focus-within, .mastery-bar:focus-within { border-color: var(--test); }
+        .student-bar label, .mastery-bar label { font-weight: 600; color: var(--ink-soft); font-size: 1rem; white-space: nowrap; }
         .student-bar input {
-            flex: 1; border: none; background: transparent; font-size: 1rem;
-            font-weight: 600; color: var(--primary); outline: none;
+            flex: 1; min-width: 0; border: none; background: transparent; font: inherit; font-size: 1.05rem;
+            font-weight: 600; color: var(--ink); outline: none;
         }
-        .student-bar input::placeholder { color: #bdc3c7; font-weight: 400; }
-        .student-bar input:focus { border-bottom: 2px solid var(--accent); }
-
-        /* MASTERY THRESHOLD CONTROL */
-        .mastery-bar {
-            display: flex; gap: 10px; align-items: center; margin-bottom: 15px;
-            background: #fff8f0; border: 2px solid #fde68a; border-radius: 10px; padding: 10px 15px;
-            font-size: 0.85rem;
-        }
-        .mastery-bar label { font-weight: 700; color: #92400e; white-space: nowrap; }
+        .student-bar input::placeholder { color: var(--ink-faint); font-weight: 400; }
         .mastery-bar input[type=number] {
-            width: 65px; padding: 4px 8px; border-radius: 6px;
-            border: 2px solid #fde68a; font-size: 1rem; font-weight: 700;
-            color: var(--primary); text-align: center;
+            width: 70px; padding: 4px 6px; border-radius: 8px; font: inherit;
+            border: 2px solid var(--line-strong); font-size: 1.05rem; font-weight: 700;
+            color: var(--ink); text-align: center;
         }
-        .mastery-bar span { color: #92400e; font-weight: 600; }
+        .mastery-bar span { color: var(--ink-soft); font-weight: 500; font-size: 1rem; }
 
         /* PER-WORD RESULTS LOG */
-        .results-log {
-            margin-top: 20px; border-radius: 12px; overflow: hidden;
-            border: 2px solid #e2e8f0; text-align: left;
-        }
+        .results-log { margin-top: 20px; border-radius: var(--radius-md); overflow: hidden; border: 2px solid var(--line); text-align: left; }
         .results-log-header {
-            background: var(--primary); color: white; padding: 10px 15px;
-            font-weight: 800; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;
+            background: var(--ink); color: white; padding: 12px 16px;
+            font-weight: 700; font-size: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
         }
-        .results-log-header .log-student-name { font-size: 1rem; }
-        .results-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .results-table th { background: #f1f5f9; padding: 8px 12px; font-weight: 700; color: var(--primary); border-bottom: 2px solid #e2e8f0; text-align: left; }
-        .results-table td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; }
+        .results-log-header .log-student-name { font-size: 1.05rem; }
+        .results-table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+        .results-table th { background: var(--paper); padding: 9px 14px; font-weight: 700; color: var(--ink); border-bottom: 2px solid var(--line); text-align: left; }
+        .results-table td { padding: 8px 14px; border-bottom: 1px solid var(--line); }
         .results-table tr:last-child td { border-bottom: none; }
-        .results-table tr.row-correct td { background: #f0fdf4; }
-        .results-table tr.row-wrong td { background: #fff5f5; }
+        .results-table tr.row-correct td { background: #f1fbf5; }
+        .results-table tr.row-wrong td { background: #fff4f4; }
         .log-mark { font-size: 1.1rem; }
-        .log-word { font-weight: 700; font-size: 1rem; color: var(--primary); }
-        .log-type { font-size: 0.75rem; color: #94a3b8; font-style: italic; }
+        .log-word { font-family: var(--font-read); font-weight: 700; font-size: 1.1rem; color: var(--ink); }
+        .log-type { font-size: 0.9rem; color: var(--ink-faint); font-style: italic; }
 
-        /* PRINT RESULTS BUTTON */
         .btn-print {
-            background: var(--primary); color: white; border: none; border-radius: 8px;
-            padding: 10px 18px; font-size: 0.85rem; font-weight: 700; cursor: pointer;
-            margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s;
+            background: var(--ink); color: white; border: none; border-radius: var(--radius-sm);
+            padding: 11px 18px; font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
+            margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s;
         }
-        .btn-print:hover { background: #1a252f; }
+        .btn-print:hover { background: #0e1527; }
 
-        /* GAME ZONE - no valid level message */
-        .no-game-msg {
-            text-align: center; padding: 30px; color: #94a3b8; font-weight: 700; font-size: 1rem;
-        }
+        .no-game-msg { text-align: center; padding: 30px; color: var(--ink-soft); font-weight: 600; font-size: 1.15rem; }
 
-        /* LEVEL TOOLTIP - why disabled */
-        .level-note { font-size: 0.8rem; color: #94a3b8; margin-top: -10px; margin-bottom: 10px; font-weight: 600; }
-        .level-note.warn { color: #f39c12; }
+        .level-note { font-size: 1rem; color: var(--ink-faint); margin: 6px 0 0; font-weight: 500; text-align: left; min-height: 0; }
+        .level-note:empty { display: none; }
+        .level-note.warn { color: var(--learning-dark); }
 
-        /* SUMMARY SECTION WITH LEVEL NAME */
-        .summary-level { font-size: 0.85rem; color: #94a3b8; margin-top: 5px; }
-        .summary-session { font-size: 0.85rem; color: #94a3b8; }
+        .summary-level { font-size: 0.95rem; color: #c9d2e6; font-weight: 500; }
+        .summary-session { font-size: 0.95rem; color: var(--ink-faint); }
 
-        /* localStorage banner */
         .persist-badge {
-            font-size: 0.75rem; background: #f0fdf4; color: #166534;
-            border: 1px solid #bbf7d0; border-radius: 6px;
-            padding: 3px 8px; display: inline-block; margin-bottom: 10px; font-weight: 600;
+            font-size: 0.95rem; background: #eefaf2; color: #166534;
+            border: 1px solid #bbf7d0; border-radius: 999px;
+            padding: 4px 12px; display: inline-block; margin-top: 12px; font-weight: 600;
+        }
+
+        /* TEACHER PIN DIALOG */
+        .pin-dialog {
+            border: none; padding: 0; border-radius: var(--radius-lg); width: min(380px, calc(100vw - 32px));
+            box-shadow: 0 30px 60px -20px rgba(15, 23, 42, 0.5);
+            font-family: var(--font-ui); color: var(--ink);
+        }
+        .pin-dialog::backdrop { background: rgba(20, 26, 40, 0.55); backdrop-filter: blur(3px); }
+        .pin-dialog form { padding: 28px 26px 24px; text-align: center; }
+        .pin-icon { width: 60px; height: 60px; margin: 0 auto 10px; border-radius: 18px; display: grid; place-items: center; font-size: 1.8rem; background: var(--test-tint); }
+        .pin-dialog h2 { margin: 0 0 6px; font-size: 1.4rem; }
+        .pin-dialog p { margin: 0 0 16px; color: var(--ink-soft); font-size: 1rem; line-height: 1.45; }
+        .pin-input {
+            width: 100%; font: inherit; font-size: 1.8rem; font-weight: 700; letter-spacing: 0.5em; text-align: center;
+            padding: 10px 0 10px 0.5em; border-radius: var(--radius-sm); border: 2px solid var(--line-strong); color: var(--ink);
+        }
+        .pin-input:focus { outline: none; border-color: var(--test); box-shadow: 0 0 0 4px var(--test-tint); }
+        .pin-error { min-height: 1.5em; margin: 8px 0 4px; color: var(--danger); font-weight: 600; font-size: 1rem; }
+        .pin-actions { display: flex; gap: 10px; margin-top: 6px; }
+        .pin-actions button {
+            flex: 1; font: inherit; font-size: 1.05rem; font-weight: 700; padding: 12px; border-radius: var(--radius-sm); cursor: pointer; border: none;
+        }
+        .pin-cancel { background: var(--paper); color: var(--ink); border: 2px solid var(--line-strong) !important; }
+        .pin-ok { background: var(--test); color: #fff; box-shadow: 0 4px 0 var(--test-dark); }
+        .pin-dialog.shake form { animation: shake 0.35s; }
+        @keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+
+        /* SMALL SCREENS */
+        @media (max-width: 680px) {
+            .hub-container { padding: 20px 16px 24px; border-radius: 20px; }
+            .menu-grid { grid-template-columns: 1fr; }
+            .teacher-controls { grid-template-columns: 1fr; }
+            .tab { font-size: 0.9rem; padding: 10px 4px; white-space: normal; line-height: 1.2; }
+            .top-bar { gap: 10px; }
+            .brand { font-size: 0.95rem; gap: 8px; }
+            .home-btn { padding: 6px 10px; font-size: 0.95rem; }
+            .top-bar { flex-wrap: wrap; }
+            .top-bar .tabs { order: 4; flex-basis: 100%; }
+            .brand-name { display: inline; }
+            .top-bar .home-btn { margin-left: auto; }
+            .level-row label { display: none; }
+            .btn-score { width: 50%; }
+            .option-chunk { padding: 16px 28px; font-size: 2.2rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
         }
 
         /* PRINT STYLES */
         @media print {
             body { background: white !important; padding: 0; }
-            .hub-container { box-shadow: none; border-radius: 0; padding: 1rem; }
+            .hub-container { box-shadow: none; border: none; border-radius: 0; padding: 1rem; }
             .no-print { display: none !important; }
             .results-log { border: 1px solid #ccc; }
         }
@@ -215,105 +372,110 @@
 <body>
 
 <!-- ========== WELCOME SCREEN ========== -->
-<div id="welcomeView" class="hub-container">
-    <div class="version-badge">v2.0</div>
-    <h1 class="welcome-title">QPS Literacy Hub</h1>
-    <p class="welcome-sub">Select a mode to get started</p>
+<main id="welcomeView" class="hub-container">
+    <div class="welcome-head">
+        <span class="version-badge">Teacher Edition · v2.1</span>
+        <h1 class="welcome-title">
+            <span class="tile-word" aria-hidden="true"><span class="tile t1">Q</span><span class="tile t2">P</span><span class="tile t3">S</span></span>Literacy Hub
+        </h1>
+        <p class="welcome-sub">Choose where to start.</p>
+    </div>
 
     <div class="menu-grid">
-        <div class="menu-card" onclick="enterApp('learn')" tabindex="0" role="button" aria-label="Learning Lab - Practice blending" onkeydown="if(event.key==='Enter'||event.key===' ')enterApp('learn')">
-            <div class="icon">🎧</div>
+        <button type="button" class="menu-card learn" onclick="enterApp('learn')" aria-label="Learning Lab - Practice blending">
+            <span class="icon" aria-hidden="true">🎧</span>
             <h3>Learning Lab</h3>
-            <p>Practice blending.</p>
-        </div>
-        <div class="menu-card" onclick="enterApp('games')" tabindex="0" role="button" aria-label="Game Zone - Interactive practice" onkeydown="if(event.key==='Enter'||event.key===' ')enterApp('games')">
-            <div class="icon">🎮</div>
+            <p>Hear each sound, then blend the word.</p>
+        </button>
+        <button type="button" class="menu-card games" onclick="enterApp('games')" aria-label="Game Zone - Interactive practice">
+            <span class="icon" aria-hidden="true">🎮</span>
             <h3>Game Zone</h3>
-            <p>Interactive practice.</p>
-        </div>
-        <div class="menu-card" onclick="enterApp('test')" tabindex="0" role="button" aria-label="Assessment - Teacher Grading Mode" onkeydown="if(event.key==='Enter'||event.key===' ')enterApp('test')">
-            <div class="icon">📝</div>
+            <p>Build words and match sounds.</p>
+        </button>
+        <button type="button" class="menu-card teacher" onclick="enterApp('test')" aria-label="Assessment - Teacher grading mode, needs Teacher PIN">
+            <span class="lock-chip" aria-hidden="true">🔒 Teacher</span>
+            <span class="icon" aria-hidden="true">📝</span>
             <h3>Assessment</h3>
-            <p>Teacher Grading Mode.</p>
-        </div>
+            <p>Teacher grading mode. Needs the Teacher PIN.</p>
+        </button>
     </div>
-</div>
+</main>
 
 <!-- ========== APP VIEW ========== -->
-<div id="appView" class="hub-container">
-    <div class="version-badge">v2.0</div>
-    <!-- FIX: Home button now labeled, not just emoji -->
-    <button class="home-btn no-print" onclick="goHome()" aria-label="Back to main menu">🏠 Home</button>
-
-    <div class="tabs no-print" role="tablist" aria-label="App modes">
-        <button id="tabTest" class="tab" onclick="switchTab('test')" role="tab" aria-controls="testSection">Assessment Mode</button>
-        <button id="tabLearn" class="tab" onclick="switchTab('learn')" role="tab" aria-controls="learnSection">Learning Lab</button>
-        <button id="tabGames" class="tab" onclick="switchTab('games')" role="tab" aria-controls="gamesSection">Game Zone</button>
+<main id="appView" class="hub-container">
+    <div class="top-bar no-print">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">Q</span><span class="brand-name">QPS Literacy Hub</span></div>
+        <button class="home-btn" onclick="goHome()" aria-label="Back to main menu">🏠 Home</button>
+    <div class="tabs" role="tablist" aria-label="App modes">
+        <button id="tabLearn" class="tab" onclick="switchTab('learn')" role="tab" aria-controls="learnSection">🎧 Learning Lab</button>
+        <button id="tabGames" class="tab" onclick="switchTab('games')" role="tab" aria-controls="gamesSection">🎮 Game Zone</button>
+        <button id="tabTest" class="tab" onclick="switchTab('test')" role="tab" aria-controls="testSection">📝 Assessment<span class="tab-lock" aria-label="locked, needs Teacher PIN">🔒</span></button>
+    </div>
     </div>
 
-    <!-- FIX: Level dropdown with disabled reason note -->
-    <select id="levelPicker" onchange="onLevelChange()" aria-label="Select task level" class="no-print">
-        <optgroup label="Task 1: Alphabet">
-            <option value="1a">Task 1(a): Letters (Set 1)</option>
-            <option value="1b">Task 1(b): Letters (Set 2)</option>
-        </optgroup>
-        <optgroup label="Task 2: CVC Words">
-            <option value="2a">Task 2(a): CVC Nonsense</option>
-            <option value="2b">Task 2(b): CVC Sentences</option>
-        </optgroup>
-        <optgroup label="Task 3: Consonant Digraphs">
-            <option value="3a">Task 3(a): Digraph Nonsense</option>
-            <option value="3b">Task 3(b): Digraph Sentences</option>
-        </optgroup>
-        <optgroup label="Task 4: Consonant Blends">
-            <option value="4a">Task 4(a): Blends Nonsense</option>
-            <option value="4b">Task 4(b): Blends Sentences</option>
-        </optgroup>
-        <optgroup label="Task 5: Silent e">
-            <option value="5a">Task 5(a): Silent e Nonsense</option>
-            <option value="5b">Task 5(b): Silent e Sentences</option>
-        </optgroup>
-        <optgroup label="Task 6: R-Controlled Vowels">
-            <option value="6a">Task 6(a): R-Controlled Nonsense</option>
-            <option value="6b">Task 6(b): R-Controlled Sentences</option>
-        </optgroup>
-        <optgroup label="Task 7: Advanced Consonants">
-            <option value="7a">Task 7(a): Adv Consonants Nonsense</option>
-            <option value="7b">Task 7(b): Adv Consonants Sentences</option>
-        </optgroup>
-        <optgroup label="Task 8: Vowel Teams">
-            <option value="8">Task 8: Vowel Teams (Mixed)</option>
-        </optgroup>
-        <optgroup label="Task 9: Multisyllabic Words">
-            <option value="9a">Task 9(a): Two-Syllable</option>
-            <option value="9b">Task 9(b): Three-Syllable</option>
-            <option value="9c">Task 9(c): Four-Syllable</option>
-        </optgroup>
-        <optgroup label="Task 10: Structural Analysis">
-            <option value="10">Task 10: Prefixes &amp; Suffixes</option>
-        </optgroup>
-    </select>
-    <!-- FIX: Explain why game levels are disabled -->
-    <div id="levelNote" class="level-note" aria-live="polite"></div>
+    <div class="level-row no-print">
+        <label for="levelPicker">Level</label>
+        <select id="levelPicker" onchange="onLevelChange()" aria-label="Select task level">
+            <optgroup label="Task 1: Alphabet">
+                <option value="1a">Task 1(a): Letters (Set 1)</option>
+                <option value="1b">Task 1(b): Letters (Set 2)</option>
+            </optgroup>
+            <optgroup label="Task 2: CVC Words">
+                <option value="2a">Task 2(a): CVC Nonsense</option>
+                <option value="2b">Task 2(b): CVC Sentences</option>
+            </optgroup>
+            <optgroup label="Task 3: Consonant Digraphs">
+                <option value="3a">Task 3(a): Digraph Nonsense</option>
+                <option value="3b">Task 3(b): Digraph Sentences</option>
+            </optgroup>
+            <optgroup label="Task 4: Consonant Blends">
+                <option value="4a">Task 4(a): Blends Nonsense</option>
+                <option value="4b">Task 4(b): Blends Sentences</option>
+            </optgroup>
+            <optgroup label="Task 5: Silent e">
+                <option value="5a">Task 5(a): Silent e Nonsense</option>
+                <option value="5b">Task 5(b): Silent e Sentences</option>
+            </optgroup>
+            <optgroup label="Task 6: R-Controlled Vowels">
+                <option value="6a">Task 6(a): R-Controlled Nonsense</option>
+                <option value="6b">Task 6(b): R-Controlled Sentences</option>
+            </optgroup>
+            <optgroup label="Task 7: Advanced Consonants">
+                <option value="7a">Task 7(a): Adv Consonants Nonsense</option>
+                <option value="7b">Task 7(b): Adv Consonants Sentences</option>
+            </optgroup>
+            <optgroup label="Task 8: Vowel Teams">
+                <option value="8">Task 8: Vowel Teams (Mixed)</option>
+            </optgroup>
+            <optgroup label="Task 9: Multisyllabic Words">
+                <option value="9a">Task 9(a): Two-Syllable</option>
+                <option value="9b">Task 9(b): Three-Syllable</option>
+                <option value="9c">Task 9(c): Four-Syllable</option>
+            </optgroup>
+            <optgroup label="Task 10: Structural Analysis">
+                <option value="10">Task 10: Prefixes &amp; Suffixes</option>
+            </optgroup>
+        </select>
+    </div>
+    <!-- Explains why some levels are greyed out in Game Zone -->
+    <div id="levelNote" class="level-note no-print" aria-live="polite"></div>
 
-    <!-- ===== ASSESSMENT TAB ===== -->
+    <!-- ===== ASSESSMENT TAB (behind the Teacher PIN) ===== -->
     <div id="testSection" class="view-section" role="tabpanel" aria-labelledby="tabTest">
 
-        <!-- NEW: Student name field -->
-        <div class="student-bar no-print">
-            <label for="studentName">👤 Student:</label>
-            <input type="text" id="studentName" placeholder="Enter student name..." maxlength="60" aria-label="Student name" autocomplete="off" />
+        <div class="teacher-controls no-print">
+            <div class="student-bar">
+                <label for="studentName">👤 Student</label>
+                <input type="text" id="studentName" placeholder="Enter student name..." maxlength="60" aria-label="Student name" autocomplete="off" />
+            </div>
+            <div class="mastery-bar">
+                <label for="masteryInput">🎯 Mastery</label>
+                <input type="number" id="masteryInput" value="80" min="1" max="100" aria-label="Mastery threshold percentage" />
+                <span>% to pass</span>
+            </div>
         </div>
 
-        <!-- NEW: Mastery threshold control -->
-        <div class="mastery-bar no-print">
-            <label for="masteryInput">🎯 Mastery Threshold:</label>
-            <input type="number" id="masteryInput" value="80" min="1" max="100" aria-label="Mastery threshold percentage" />
-            <span>% correct to pass</span>
-        </div>
-
-        <!-- NEW: localStorage last-level indicator -->
-        <div id="persistBadge" class="persist-badge" style="display:none;" aria-live="polite">💾 Last level restored from your previous session</div>
+        <div id="persistBadge" class="persist-badge no-print" style="display:none;" aria-live="polite">💾 Last level restored from your previous session</div>
 
         <div class="display-box">
             <p id="testWord" class="word-main" aria-live="polite">READY?</p>
@@ -324,11 +486,11 @@
         <button id="startTest" class="btn-test no-print" onclick="startTest()" aria-label="Start assessment">START ASSESSMENT</button>
 
         <div id="scoreControls" class="score-controls no-print" style="display:none;" aria-label="Score controls">
-            <button class="btn-score btn-wrong" onclick="markScore(false)" aria-label="Mark incorrect">❌</button>
-            <button class="btn-score btn-correct" onclick="markScore(true)" aria-label="Mark correct">✅</button>
+            <button class="btn-score btn-wrong" onclick="markScore(false)" aria-label="Mark incorrect"><span class="mark" aria-hidden="true">✗</span> Missed</button>
+            <button class="btn-score btn-correct" onclick="markScore(true)" aria-label="Mark correct"><span class="mark" aria-hidden="true">✓</span> Correct</button>
         </div>
 
-        <!-- NEW: Per-word results log (shown after test completes) -->
+        <!-- Per-word results log (shown after test completes) -->
         <div id="resultsLogContainer" style="display:none;">
             <div class="results-log">
                 <div class="results-log-header">
@@ -358,9 +520,9 @@
             <p id="learnWord" class="word-main" style="opacity: 0.3;" aria-live="polite">---</p>
         </div>
         <div style="display:flex; flex-direction: column;">
-            <div style="display:flex; justify-content: center;">
+            <div style="display:flex; justify-content: center; flex-wrap: wrap;">
                 <button id="blendBtn" class="btn-learn" onclick="playBlending()" aria-label="Hear sounds and word">🔊 HEAR IT</button>
-                <button id="nextLearnBtn" class="btn-learn" style="background:#34495e" onclick="nextLearn()" aria-label="Next word">NEXT ➡️</button>
+                <button id="nextLearnBtn" class="btn-learn btn-next" onclick="nextLearn()" aria-label="Next word">NEXT ➡️</button>
             </div>
             <p id="learnMsg" class="helper-text">The computer will read the full word after you hear the sounds.</p>
         </div>
@@ -374,45 +536,62 @@
         </div>
 
         <div id="game1Container">
-            <button id="hearGame1Btn" class="btn-games" onclick="playGame1Sounds()" aria-label="Hear sounds for current word">🔊 Hear Sounds</button>
-            <p class="helper-text">Tap the chunks below to build the word!</p>
+            <div class="game-prompt">
+                <button id="hearGame1Btn" class="btn-games" onclick="playGame1Sounds()" aria-label="Hear sounds for current word">🔊 Hear Sounds</button>
+                <p class="helper-text">Tap the chunks below to build the word!</p>
+            </div>
 
-            <p style="font-size:0.8rem; font-weight:bold; color:#7f8c8d; margin-bottom: 2px;">BUILD ZONE</p>
+            <p class="zone-label">Build zone</p>
             <div id="buildArea" class="build-area" aria-label="Build zone - place chunks here"></div>
 
-            <p style="font-size:0.8rem; font-weight:bold; color:#7f8c8d; margin-bottom: 2px;">YOUR BLOCKS</p>
+            <p class="zone-label">Your blocks</p>
             <div id="poolArea" class="pool-area" aria-label="Available chunks"></div>
 
-            <!-- FIX: No-game fallback message -->
             <div id="game1NoData" class="no-game-msg" style="display:none;" aria-live="polite">
                 ⚠️ This level doesn't have multi-chunk words for Word Builder.<br>Please select a different level.
             </div>
 
             <div id="game1Feedback" class="game-feedback" aria-live="assertive"></div>
             <div style="display:flex; justify-content: center;">
-                <button id="checkBtn1" class="btn-games" style="background:var(--success)" onclick="checkGame1()" aria-label="Check your answer">Check Answer ✅</button>
-                <button id="nextBtn1" class="btn-games" style="background:#34495e; display:none;" onclick="loadGame1()" aria-label="Next word">Next Word ➡️</button>
+                <button id="checkBtn1" class="btn-games btn-check" onclick="checkGame1()" aria-label="Check your answer">Check Answer ✅</button>
+                <button id="nextBtn1" class="btn-games btn-next" style="display:none;" onclick="loadGame1()" aria-label="Next word">Next Word ➡️</button>
             </div>
         </div>
 
         <div id="game2Container" style="display:none;">
-            <button id="hearGame2Btn" class="btn-games" onclick="playGame2Sound()" aria-label="Hear mystery sound">🔊 Hear Mystery Sound</button>
-            <p class="helper-text">Which chunk makes the sound you just heard?</p>
+            <div class="game-prompt">
+                <button id="hearGame2Btn" class="btn-games" onclick="playGame2Sound()" aria-label="Hear mystery sound">🔊 Hear Mystery Sound</button>
+                <p class="helper-text">Which chunk makes the sound you just heard?</p>
+            </div>
 
             <div id="optionsArea" class="pool-area" style="border:none; background:transparent;" aria-label="Answer choices" role="group"></div>
 
-            <!-- FIX: No-game fallback message -->
             <div id="game2NoData" class="no-game-msg" style="display:none;" aria-live="polite">
                 ⚠️ This level needs at least 3 unique chunks for Sound Match.<br>Please select a different level.
             </div>
 
             <div id="game2Feedback" class="game-feedback" aria-live="assertive"></div>
             <div style="display:flex; justify-content: center;">
-                <button id="nextBtn2" class="btn-games" style="background:#34495e; display:none;" onclick="loadGame2()" aria-label="Next sound">Next Sound ➡️</button>
+                <button id="nextBtn2" class="btn-games btn-next" style="display:none;" onclick="loadGame2()" aria-label="Next sound">Next Sound ➡️</button>
             </div>
         </div>
     </div>
-</div>
+</main>
+
+<!-- ========== TEACHER PIN ========== -->
+<dialog id="pinDialog" class="pin-dialog" aria-labelledby="pinTitle">
+    <form method="dialog" onsubmit="return submitPin(event)">
+        <div class="pin-icon" aria-hidden="true">🔒</div>
+        <h2 id="pinTitle">Teacher PIN</h2>
+        <p>Assessment is for the teacher. Enter the Teacher PIN to open it.</p>
+        <input id="pinInput" class="pin-input" type="password" inputmode="numeric" autocomplete="off" maxlength="10" aria-label="Teacher PIN" aria-describedby="pinError" />
+        <div id="pinError" class="pin-error" aria-live="assertive"></div>
+        <div class="pin-actions">
+            <button type="button" class="pin-cancel" onclick="closePin()">Cancel</button>
+            <button type="submit" class="pin-ok">Unlock</button>
+        </div>
+    </form>
+</dialog>
 
 <script>
     // ============================================================
@@ -526,7 +705,53 @@
         resetAll();
     }
 
+    // ============================================================
+    // TEACHER PIN - Assessment opens only after the PIN; it locks
+    // again whenever the teacher leaves Assessment (tab or Home).
+    // ============================================================
+    const TEACHER_PIN = '9377';
+    let assessmentUnlocked = false;
+    let afterPin = null;
+
+    function askForPin(onUnlock) {
+        afterPin = onUnlock;
+        const dlg = document.getElementById('pinDialog');
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinError').textContent = '';
+        dlg.showModal();
+        document.getElementById('pinInput').focus();
+    }
+
+    function submitPin(event) {
+        event.preventDefault();
+        const dlg = document.getElementById('pinDialog');
+        const input = document.getElementById('pinInput');
+        if (input.value.trim() === TEACHER_PIN) {
+            assessmentUnlocked = true;
+            dlg.close();
+            const next = afterPin; afterPin = null;
+            if (next) next();
+        } else {
+            document.getElementById('pinError').textContent = 'That PIN is not right. Try again.';
+            input.value = '';
+            input.focus();
+            dlg.classList.remove('shake'); void dlg.offsetWidth; dlg.classList.add('shake');
+        }
+        return false;
+    }
+
+    function closePin() {
+        afterPin = null;
+        document.getElementById('pinDialog').close();
+    }
+
+    function setAssessmentLock(unlocked) {
+        assessmentUnlocked = unlocked;
+        document.querySelector('#tabTest .tab-lock').style.display = unlocked ? 'none' : '';
+    }
+
     function enterApp(mode) {
+        if (mode === 'test' && !assessmentUnlocked) { askForPin(() => enterApp('test')); return; }
         document.getElementById('welcomeView').style.display = 'none';
         document.getElementById('appView').style.display = 'block';
 
@@ -549,12 +774,18 @@
         document.getElementById('appView').style.display = 'none';
         document.getElementById('welcomeView').style.display = 'block';
         document.title = 'QPS Literacy Hub 2.0 | Teacher Edition';
+        setAssessmentLock(false);
         resetAll();
     }
 
     function switchTab(mode) {
+        if (mode === 'test' && !assessmentUnlocked) { askForPin(() => switchTab('test')); return; }
+        setAssessmentLock(mode === 'test');
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active-test','active-learn','active-games'));
+        document.querySelectorAll('.tab').forEach(el => {
+            el.classList.remove('active-test','active-learn','active-games');
+            el.setAttribute('aria-selected','false');
+        });
 
         // FIX: Update title dynamically
         const titleMap = { test: 'Assessment', learn: 'Learning Lab', games: 'Game Zone' };
