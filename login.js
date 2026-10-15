@@ -264,12 +264,31 @@
     h.className = 'plan-hi'; h.textContent = 'Reading for meaning';
     const p = document.createElement('p');
     p.className = 'plan-line';
-    p.textContent = 'The comprehension track, for students who passed every QPS stop. The passages match the reader\'s level.';
-    const cards = document.createElement('div');
-    cards.className = 'guest-comp-grid';
-    Comp.skills().forEach(sk => cards.append(compCard(sk)));
-    sec.append(h, p, cards);
+    p.textContent = 'The comprehension track, for students who passed every QPS stop. A student gets passages at their own level, and the site moves them up and down. Here you can open any level.';
+    sec.append(h, p);
+    Comp.skills().forEach(sk => {
+      const name = document.createElement('h3');
+      name.className = 'guest-comp-skill';
+      name.textContent = `${sk.icon} ${sk.name}`;
+      const cards = document.createElement('div');
+      cards.className = 'guest-comp-grid';
+      for (let lv = 1; lv <= (Comp.maxLevel || 4); lv++) cards.append(levelCard(sk, lv));
+      sec.append(name, cards);
+    });
     $('stopGrid').after(sec);
+  }
+
+  // One level of a comprehension skill, for Mr. O and guests: opens the skill at that level.
+  function levelCard(sk, lv) {
+    const note = (sk.levelNotes && sk.levelNotes[lv]) || '';
+    const card = document.createElement('button');
+    card.type = 'button'; card.className = 'plan-card level-card';
+    card.setAttribute('aria-label', `Start ${sk.name} at level ${lv}. ${note}`);
+    card.onclick = () => Comp.openAt(sk.id, lv);
+    card.innerHTML = '<span class="plan-name"></span><span class="plan-level"></span><span class="plan-go">Start ▶</span>';
+    card.querySelector('.plan-name').textContent = `Level ${lv}`;
+    card.querySelector('.plan-level').textContent = note;
+    return card;
   }
 
   // Plan for the comprehension track: each skill with the student's level.

@@ -414,5 +414,14 @@
     }
   }
 
-  window.Comp = { open, levelOf, restore, skills: () => COMP_SKILLS, _rules: { afterAnswer, afterCheck, freshSkill } };
+  // Mr. O and guests can open a skill at any level (login.js renderAllComp). Students never get this:
+  // the site picks their level. The passages they have already seen are kept, so they are not repeated first.
+  function openAt(id, level) {
+    const name = who();
+    const lv = Math.max(1, Math.min(MAX_LEVEL, Number(level) || DEFAULT_START));
+    putSkill(name, id, { ...freshSkill(lv), seen: skillState(name, id).seen || [] });
+    open(id);
+  }
+
+  window.Comp = { open, openAt, levelOf, restore, maxLevel: MAX_LEVEL, skills: () => COMP_SKILLS, _rules: { afterAnswer, afterCheck, freshSkill } };
 })();

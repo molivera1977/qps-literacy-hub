@@ -18,6 +18,13 @@ const COMP_SKILLS = [
     id: 'context',
     name: 'Words in context',
     icon: '🔎',
+    // One line per level, shown to Mr. O and guests when they pick a level (students never pick).
+    levelNotes: {
+      1: 'The meaning is right next to the word.',
+      2: 'An example or a nearby sentence shows the meaning.',
+      3: 'An opposite shows it, or the clue is in another sentence.',
+      4: 'Words with two meanings, harder words, longer passages.'
+    },
     learn: [
       'Good readers do not skip a hard word. They look at the words around it.',
       'The words around a hard word are called context clues. Context clues help you figure out what the word means.',

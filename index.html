@@ -401,8 +401,14 @@
         .plan-go { margin-top: 6px; background: var(--learning); color: #fff; font-weight: 700; font-size: 1.35rem; padding: 10px 28px; border-radius: 999px; box-shadow: 0 4px 0 var(--learning-dark); }
         @media (prefers-reduced-motion: reduce) { .plan-card { transition: none; } .plan-card:hover, .plan-card:active { transform: none; } }
         .plan-level { font-weight: 600; font-size: 1.15rem; color: var(--ink-soft); }
-        /* Guest view only: the comprehension skills under the phonics stops (login.js renderGuestComp). */
-        .guest-comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 12px; }
+        /* Mr. O and guests: every comprehension skill under the phonics stops, one card per level (login.js renderAllComp). */
+        .guest-comp-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 10px; }
+        @media (max-width: 920px) { .guest-comp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }   /* 2 x 2, never 3 + 1 */
+        @media (max-width: 480px) { .guest-comp-grid { grid-template-columns: 1fr; } }
+        .guest-comp-skill { margin: 14px 0 0; font-size: 1.35rem; color: var(--ink); }
+        .guest-comp-grid .plan-card + .plan-card { margin-top: 0; }   /* the stacked-plan spacing does not apply in a grid */
+        .level-card .plan-name { margin-top: 4px; }
+        .level-card .plan-level { text-align: center; font-size: 1.05rem; line-height: 1.35; flex: 1; }
         .plan-card + .plan-card { margin-top: 14px; }
         /* Comprehension track (comp.js) */
         #compView { display: none; }
@@ -1729,8 +1735,8 @@
 <script src="readaloud.js?v=r1"></script>
 <script src="practice-data.js?v=p1"></script>
 <script src="practice.js?v=p4"></script>
-<script src="comp-data.js?v=c1"></script>
-<script src="comp.js?v=c2"></script>
-<script src="login.js?v=7"></script>
+<script src="comp-data.js?v=c2"></script>
+<script src="comp.js?v=c3"></script>
+<script src="login.js?v=8"></script>
 </body>
 </html>
