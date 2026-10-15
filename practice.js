@@ -196,7 +196,9 @@
   /* ---------- shared pieces ---------- */
   function direction(area, text) {
     const row = el('div', 'p-direction');
-    row.append(button('p-say', '🔊', () => sayText(text), 'Hear the directions'), el('p', '', text));
+    const p = window.QPSRead ? QPSRead.wrap(el('p', ''), text) : el('p', '', text);
+    // A speaker always answers: it stops whatever is being read and reads this line.
+    row.append(button('p-say', '🔊', () => (window.QPSRead ? QPSRead.say(p) : sayText(text)), 'Hear the directions'), p);
     area.append(row);
   }
   function progress(area, n, total) {
@@ -242,9 +244,14 @@
     learn(area, done) {
       const card = el('div', 'p-learn');
       const rule = stop.learn.lines.join(' ');
-      const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => { await sayText(rule); done(); });
+      const linePs = stop.learn.lines.map(line => window.QPSRead ? QPSRead.wrap(el('p', 'p-learn-line'), line) : el('p', 'p-learn-line', line));
+      const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => {
+        if (window.QPSRead) await QPSRead.sayAll(linePs);
+        else await sayText(rule);
+        done();
+      });
       card.append(el('h2', 'p-learn-title', `Learn: ${stop.name}`));
-      stop.learn.lines.forEach(line => card.append(el('p', 'p-learn-line', line)));
+      linePs.forEach(p => card.append(p));
       card.append(sayBtn);
       card.append(el('p', 'p-small', 'Tap a word to hear it.'));
       const ex = el('div', 'p-examples');
@@ -381,9 +388,13 @@
         const line = el('p', 'p-sentence');
         sentence.split(' ').forEach((word, i) => {
           if (i) line.append(' ');
-          line.append(button('p-sword', word, () => sayText(word.replace(/[.,?!]/g, '')), `Hear ${word}`));
+          line.append(button('p-sword rw', word, () => sayText(word.replace(/[.,?!]/g, '')), `Hear ${word}`));
         });
-        box.append(line, button('p-btn p-hear', '🔊 Hear the sentence', async () => { await sayText(sentence); finish(); }));
+        line.dataset.say = sentence;
+        box.append(line, button('p-btn p-hear', '🔊 Hear the sentence', async () => {
+          if (window.QPSRead) await QPSRead.say(line); else await sayText(sentence);
+          finish();
+        }));
       }, done, 'Read the sentence out loud. Tap a word if you need help. Then tap Hear the sentence to check yourself.');
     },
 

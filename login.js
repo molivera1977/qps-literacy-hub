@@ -202,6 +202,7 @@
       const p = document.createElement('p');
       p.className = 'plan-line';
       p.textContent = `Your stop is ${track.num} · ${track.name}.`;
+      if (window.QPSRead) { QPSRead.wrap(p, p.textContent); sayBtn.onclick = () => QPSRead.say(p); }
       dir.append(sayBtn, p);
 
       const card = document.createElement('button');
@@ -241,6 +242,7 @@
     const p = document.createElement('p');
     p.className = 'plan-line';
     p.textContent = line;
+    if (window.QPSRead) { QPSRead.wrap(p, line); sayBtn.onclick = () => QPSRead.say(p); }
     dir.append(sayBtn, p);
     box.append(dir);
     skills.forEach(sk => {

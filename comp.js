@@ -102,11 +102,9 @@
   const targetWord = (item) => (/\*([^*]+)\*/.exec(item.passage) || [])[1] || '';
 
   /* ---------- read aloud: a speaker on the left of every block, words lit as they are read ---------- */
-  let speaking = null;
   function stopSpeaking() {
-    if (window.speechSynthesis) speechSynthesis.cancel();
-    if (speaking) speaking.querySelectorAll('.c-w.lit').forEach(w => w.classList.remove('lit'));
-    speaking = null;
+    if (window.QPSRead) QPSRead.stop();
+    else if (window.speechSynthesis) speechSynthesis.cancel();
   }
   // Words wrapped in spans (with their place in the spoken text) so the voice can light them.
   function wordsInto(host, text, markWord) {
@@ -127,23 +125,12 @@
       if (wrap) host.append(wrap);
     });
   }
+  // The shared reader (readaloud.js) lights each word, on voices with or without word events.
   function speak(host) {
-    stopSpeaking();
+    if (window.QPSRead) { QPSRead.say(host); return; }
     if (!window.speechSynthesis) return;
-    const text = host.dataset.say;
-    const words = [...host.querySelectorAll('.c-w')];
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.0;
-    speaking = host;
-    u.onboundary = (e) => {
-      if (e.name && e.name !== 'word') return;
-      words.forEach(w => w.classList.remove('lit'));
-      let hit = null;
-      for (const w of words) { if (Number(w.dataset.at) <= e.charIndex) hit = w; else break; }
-      if (hit) hit.classList.add('lit');
-    };
-    u.onend = u.onerror = () => { words.forEach(w => w.classList.remove('lit')); if (speaking === host) speaking = null; };
-    speechSynthesis.speak(u);
+    speechSynthesis.cancel();
+    speechSynthesis.speak(new SpeechSynthesisUtterance(host.dataset.say));
   }
   // A speaker icon is a span (it can sit inside an answer button); its tap never answers.
   function speaker(host, label) {
