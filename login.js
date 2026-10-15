@@ -219,13 +219,46 @@
     }
   }
 
+  /* ---------- results to Mr. O's sheet (same as his other sites) ---------- */
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzv8CWv1yyi8NeH04now9UxVL4IZm5yMqqsEGMcgGdrcAOWVB-aSp5siTvSSJXIUpzFMA/exec';
+
+  // One row per finished Practice Check, on the stop's own tab (qps-5 = Silent e).
+  function saveCheck(r) {
+    if (SHARE || !student || !r || !r.stop) return;          // a visitor's work is never sent
+    const started = r.started || r.finished;
+    const elapsed = Math.max(0, Math.round((r.finished - started) / 1000));
+    const body = {
+      action: 'submit',
+      game: 'qps-' + r.stop.id,
+      sessionId: 'qps-' + r.stop.id + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      name: student,
+      form: `Practice Check · ${r.stop.num} ${r.stop.name}`,
+      score: r.right, correct: r.right, total: r.total, maxScore: r.total,
+      percent: r.percent,
+      done: true,
+      elapsed,
+      tabSwitches: 0,
+      wrongQuestions: r.missed.join(' | '),
+      startedAt: started.toISOString(),
+      finishedAt: r.finished.toISOString()
+    };
+    window.QPS_LAST_SENT = body;                             // for testing
+    try {
+      fetch(SHEET_URL, {
+        method: 'POST', mode: 'no-cors', keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).catch(() => {});
+    } catch (e) { /* offline: the stars still show on this Chromebook */ }
+  }
+
   /* ---------- start ---------- */
   buildNameList();
   $('qpsName').addEventListener('change', onNamePick);
   ['qpsPin', 'qpsGuestName'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') trySignIn(); }));
   $('qpsSignIn').addEventListener('click', trySignIn);
 
-  window.QPSLogin = { renderPlan, signOut, trackFor, _tracks: TRACKS };
+  window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, _tracks: TRACKS };
 
   if (SHARE) { signIn('Visitor'); return; }
   let saved = '';

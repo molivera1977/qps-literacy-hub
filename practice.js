@@ -19,7 +19,7 @@
     letterHear: 'Listen', check: 'Check'
   };
 
-  let stop = null, steps = [], stepIndex = 0, busy = false;
+  let stop = null, steps = [], stepIndex = 0, busy = false, checkStarted = null;
   const QA = /[?&]qa\b/.test(location.search);        // test runs only: each round names its answer
   const mark = (box, answer) => { if (QA) box.dataset.answer = answer; };
   const $ = (id) => document.getElementById(id);
@@ -424,6 +424,7 @@
       else if (stop.big) items = shuffle([...pick(stop.real, 5).map(w => ({ kind: 'chop', chunks: split(w) })), ...pick(stop.real, 5).map(w => ({ kind: 'build', chunks: split(w) }))]);
       else items = shuffle([...pick(stop.made, 6).map(w => ({ kind: 'decode', chunks: split(w) })), ...pick(stop.made, 4).map(w => ({ kind: 'spell', chunks: split(w) }))]);
       const results = [];
+      checkStarted = new Date();
       direction(area, 'Practice Check. Do your best. This time the site does not tell you the answer until the end.');
       const box = el('div', 'p-round');
       area.append(box);
@@ -622,6 +623,11 @@
     box.append(el('div', 'p-score', `${right} of ${items.length}`), el('div', 'p-stars', '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars)));
     box.append(el('p', 'p-well', pct >= PASS ? '🎉 You are ready for Mr. O\'s check!' : 'Good work. Practice this stop again to get ready for Mr. O\'s check.'));
     const missed = items.filter((_, k) => !results[k]);
+    // Send the Check to Mr. O's results sheet (login.js knows who is signed in).
+    if (window.QPSLogin) QPSLogin.saveCheck({
+      stop, right, total: items.length, percent: pct, started: checkStarted, finished: new Date(),
+      missed: missed.map(it => `${join(it.chunks)} (${STEP_NAMES[it.kind] || it.kind})`)
+    });
     if (missed.length) {
       box.append(el('p', 'p-small', 'Words to practice — tap to hear:'));
       const list = el('div', 'p-examples');
