@@ -46,6 +46,7 @@
 };
 
   // Official track = the practice stop to work on. Mr. O changes a track here.
+  // "comp" = the comprehension track (comp.js) for students who passed every QPS level.
   const TRACKS = {
     "Castaneda, Kelvin":              "2",
     "Watts, Autumn":                  "3",
@@ -63,12 +64,12 @@
     "Vega, Taishmara":                "9b",
     "Collado, Roniel":                "9c",
     "Dock, Fakeem":                   "9c",
-    "Dejesus, Michael":               null,   // passed every section
-    "Roberts, Robyn":                 null,   // passed every section
-    "Flores, Kiara":                  null,   // passed every section
-    "Belasquez Bonilla, Eduin":       null,   // passed every section
-    "Douglas, Iyana":                 null,   // passed every section
-    "Pettway, Lanaura":               null,   // passed every section
+    "Dejesus, Michael":               "comp", // passed every section → comprehension track
+    "Roberts, Robyn":                 "comp", // passed every section → comprehension track
+    "Flores, Kiara":                  "comp", // passed every section → comprehension track
+    "Belasquez Bonilla, Eduin":       "comp", // passed every section → comprehension track
+    "Douglas, Iyana":                 "comp", // passed every section → comprehension track
+    "Pettway, Lanaura":               "comp", // passed every section → comprehension track
   };
 
   const SHARE = new URLSearchParams(location.search).get('share') === 'mro';
@@ -124,7 +125,7 @@
   }
 
   function showLogin() {
-    ['welcomeView', 'appView', 'practiceView'].forEach(id => { const e = $(id); if (e) e.style.display = 'none'; });
+    ['welcomeView', 'appView', 'practiceView', 'compView'].forEach(id => { const e = $(id); if (e) e.style.display = 'none'; });
     $('loginView').style.display = 'block';
     $('qpsName').value = ''; $('qpsPin').value = ''; $('qpsGuestName').value = '';
     onNamePick();
@@ -139,6 +140,8 @@
     $('welcomeView').style.display = 'block';
     if (window.Practice) Practice.renderStops();      // stars for THIS student, then the plan
     renderPlan();
+    // Comprehension students on a new or wiped device get their level back from the sheet.
+    if (TRACKS[name] === 'comp' && window.Comp) Comp.restore(name).then(got => { if (got && student === name) renderPlan(); });
     window.scrollTo(0, 0);
   }
 
@@ -181,6 +184,12 @@
 
     const sub = document.querySelector('#welcomeView .welcome-sub');
     const grid = $('stopGrid');
+    if (TRACKS[student] === 'comp' && window.Comp) {
+      renderCompPlan(box, first);
+      if (sub) sub.parentElement.hidden = true;
+      if (grid) grid.hidden = true;
+      return;
+    }
     if (track) {
       const stars = starsFor(track.id);
       const line = `Your stop is number ${track.num}, ${track.name}. Tap Start.`;
@@ -219,19 +228,69 @@
     }
   }
 
+  // Plan for the comprehension track: each skill with the student's level.
+  function renderCompPlan(box, first) {
+    const skills = Comp.skills();
+    const dir = document.createElement('div');
+    dir.className = 'p-direction';
+    const line = 'You passed every QPS stop! Your plan is reading for meaning. The site will match the passages to you.';
+    const sayBtn = document.createElement('button');
+    sayBtn.type = 'button'; sayBtn.className = 'p-say'; sayBtn.textContent = '🔊';
+    sayBtn.setAttribute('aria-label', 'Hear your plan');
+    sayBtn.onclick = () => say(`Hi ${first}. ${line} Tap Start.`);
+    const p = document.createElement('p');
+    p.className = 'plan-line';
+    p.textContent = line;
+    dir.append(sayBtn, p);
+    box.append(dir);
+    skills.forEach(sk => {
+      const lv = Comp.levelOf(student, sk.id);
+      const card = document.createElement('button');
+      card.type = 'button'; card.className = 'plan-card';
+      card.setAttribute('aria-label', `Start ${sk.name}. Level ${lv} of 4.`);
+      card.onclick = () => Comp.open(sk.id);
+      card.innerHTML = '<span class="plan-example"></span><span class="plan-name"></span><span class="plan-level"></span><span class="plan-go">Start ▶</span>';
+      card.querySelector('.plan-example').textContent = sk.icon;
+      card.querySelector('.plan-name').textContent = sk.name;
+      card.querySelector('.plan-level').textContent = `Level ${lv} of 4`;
+      box.append(card);
+    });
+  }
+
   /* ---------- results to Mr. O's sheet (same as his other sites) ---------- */
   const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzv8CWv1yyi8NeH04now9UxVL4IZm5yMqqsEGMcgGdrcAOWVB-aSp5siTvSSJXIUpzFMA/exec';
+
+  // Any row to the sheet, for the signed-in student. A visitor's work is never sent.
+  function send(row) {
+    if (SHARE || !student || !row || !row.game) return;
+    const body = { action: 'submit', name: student, ...row };
+    window.QPS_LAST_SENT = body;                             // for testing
+    try {
+      fetch(SHEET_URL, {
+        method: 'POST', mode: 'no-cors', keepalive: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).catch(() => {});
+    } catch (e) { /* offline: the work still shows on this device */ }
+  }
+
+  // Read one tab back (one entry per student) — used for the level backup.
+  async function readTab(game) {
+    if (SHARE) return [];
+    try {
+      const res = await fetch(`${SHEET_URL}?action=leaderboard&game=${encodeURIComponent(game)}`, { cache: 'no-store' });
+      return await res.json();
+    } catch (e) { return []; }
+  }
 
   // One row per finished Practice Check, on the stop's own tab (qps-5 = Silent e).
   function saveCheck(r) {
     if (SHARE || !student || !r || !r.stop) return;          // a visitor's work is never sent
     const started = r.started || r.finished;
     const elapsed = Math.max(0, Math.round((r.finished - started) / 1000));
-    const body = {
-      action: 'submit',
+    send({
       game: 'qps-' + r.stop.id,
       sessionId: 'qps-' + r.stop.id + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-      name: student,
       form: `Practice Check · ${r.stop.num} ${r.stop.name}`,
       score: r.right, correct: r.right, total: r.total, maxScore: r.total,
       percent: r.percent,
@@ -241,15 +300,7 @@
       wrongQuestions: r.missed.join(' | '),
       startedAt: started.toISOString(),
       finishedAt: r.finished.toISOString()
-    };
-    window.QPS_LAST_SENT = body;                             // for testing
-    try {
-      fetch(SHEET_URL, {
-        method: 'POST', mode: 'no-cors', keepalive: true,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }).catch(() => {});
-    } catch (e) { /* offline: the stars still show on this Chromebook */ }
+    });
   }
 
   /* ---------- start ---------- */
@@ -258,7 +309,7 @@
   ['qpsPin', 'qpsGuestName'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') trySignIn(); }));
   $('qpsSignIn').addEventListener('click', trySignIn);
 
-  window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, _tracks: TRACKS };
+  window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, _tracks: TRACKS };
 
   if (SHARE) { signIn('Visitor'); return; }
   let saved = '';

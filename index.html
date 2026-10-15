@@ -400,6 +400,55 @@
         .plan-name { font-weight: 700; font-size: 1.35rem; color: var(--ink); }
         .plan-go { margin-top: 6px; background: var(--learning); color: #fff; font-weight: 700; font-size: 1.35rem; padding: 10px 28px; border-radius: 999px; box-shadow: 0 4px 0 var(--learning-dark); }
         @media (prefers-reduced-motion: reduce) { .plan-card { transition: none; } .plan-card:hover, .plan-card:active { transform: none; } }
+        .plan-level { font-weight: 600; font-size: 1.15rem; color: var(--ink-soft); }
+        .plan-card + .plan-card { margin-top: 14px; }
+        /* Comprehension track (comp.js) */
+        #compView { display: none; }
+        #compView [hidden] { display: none !important; }
+        .c-block { display: flex; align-items: flex-start; gap: 12px; text-align: left; margin: 0; }
+        .c-say {
+            flex: none; width: 44px; height: 44px; border-radius: 12px; border: 2px solid var(--line-strong);
+            background: #fff; font-size: 1.3rem; cursor: pointer; box-shadow: 0 3px 0 var(--line-strong);
+            display: inline-grid; place-items: center; line-height: 1;
+        }
+        .c-say:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-strong); }
+        .c-say:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+        .c-words { flex: 1; }
+        .c-w.lit { background: #FFD44D; color: #1f2a44; border-radius: 4px; box-shadow: 0 0 0 2px #FFD44D; }
+        .c-w.c-clue { background: #e6f6ec; box-shadow: 0 0 0 2px #a7e0bd; border-radius: 4px; }
+        mark.c-target { background: var(--test-tint); color: var(--test-dark); font-weight: 700; padding: 0 3px; border-radius: 6px; }
+        .c-card { background: var(--paper); border: 2px solid var(--line); border-radius: 20px; padding: 16px 18px; margin: 10px 0 16px; display: flex; flex-direction: column; gap: 12px; }
+        .c-passage { font-family: var(--font-read); font-size: 1.5rem; line-height: 1.6; color: var(--ink); }
+        .c-learn { font-size: 1.3rem; line-height: 1.5; color: var(--ink); }
+        .c-lead { font-size: 1.25rem; color: var(--ink-soft); margin: 6px 0 12px; }
+        .c-ask { font-size: 1.3rem; font-weight: 600; color: var(--ink); margin: 6px 0 10px; }
+        .c-q { margin-top: 8px; }
+        .c-choices { display: flex; flex-direction: column; gap: 10px; }
+        .c-choice {
+            display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; cursor: pointer;
+            font: inherit; font-size: 1.3rem; font-weight: 600; color: var(--ink); background: #fff;
+            border: 2px solid var(--line-strong); border-radius: 16px; padding: 10px 14px; box-shadow: 0 4px 0 var(--line-strong);
+        }
+        .c-choice:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+        .c-choice.picked { border-color: var(--test); box-shadow: 0 0 0 4px var(--test-tint), 0 4px 0 var(--test-dark); }
+        .c-choice.right { background: #e6f6ec; border-color: var(--success); }
+        .c-choice.wrong { background: #fde4e4; border-color: var(--danger); }
+        .c-choice:disabled { cursor: default; color: var(--ink); }
+        .c-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .c-level { display: inline-flex; align-items: center; gap: 6px; }
+        .c-level-label { font-weight: 700; font-size: 1.1rem; color: var(--ink); margin-right: 4px; }
+        .c-level-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--line-strong); }
+        .c-level-dot.on { background: var(--test); }
+        .c-menu { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+        .c-menu-btn {
+            font: inherit; font-size: 1.45rem; font-weight: 700; color: #fff; border: none; cursor: pointer;
+            border-radius: 18px; padding: 18px 20px; text-align: left;
+        }
+        .c-menu-btn.learn { background: var(--learning); box-shadow: 0 5px 0 var(--learning-dark); }
+        .c-menu-btn.practice { background: var(--test); box-shadow: 0 5px 0 var(--test-dark); }
+        .c-menu-btn.check { background: var(--success); box-shadow: 0 5px 0 var(--success-dark); }
+        .c-menu-btn:focus-visible { outline: 4px solid var(--ink); outline-offset: 3px; }
+        #compView .p-well { display: flex; }
         .more-title { font-size: 1.15rem; color: var(--ink-soft); font-weight: 600; margin: 4px 0 10px; text-align: left; }
         .menu-grid.small .menu-card { flex-direction: row; align-items: center; padding: 12px 14px; gap: 12px; }
         .menu-grid.small .menu-card h3 { margin: 0; font-size: 1.15rem; }
@@ -624,6 +673,9 @@
         <button type="button" id="practiceNext" class="p-btn p-next" style="display:none;" onclick="Practice.nextStep()">Next ➡️</button>
     </div>
 </main>
+
+<!-- ========== COMPREHENSION TRACK (comp.js) ========== -->
+<main id="compView" class="hub-container" aria-live="off"></main>
 
 <!-- ========== APP VIEW ========== -->
 <main id="appView" class="hub-container">
@@ -1660,6 +1712,8 @@
 </script>
 <script src="practice-data.js?v=p1"></script>
 <script src="practice.js?v=p3"></script>
-<script src="login.js?v=2"></script>
+<script src="comp-data.js?v=c1"></script>
+<script src="comp.js?v=c1"></script>
+<script src="login.js?v=3"></script>
 </body>
 </html>
