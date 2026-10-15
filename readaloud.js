@@ -5,10 +5,13 @@
      • voices that report each word (onboundary) move the highlight;
      • voices that never report (many Chromebook voices) get a highlight
        paced by hand from the length of the text.
-   Rate stays 1.0, the speed Mr. O chose for this site (speakComputer).
+   Rate 0.82 for sentences, directions, lessons and passages (Marcos
+   10/15: "the read aloud part for the directions seems very fast") — the
+   pace he approved for the science lessons. Single words read on their
+   own (speakComputer) stay at 1.0, his choice for this site.
    ===================================================================== */
 window.QPSRead = (function () {
-  const RATE = 1.0;
+  const RATE = 0.82;
   const MS_PER_LETTER = 58, PACE_BASE = 0.92;   // measured on the science lessons at 0.92
   let current = null, timer = null, endCurrent = null, gen = 0;
 
