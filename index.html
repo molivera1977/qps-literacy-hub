@@ -456,7 +456,12 @@
         .menu-grid.small .menu-card { flex-direction: row; align-items: center; padding: 12px 14px; gap: 12px; }
         .menu-grid.small .menu-card h3 { margin: 0; font-size: 1.15rem; }
         .menu-grid.small .icon { width: 46px; height: 46px; font-size: 1.6rem; border-radius: 14px; }
-        .menu-grid.small .lock-chip { top: 50%; transform: translateY(-50%); right: 12px; }
+        /* In the small row the chip is just the lock, at the end of the row, so it never covers the card's name. */
+        .menu-grid.small .lock-chip { position: static; transform: none; order: 3; margin-left: auto; flex-shrink: 0; padding: 4px 8px; }
+        .menu-grid.small .lock-word { display: none; }
+        /* Between phone and wide screens the three small cards are too narrow for "Assessment": Mr. O's card drops its icon there. Students never have this card. */
+        @media (min-width: 681px) and (max-width: 920px) { .menu-grid.small .menu-card.teacher .icon { display: none; } .menu-grid.small .menu-card.teacher { padding-inline: 10px; gap: 8px; } }
+        .menu-grid.small .menu-card h3 { min-width: 0; }
 
         /* Inside a stop */
         .practice-top { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
@@ -657,7 +662,7 @@
             <h3>Game Zone</h3>
         </button>
         <button type="button" class="menu-card teacher teacher-only" onclick="enterApp('test')" aria-label="Assessment - Teacher grading mode, needs Teacher PIN">
-            <span class="lock-chip" aria-hidden="true">🔒 Teacher</span>
+            <span class="lock-chip" aria-hidden="true">🔒<span class="lock-word"> Teacher</span></span>
             <span class="icon" aria-hidden="true">📝</span>
             <h3>Assessment</h3>
         </button>
@@ -992,9 +997,15 @@
     // ============================================================
     const TEACHER_PIN = '9377';
     let assessmentUnlocked = false;
-    // Kids never see the Assessment. Mr. O opens it from the teacher link: index.html?teacher (still asks for the PIN).
-    const TEACHER_MODE = /[?&]teacher\b/.test(location.search);
-    if (TEACHER_MODE) document.body.classList.add('teacher-mode');
+    // Kids never see the Assessment. Mr. O opens it from the teacher link (index.html?teacher) or by
+    // signing in as Mr. O (login.js calls setTeacherMode). Either way it still asks for the PIN.
+    const TEACHER_LINK = /[?&]teacher\b/.test(location.search);
+    let TEACHER_MODE = TEACHER_LINK;
+    function setTeacherMode(on) {
+        TEACHER_MODE = !!on || TEACHER_LINK;
+        document.body.classList.toggle('teacher-mode', TEACHER_MODE);
+    }
+    setTeacherMode(false);
     let afterPin = null;
 
     function askForPin(onUnlock) {
@@ -1720,6 +1731,6 @@
 <script src="practice.js?v=p4"></script>
 <script src="comp-data.js?v=c1"></script>
 <script src="comp.js?v=c2"></script>
-<script src="login.js?v=6"></script>
+<script src="login.js?v=7"></script>
 </body>
 </html>

@@ -3,8 +3,9 @@
    A student signs in with their name and student number (same as Mr. O's
    other sites). Their plan then shows their official track: the stop
    where they stopped on the Wonders Quick Phonics Screener (mCLASS data
-   meeting, Oct 14, 2026). Students who passed every section, Mr. O and
-   guests see every stop. Each student's stars are kept under their name.
+   meeting, Oct 14, 2026). Students who passed every section see every
+   stop. Mr. O and guests see everything: every stop and every
+   comprehension skill; Mr. O also gets the Assessment card (PIN). Each student's stars are kept under their name.
    Guests on Mr. O's share link (?share=<code>, share.js) skip sign-in as "Guest".
    ===================================================================== */
 (function () {
@@ -72,7 +73,8 @@
     "Pettway, Lanaura":               "comp", // passed every section → comprehension track
   };
 
-  const SHARE = !!window.SHARE_MODE;               // share.js: the code lives there, the same on every site
+  const SHARE = !!window.SHARE_MODE;
+  const TEACHER = 'Mr. O (Teacher)';               // share.js: the code lives there, the same on every site
   const $ = (id) => document.getElementById(id);
   const firstName = (name) => name.includes(',') ? name.split(',')[1].trim() : name.replace(/ \((Guest|Teacher)\)$/, '');
   const say = (text) => { if (window.speakComputer) speakComputer(text); };
@@ -135,6 +137,7 @@
   function signIn(name) {
     student = name;
     window.QPS_STUDENT = name;                       // practice.js keeps stars under this name
+    if (window.setTeacherMode) setTeacherMode(name === TEACHER);   // Mr. O also sees the Assessment card (it still asks for the PIN)
     if (!SHARE) { try { sessionStorage.setItem(LOGIN_KEY, name); } catch (e) {} }
     $('loginView').style.display = 'none';
     $('welcomeView').style.display = 'block';
@@ -150,6 +153,7 @@
     if (window.speechSynthesis) speechSynthesis.cancel();
     student = '';
     window.QPS_STUDENT = '';
+    if (window.setTeacherMode) setTeacherMode(false);
     try { sessionStorage.removeItem(LOGIN_KEY); } catch (e) {}
     showLogin();
   }
@@ -220,7 +224,7 @@
     } else {
       const p = document.createElement('p');
       p.className = 'plan-line';
-      p.textContent = SHARE
+      p.textContent = seesEverything()
         ? 'Pick a phonics stop, or a reading skill below.'
         : TRACKS[student] === null
           ? 'You passed every QPS stop! Pick any stop to keep your skills sharp.'
@@ -229,7 +233,7 @@
       if (sub) sub.parentElement.hidden = true;
       if (grid) grid.hidden = false;
     }
-    renderGuestComp();
+    renderAllComp();
   }
 
   // One comprehension skill as a card, with this student's level.
@@ -246,12 +250,13 @@
     return card;
   }
 
-  // Guest view: a guest has no track, so it sees both — every phonics stop, then the
-  // comprehension skills under them (students only get comprehension on the "comp" track).
-  function renderGuestComp() {
+  // Mr. O and a guest see everything: every phonics stop, then the comprehension skills under
+  // them (students only get comprehension on the "comp" track). Marcos 10/15: "i want to see everything".
+  const seesEverything = () => SHARE || student === TEACHER;
+  function renderAllComp() {
     const old = $('guestComp');
     if (old) old.remove();
-    if (!SHARE || !window.Comp || !$('stopGrid')) return;
+    if (!seesEverything() || !window.Comp || !$('stopGrid')) return;
     const sec = document.createElement('section');
     sec.id = 'guestComp'; sec.className = 'plan-box';
     sec.setAttribute('aria-label', 'Reading for meaning');
