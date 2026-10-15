@@ -220,13 +220,51 @@
     } else {
       const p = document.createElement('p');
       p.className = 'plan-line';
-      p.textContent = TRACKS[student] === null
-        ? 'You passed every QPS stop! Pick any stop to keep your skills sharp.'
-        : 'Pick a stop to practice.';
+      p.textContent = SHARE
+        ? 'Pick a phonics stop, or a reading skill below.'
+        : TRACKS[student] === null
+          ? 'You passed every QPS stop! Pick any stop to keep your skills sharp.'
+          : 'Pick a stop to practice.';
       box.append(p);
       if (sub) sub.parentElement.hidden = true;
       if (grid) grid.hidden = false;
     }
+    renderGuestComp();
+  }
+
+  // One comprehension skill as a card, with this student's level.
+  function compCard(sk) {
+    const lv = Comp.levelOf(student, sk.id);
+    const card = document.createElement('button');
+    card.type = 'button'; card.className = 'plan-card';
+    card.setAttribute('aria-label', `Start ${sk.name}. Level ${lv} of 4.`);
+    card.onclick = () => Comp.open(sk.id);
+    card.innerHTML = '<span class="plan-example"></span><span class="plan-name"></span><span class="plan-level"></span><span class="plan-go">Start ▶</span>';
+    card.querySelector('.plan-example').textContent = sk.icon;
+    card.querySelector('.plan-name').textContent = sk.name;
+    card.querySelector('.plan-level').textContent = `Level ${lv} of 4`;
+    return card;
+  }
+
+  // Guest view: a guest has no track, so it sees both — every phonics stop, then the
+  // comprehension skills under them (students only get comprehension on the "comp" track).
+  function renderGuestComp() {
+    const old = $('guestComp');
+    if (old) old.remove();
+    if (!SHARE || !window.Comp || !$('stopGrid')) return;
+    const sec = document.createElement('section');
+    sec.id = 'guestComp'; sec.className = 'plan-box';
+    sec.setAttribute('aria-label', 'Reading for meaning');
+    const h = document.createElement('h2');
+    h.className = 'plan-hi'; h.textContent = 'Reading for meaning';
+    const p = document.createElement('p');
+    p.className = 'plan-line';
+    p.textContent = 'The comprehension track, for students who passed every QPS stop. The passages match the reader\'s level.';
+    const cards = document.createElement('div');
+    cards.className = 'guest-comp-grid';
+    Comp.skills().forEach(sk => cards.append(compCard(sk)));
+    sec.append(h, p, cards);
+    $('stopGrid').after(sec);
   }
 
   // Plan for the comprehension track: each skill with the student's level.
@@ -245,18 +283,7 @@
     if (window.QPSRead) { QPSRead.wrap(p, line); sayBtn.onclick = () => QPSRead.say(p); }
     dir.append(sayBtn, p);
     box.append(dir);
-    skills.forEach(sk => {
-      const lv = Comp.levelOf(student, sk.id);
-      const card = document.createElement('button');
-      card.type = 'button'; card.className = 'plan-card';
-      card.setAttribute('aria-label', `Start ${sk.name}. Level ${lv} of 4.`);
-      card.onclick = () => Comp.open(sk.id);
-      card.innerHTML = '<span class="plan-example"></span><span class="plan-name"></span><span class="plan-level"></span><span class="plan-go">Start ▶</span>';
-      card.querySelector('.plan-example').textContent = sk.icon;
-      card.querySelector('.plan-name').textContent = sk.name;
-      card.querySelector('.plan-level').textContent = `Level ${lv} of 4`;
-      box.append(card);
-    });
+    skills.forEach(sk => box.append(compCard(sk)));
   }
 
   /* ---------- results to Mr. O's sheet (same as his other sites) ---------- */
