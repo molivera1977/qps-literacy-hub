@@ -338,6 +338,153 @@
         .pin-dialog.shake form { animation: shake 0.35s; }
         @keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
 
+        /* ===================== PRACTICE (v3) ===================== */
+        /* Home: the stop path */
+        .p-direction { display: flex; align-items: center; gap: 12px; margin: 2px 0 10px; text-align: left; }
+        .p-direction.center { justify-content: center; margin: 0; }
+        .p-direction p { margin: 0; font-size: 1.3rem; line-height: 1.45; color: var(--ink); }
+        .p-direction .welcome-sub { color: var(--ink-soft); }
+        .p-say {
+            flex: none; width: 48px; height: 48px; border-radius: 14px; border: 2px solid var(--line-strong);
+            background: #fff; font-size: 1.4rem; cursor: pointer; box-shadow: 0 3px 0 var(--line-strong);
+        }
+        .p-say:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line-strong); }
+        .stop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 26px; }
+        .stop-card {
+            position: relative; font: inherit; color: var(--ink); cursor: pointer; text-align: center;
+            background: #fff; border: 2px solid var(--line); border-radius: 20px; padding: 16px 10px 12px;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            box-shadow: 0 5px 0 var(--line-strong); transition: transform 0.2s var(--ease), box-shadow 0.2s, border-color 0.2s;
+        }
+        .stop-card:hover { transform: translateY(-3px); border-color: var(--learning); box-shadow: 0 8px 0 var(--learning-dark); }
+        .stop-card:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--learning-dark); }
+        .stop-card:focus-visible { outline: 4px solid var(--learning); outline-offset: 3px; }
+        .stop-num {
+            position: absolute; top: 8px; left: 10px; min-width: 34px; height: 34px; padding: 0 6px; border-radius: 10px;
+            display: grid; place-items: center; background: var(--ink); color: #fff; font-weight: 700; font-size: 1.05rem;
+        }
+        .stop-example { font-family: var(--font-read); font-weight: 700; font-size: 1.9rem; margin-top: 18px; }
+        .stop-example.long { font-size: 1.35rem; margin-top: 24px; margin-bottom: 6px; }
+        .stop-name { font-weight: 600; font-size: 1.1rem; color: var(--ink-soft); }
+        .stop-stars { color: #e8a317; font-size: 1.3rem; letter-spacing: 2px; }
+        .more-title { font-size: 1.15rem; color: var(--ink-soft); font-weight: 600; margin: 4px 0 10px; text-align: left; }
+        .menu-grid.small .menu-card { flex-direction: row; align-items: center; padding: 12px 14px; gap: 12px; }
+        .menu-grid.small .menu-card h3 { margin: 0; font-size: 1.15rem; }
+        .menu-grid.small .icon { width: 46px; height: 46px; font-size: 1.6rem; border-radius: 14px; }
+        .menu-grid.small .lock-chip { top: 50%; transform: translateY(-50%); right: 12px; }
+
+        /* Inside a stop */
+        .practice-top { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+        .practice-title { margin: 0; font-size: 1.6rem; font-weight: 700; text-align: left; }
+        .step-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .step-chip {
+            font: inherit; font-size: 1rem; font-weight: 600; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+            background: var(--paper); color: var(--ink-soft); border: 2px solid var(--line);
+        }
+        .step-chip.done { background: #e6f6ec; border-color: #a7e0bd; color: #11592f; }
+        .step-chip.current { background: var(--learning); border-color: var(--learning); color: #fff; }
+        .step-chip:disabled { opacity: 0.5; cursor: default; }
+        #practiceArea { min-height: 320px; }
+        .practice-foot { display: flex; justify-content: center; margin-top: 18px; }
+
+        .p-round {
+            background: var(--paper); border: 2px solid var(--line); border-radius: 20px; padding: 14px 16px 18px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .p-dots { display: flex; gap: 6px; }
+        .p-dots span { width: 12px; height: 12px; border-radius: 50%; background: var(--line-strong); }
+        .p-dots span.on { background: var(--success); }
+        .p-small { margin: 0; font-size: 1.1rem; color: var(--ink-soft); font-weight: 500; }
+        .p-feedback { min-height: 1.6em; font-size: 1.25rem; font-weight: 600; color: var(--ink); text-align: center; }
+        .p-well { font-size: 1.35rem; font-weight: 700; color: var(--success-dark); margin: 6px 0; }
+
+        .p-btn {
+            font: inherit; font-weight: 700; font-size: 1.2rem; border: none; border-radius: var(--radius-md); cursor: pointer;
+            padding: 13px 24px; color: #fff; display: inline-flex; align-items: center; gap: 8px;
+            transition: transform 0.15s var(--ease), box-shadow 0.15s;
+        }
+        .p-btn:active { transform: translateY(3px); }
+        .p-hear { background: var(--learning); box-shadow: 0 5px 0 var(--learning-dark); }
+        .p-check, .p-go { background: var(--success); box-shadow: 0 5px 0 var(--success-dark); }
+        .p-next { background: var(--test); box-shadow: 0 5px 0 var(--test-dark); font-size: 1.3rem; padding: 15px 30px; }
+        .p-again { background: var(--slate); box-shadow: 0 5px 0 var(--slate-dark); }
+        .p-btn:disabled { background: #9aa3b2; box-shadow: 0 5px 0 #7c8494; cursor: default; }
+        .p-btn:focus-visible, .p-option:focus-visible, .p-tile:focus-visible, .p-bin:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+        .p-tiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .p-tile {
+            font-family: var(--font-read); font-weight: 700; font-size: 1.6rem; color: var(--ink);
+            min-width: 54px; padding: 8px 16px; border-radius: var(--radius-sm); background: #fff;
+            border: 2px solid var(--line-strong); box-shadow: 0 4px 0 var(--line-strong); text-align: center;
+        }
+        .p-tiles.big .p-tile { font-size: 2.4rem; min-width: 70px; }
+        button.p-tile { cursor: pointer; }
+        .p-tile.glow { border-color: var(--learning); box-shadow: 0 0 0 4px var(--learning-tint), 0 4px 0 var(--learning-dark); }
+        .p-tile.heard { background: var(--learning-tint); }
+        .p-tile.mark { background: var(--games-tint); border-color: var(--games); }
+        .p-tile.blank { color: var(--ink-faint); border-style: dashed; }
+        .p-tile.slot { min-height: 64px; min-width: 70px; background: rgba(255,255,255,0.6); border-style: dashed; box-shadow: none; }
+        .p-tile.wrong-slot { border-color: var(--danger); box-shadow: 0 0 0 4px #fde4e4; }
+        .p-tiles.blended .p-tile { background: #e6f6ec; border-color: #a7e0bd; }
+        .p-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; min-height: 70px; }
+
+        .p-big-word { font-family: var(--font-read); font-weight: 700; font-size: clamp(3rem, 1.5rem + 5vw, 4.6rem); color: var(--nonsense); line-height: 1.1; }
+        .p-hidden-word { font-family: var(--font-read); font-weight: 700; font-size: 3rem; color: var(--ink); min-height: 1.2em; }
+        .p-word-btn { background: none; border: none; cursor: pointer; padding: 0; }
+
+        .p-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+        .p-option {
+            font-family: var(--font-read); font-weight: 700; font-size: 2rem; color: var(--ink); cursor: pointer;
+            min-width: 120px; padding: 12px 22px; border-radius: 16px; background: #fff;
+            border: 2px solid var(--line-strong); box-shadow: 0 5px 0 var(--line-strong);
+        }
+        .p-option.big { font-size: 2.6rem; min-width: 96px; }
+        .p-option.listen { font-family: var(--font-ui); font-size: 1.5rem; }
+        .p-option.picked { border-color: var(--test); box-shadow: 0 0 0 4px var(--test-tint), 0 5px 0 var(--test-dark); }
+        .p-option.right { background: #e6f6ec; border-color: var(--success); }
+        .p-option.wrong { background: #fde4e4; border-color: var(--danger); }
+
+        .p-bins { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+        .p-bin {
+            font: inherit; font-weight: 700; font-size: 1.35rem; color: var(--ink); cursor: pointer;
+            min-width: 120px; padding: 16px 20px; border-radius: 18px; background: #fff;
+            border: 2px dashed var(--line-strong);
+        }
+        .p-bin.right { background: #e6f6ec; border: 2px solid var(--success); }
+        .p-bin.wrong { background: #fde4e4; border: 2px solid var(--danger); }
+
+        .p-sentence { font-family: var(--font-read); font-size: clamp(1.6rem, 1rem + 2vw, 2.2rem); line-height: 1.7; text-align: center; margin: 0; max-width: 30ch; }
+        .p-sword { font: inherit; background: none; border: none; border-bottom: 3px dotted var(--line-strong); padding: 0 2px; cursor: pointer; color: var(--ink); }
+        .p-sword:hover { background: var(--learning-tint); }
+
+        .p-chop { display: flex; align-items: stretch; justify-content: center; flex-wrap: wrap; }
+        .p-letter { font-family: var(--font-read); font-weight: 700; font-size: 2.6rem; padding: 4px 2px; }
+        .p-gap { width: 22px; border: none; background: transparent; cursor: pointer; position: relative; }
+        .p-gap::after { content: ""; position: absolute; left: 50%; top: 10%; bottom: 10%; width: 2px; background: var(--line); transform: translateX(-50%); }
+        .p-gap:hover::after { background: var(--ink-faint); }
+        .p-gap.cut::after { width: 6px; background: var(--games); border-radius: 3px; }
+
+        .p-learn { background: var(--learning-tint); border: 2px solid #fbdcb8; border-radius: 20px; padding: 20px; text-align: left; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+        .p-learn-title { margin: 0; font-size: 1.5rem; }
+        .p-learn-line { margin: 0; font-size: 1.3rem; line-height: 1.5; }
+        .p-examples { display: flex; flex-wrap: wrap; gap: 12px; }
+        .p-example { background: #fff; border: 2px solid var(--line); border-radius: 16px; padding: 8px; cursor: pointer; }
+        .p-example { display: inline-flex; align-items: center; gap: 8px; }
+        .p-arrow { font-size: 1.6rem; font-weight: 700; color: var(--learning-dark); }
+        .p-example .p-tile { font-size: 1.5rem; padding: 4px 10px; min-width: 40px; box-shadow: none; }
+        .p-score { font-size: 2.6rem; font-weight: 700; }
+        .p-stars { font-size: 2.4rem; color: #e8a317; letter-spacing: 6px; }
+        .p-end-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 8px; }
+
+        @media (max-width: 680px) {
+            .stop-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .practice-top { flex-wrap: wrap; }
+            .p-tiles.big .p-tile { font-size: 1.9rem; min-width: 54px; padding: 6px 10px; }
+            .p-option { font-size: 1.6rem; min-width: 90px; padding: 10px 14px; }
+            .p-letter { font-size: 2rem; }
+            .menu-grid.small { grid-template-columns: 1fr; }
+        }
+
         /* SMALL SCREENS */
         @media (max-width: 680px) {
             .hub-container { padding: 20px 16px 24px; border-radius: 20px; }
@@ -371,33 +518,49 @@
 </head>
 <body>
 
-<!-- ========== WELCOME SCREEN ========== -->
+<!-- ========== WELCOME SCREEN: the practice path ========== -->
 <main id="welcomeView" class="hub-container">
     <div class="welcome-head">
-        <span class="version-badge">Teacher Edition · v2.1</span>
+        <span class="version-badge">v3 · Practice</span>
         <h1 class="welcome-title">
             <span class="tile-word" aria-hidden="true"><span class="tile t1">Q</span><span class="tile t2">P</span><span class="tile t3">S</span></span>Literacy Hub
         </h1>
-        <p class="welcome-sub">Choose where to start.</p>
+        <div class="p-direction center">
+            <button type="button" class="p-say" onclick="speakComputer('Pick your stop. Mr. O will tell you your number.')" aria-label="Hear the directions">🔊</button>
+            <p class="welcome-sub">Pick your stop. Mr. O will tell you your number.</p>
+        </div>
     </div>
 
-    <div class="menu-grid">
+    <div id="stopGrid" class="stop-grid" aria-label="Practice stops"></div>
+
+    <h2 class="more-title">More to do</h2>
+    <div class="menu-grid small">
         <button type="button" class="menu-card learn" onclick="enterApp('learn')" aria-label="Learning Lab - Practice blending">
             <span class="icon" aria-hidden="true">🎧</span>
             <h3>Learning Lab</h3>
-            <p>Hear each sound, then blend the word.</p>
         </button>
         <button type="button" class="menu-card games" onclick="enterApp('games')" aria-label="Game Zone - Interactive practice">
             <span class="icon" aria-hidden="true">🎮</span>
             <h3>Game Zone</h3>
-            <p>Build words and match sounds.</p>
         </button>
         <button type="button" class="menu-card teacher" onclick="enterApp('test')" aria-label="Assessment - Teacher grading mode, needs Teacher PIN">
             <span class="lock-chip" aria-hidden="true">🔒 Teacher</span>
             <span class="icon" aria-hidden="true">📝</span>
             <h3>Assessment</h3>
-            <p>Teacher grading mode. Needs the Teacher PIN.</p>
         </button>
+    </div>
+</main>
+
+<!-- ========== PRACTICE STOP (practice.js) ========== -->
+<main id="practiceView" class="hub-container" style="display:none;">
+    <div class="practice-top">
+        <button type="button" class="home-btn" onclick="Practice.backToStops()" aria-label="Back to all stops">⬅️ All stops</button>
+        <h1 id="practiceTitle" class="practice-title"></h1>
+    </div>
+    <nav id="practiceSteps" class="step-row" aria-label="Steps in this stop"></nav>
+    <div id="practiceArea"></div>
+    <div class="practice-foot">
+        <button type="button" id="practiceNext" class="p-btn p-next" style="display:none;" onclick="Practice.nextStep()">Next ➡️</button>
     </div>
 </main>
 
@@ -775,6 +938,7 @@
         document.getElementById('welcomeView').style.display = 'block';
         document.title = 'QPS Literacy Hub 2.0 | Teacher Edition';
         setAssessmentLock(false);
+        if (window.Practice) Practice.renderStops();
         resetAll();
     }
 
@@ -1428,5 +1592,7 @@
         }
     }
 </script>
+<script src="practice-data.js?v=p1"></script>
+<script src="practice.js?v=p1"></script>
 </body>
 </html>
