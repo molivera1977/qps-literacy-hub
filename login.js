@@ -5,7 +5,7 @@
    where they stopped on the Wonders Quick Phonics Screener (mCLASS data
    meeting, Oct 14, 2026). Students who passed every section, Mr. O and
    guests see every stop. Each student's stars are kept under their name.
-   Visitors on Mr. O's share link (?share=mro) skip sign-in.
+   Guests on Mr. O's share link (?share=<code>, share.js) skip sign-in as "Guest".
    ===================================================================== */
 (function () {
   const LOGIN_KEY = 'qps_student_v1';
@@ -72,7 +72,7 @@
     "Pettway, Lanaura":               "comp", // passed every section → comprehension track
   };
 
-  const SHARE = new URLSearchParams(location.search).get('share') === 'mro';
+  const SHARE = !!window.SHARE_MODE;               // share.js: the code lives there, the same on every site
   const $ = (id) => document.getElementById(id);
   const firstName = (name) => name.includes(',') ? name.split(',')[1].trim() : name.replace(/ \((Guest|Teacher)\)$/, '');
   const say = (text) => { if (window.speakComputer) speakComputer(text); };
@@ -262,7 +262,7 @@
   /* ---------- results to Mr. O's sheet (same as his other sites) ---------- */
   const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzv8CWv1yyi8NeH04now9UxVL4IZm5yMqqsEGMcgGdrcAOWVB-aSp5siTvSSJXIUpzFMA/exec';
 
-  // Any row to the sheet, for the signed-in student. A visitor's work is never sent.
+  // Any row to the sheet, for the signed-in student. A guest's work is never sent.
   function send(row) {
     if (SHARE || !student || !row || !row.game) return;
     const body = { action: 'submit', name: student, ...row };
@@ -287,7 +287,7 @@
 
   // One row per finished Practice Check, on the stop's own tab (qps-5 = Silent e).
   function saveCheck(r) {
-    if (SHARE || !student || !r || !r.stop) return;          // a visitor's work is never sent
+    if (SHARE || !student || !r || !r.stop) return;          // a guest's work is never sent
     const started = r.started || r.finished;
     const elapsed = Math.max(0, Math.round((r.finished - started) / 1000));
     send({
@@ -313,7 +313,7 @@
 
   window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, _tracks: TRACKS };
 
-  if (SHARE) { signIn('Visitor'); return; }
+  if (SHARE) { signIn('Guest'); return; }
   let saved = '';
   try { saved = sessionStorage.getItem(LOGIN_KEY) || ''; } catch (e) {}
   if (saved && (ROSTER.some(s => s.name === saved) || saved.endsWith(' (Guest)'))) signIn(saved);
