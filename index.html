@@ -524,7 +524,7 @@
                 <button id="blendBtn" class="btn-learn" onclick="playBlending()" aria-label="Hear sounds and word">🔊 HEAR IT</button>
                 <button id="nextLearnBtn" class="btn-learn btn-next" onclick="nextLearn()" aria-label="Next word">NEXT ➡️</button>
             </div>
-            <p id="learnMsg" class="helper-text">The computer will read the full word after you hear the sounds.</p>
+            <p id="learnMsg" class="helper-text">Listen to the sounds, then the whole word.</p>
         </div>
     </div>
 
@@ -865,20 +865,26 @@
     // ============================================================
     // AUDIO ENGINE
     // ============================================================
+    // The recording for a chunk; a few chunks sound different by level or word.
+    function chunkFile(chunkName) {
+        let fileName = chunkName.toLowerCase().trim();
+        const lv = document.getElementById('levelPicker').value;
+        let currentWord = "";
+        if (document.getElementById('learnSection').classList.contains('active')) currentWord = wordBank[lv][learnIndex].w;
+        if (document.getElementById('gamesSection').classList.contains('active') && currentGame1Word) currentWord = currentGame1Word.w;
+
+        if (fileName === "y" && (lv === "9c" || lv === "10")) fileName = "y-ee";
+        if (fileName === "re") fileName = (lv === "10") ? "re-long" : "re-short";
+        if (fileName === "o" && lv === "9c") fileName = "o-schwa";
+        if (fileName === "ar" && lv === "10") fileName = "ar-air";
+        if (fileName === "tain" && lv === "10") fileName = "tain-ten";
+        if (fileName === "able" && currentWord === "unable") fileName = "able-long";
+        return fileName;
+    }
+
     function playAudioChunk(chunkName) {
         return new Promise((resolve) => {
-            let fileName = chunkName.toLowerCase().trim();
-            const lv = document.getElementById('levelPicker').value;
-            let currentWord = "";
-            if (document.getElementById('learnSection').classList.contains('active')) currentWord = wordBank[lv][learnIndex].w;
-            if (document.getElementById('gamesSection').classList.contains('active') && currentGame1Word) currentWord = currentGame1Word.w;
-
-            if (fileName === "y" && (lv === "9c" || lv === "10")) fileName = "y-ee";
-            if (fileName === "re") fileName = (lv === "10") ? "re-long" : "re-short";
-            if (fileName === "o" && lv === "9c") fileName = "o-schwa";
-            if (fileName === "ar" && lv === "10") fileName = "ar-air";
-            if (fileName === "tain" && lv === "10") fileName = "tain-ten";
-            if (fileName === "able" && currentWord === "unable") fileName = "able-long";
+            const fileName = chunkFile(chunkName);
 
             // FIX: use AUDIO_BASE constant
             const audio = new Audio(`${AUDIO_BASE}${fileName}.m4a`);
@@ -905,6 +911,121 @@
             audio.onerror = doFallback;
             audio.play().catch(doFallback);
         });
+    }
+
+    // ============================================================
+    // BLEND - a made-up word is said in Mr. O's voice: his chunk
+    // recordings with the silence trimmed off, run together. The
+    // computer voice is only a last resort if a recording won't load.
+    // ============================================================
+    let audioCtx = null;
+    const bufferCache = {};
+
+    function getAudioCtx() {
+        if (!audioCtx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return null;
+            audioCtx = new AC();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        return audioCtx;
+    }
+
+    async function loadBuffer(name) {
+        if (name in bufferCache) return bufferCache[name];
+        const ctx = getAudioCtx();
+        let buf = null;
+        if (ctx) {
+            try {
+                const res = await fetch(`${AUDIO_BASE}${name}.m4a`);
+                if (res.ok) buf = await ctx.decodeAudioData(await res.arrayBuffer());
+            } catch (e) { buf = null; }
+        }
+        bufferCache[name] = buf;
+        return buf;
+    }
+
+    // Where the sound starts and stops, judged in 10 ms windows against the
+    // recording's own background noise, so quiet sounds like s, f and th stay.
+    function monoData(buf) {
+        if (buf.numberOfChannels === 1) return buf.getChannelData(0);
+        const mix = new Float32Array(buf.length);
+        for (let c = 0; c < buf.numberOfChannels; c++) {
+            const ch = buf.getChannelData(c);
+            for (let i = 0; i < buf.length; i++) mix[i] += ch[i] / buf.numberOfChannels;
+        }
+        return mix;
+    }
+
+    function soundSpan(buf) {
+        const data = monoData(buf);
+        const win = Math.max(1, Math.round(buf.sampleRate * 0.01));
+        const rms = [];
+        for (let i = 0; i < data.length; i += win) {
+            let sum = 0;
+            const stop = Math.min(data.length, i + win);
+            for (let j = i; j < stop; j++) sum += data[j] * data[j];
+            rms.push(Math.sqrt(sum / (stop - i)));
+        }
+        const sorted = [...rms].sort((a, b) => a - b);
+        const noise = sorted[Math.floor(sorted.length * 0.2)];
+        const loudest = sorted[sorted.length - 1];
+        if (!loudest) return null;
+        const limit = Math.max(noise * 4, loudest * 0.05);
+        let first = rms.findIndex(v => v > limit);
+        let last = rms.length - 1;
+        while (last > first && rms[last] <= limit) last--;
+        if (first < 0) return null;
+        const before = Math.round(buf.sampleRate * 0.03), after = Math.round(buf.sampleRate * 0.05);
+        return { start: Math.max(0, first * win - before), end: Math.min(data.length, (last + 1) * win + after) };
+    }
+
+    async function buildBlend(fileNames) {
+        const ctx = getAudioCtx();
+        if (!ctx) return null;
+        const bufs = await Promise.all(fileNames.map(loadBuffer));
+        if (bufs.some(b => !b)) return null;
+        const parts = bufs.map(b => ({ data: monoData(b), span: soundSpan(b) }));
+        if (parts.some(p => !p.span)) return null;
+        const fade = Math.round(ctx.sampleRate * 0.008);
+        const total = parts.reduce((n, p) => n + (p.span.end - p.span.start), 0);
+        const out = ctx.createBuffer(1, total, ctx.sampleRate);
+        const o = out.getChannelData(0);
+        let pos = 0;
+        parts.forEach(p => {
+            const src = p.data;
+            const len = p.span.end - p.span.start;
+            for (let i = 0; i < len; i++) {
+                const g = i < fade ? i / fade : (i > len - fade ? (len - i) / fade : 1);
+                o[pos + i] = src[p.span.start + i] * g;
+            }
+            pos += len;
+        });
+        return out;
+    }
+
+    // His whole-word recording if he made one (e.g. whaf), otherwise the blend.
+    async function prepareMadeUpWord(wordObj) {
+        const whole = await loadBuffer(wordObj.w.toLowerCase().trim());
+        if (whole) return whole;
+        return buildBlend(wordObj.c.map(chunkFile));
+    }
+
+    function playBuffer(buf) {
+        return new Promise((resolve) => {
+            const ctx = getAudioCtx();
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(ctx.destination);
+            src.onended = resolve;
+            src.start();
+        });
+    }
+
+    async function sayWholeWord(wordObj, ready) {
+        if (!wordObj.n) return playFullWord(wordObj.w);
+        const buf = await (ready || prepareMadeUpWord(wordObj));
+        return buf ? playBuffer(buf) : speakComputer(wordObj.w);
     }
 
     async function playGame1Sounds() {
@@ -972,6 +1093,8 @@
         if (wordObj.isSentence) {
             await speakComputer(wordObj.w);
         } else {
+            getAudioCtx();
+            const ready = wordObj.n ? prepareMadeUpWord(wordObj) : null;  // loads while the sounds play
             wordEl.style.opacity = "0.2";
             for (let i = 0; i < wordObj.c.length; i++) {
                 const chunkSpan = document.getElementById(`chunk-${i}`);
@@ -982,7 +1105,7 @@
             }
             await new Promise(r => setTimeout(r, 200));
             wordEl.style.opacity = "1";
-            await playFullWord(wordObj.w);
+            await sayWholeWord(wordObj, ready);
         }
         document.getElementById('blendBtn').disabled = false;
         document.getElementById('nextLearnBtn').disabled = false;
@@ -1218,6 +1341,8 @@
             nextBtn.style.display = 'block';
             nextBtn.disabled = true;
             await playGame1Sounds();
+            await new Promise(r => setTimeout(r, 200));
+            await sayWholeWord(currentGame1Word);
             nextBtn.disabled = false;
         } else {
             document.getElementById('game1Feedback').innerHTML = "<span style='color:var(--danger)'>Oops! Try a different order.</span>";
