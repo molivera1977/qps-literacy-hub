@@ -369,6 +369,37 @@
         .stop-example.long { font-size: 1.35rem; margin-top: 24px; margin-bottom: 6px; }
         .stop-name { font-weight: 600; font-size: 1.1rem; color: var(--ink-soft); }
         .stop-stars { color: #e8a317; font-size: 1.3rem; letter-spacing: 2px; }
+        /* Sign-in and my plan (login.js) */
+        #loginView [hidden], #welcomeView [hidden] { display: none !important; }
+        #loginView { display: none; padding-top: 36px; }
+        .login-box { max-width: 440px; margin: 18px auto 6px; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+        .login-box label { font-weight: 600; font-size: 1.15rem; color: var(--ink); }
+        .login-box select, .login-box input {
+            font: inherit; font-size: 1.3rem; padding: 12px 14px; border-radius: var(--radius-sm);
+            border: 2px solid var(--line-strong); background: #fff; color: var(--ink); width: 100%;
+        }
+        .login-box select:focus-visible, .login-box input:focus-visible { outline: 3px solid var(--learning); outline-offset: 2px; }
+        .login-box .p-btn { align-self: stretch; margin-top: 6px; }
+        .login-error { min-height: 1.4em; margin: 0; color: #b42318; font-weight: 600; font-size: 1.15rem; }
+        .plan-box { margin: 4px 0 22px; text-align: left; }
+        .plan-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .plan-hi { margin: 0; font-size: 1.9rem; font-weight: 700; color: var(--ink); }
+        .plan-signout { font: inherit; font-size: 1rem; font-weight: 600; color: var(--ink-soft); background: var(--paper); border: 2px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+        .plan-line { margin: 0; font-size: 1.3rem; color: var(--ink); font-weight: 500; }
+        .plan-box .p-direction { justify-content: flex-start; margin: 8px 0 12px; }
+        .plan-card {
+            position: relative; width: 100%; font: inherit; color: var(--ink); cursor: pointer;
+            background: var(--learning-tint); border: 3px solid var(--learning); border-radius: 24px; padding: 22px 16px 18px;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            box-shadow: 0 6px 0 var(--learning-dark); transition: transform 0.2s var(--ease), box-shadow 0.2s;
+        }
+        .plan-card:hover { transform: translateY(-3px); box-shadow: 0 9px 0 var(--learning-dark); }
+        .plan-card:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--learning-dark); }
+        .plan-card:focus-visible { outline: 4px solid var(--ink); outline-offset: 3px; }
+        .plan-example { font-family: var(--font-read); font-weight: 700; font-size: 3rem; margin-top: 10px; line-height: 1.1; }
+        .plan-name { font-weight: 700; font-size: 1.35rem; color: var(--ink); }
+        .plan-go { margin-top: 6px; background: var(--learning); color: #fff; font-weight: 700; font-size: 1.35rem; padding: 10px 28px; border-radius: 999px; box-shadow: 0 4px 0 var(--learning-dark); }
+        @media (prefers-reduced-motion: reduce) { .plan-card { transition: none; } .plan-card:hover, .plan-card:active { transform: none; } }
         .more-title { font-size: 1.15rem; color: var(--ink-soft); font-weight: 600; margin: 4px 0 10px; text-align: left; }
         .menu-grid.small .menu-card { flex-direction: row; align-items: center; padding: 12px 14px; gap: 12px; }
         .menu-grid.small .menu-card h3 { margin: 0; font-size: 1.15rem; }
@@ -520,6 +551,33 @@
 </head>
 <body>
 
+<!-- ========== SIGN IN (login.js) ========== -->
+<main id="loginView" class="hub-container">
+    <div class="welcome-head">
+        <h1 class="welcome-title">
+            <span class="tile-word" aria-hidden="true"><span class="tile t1">Q</span><span class="tile t2">P</span><span class="tile t3">S</span></span>Literacy Hub
+        </h1>
+        <div class="p-direction center">
+            <button type="button" class="p-say" onclick="speakComputer('Find your name. Then type your student number. Tap Sign in.')" aria-label="Hear the directions">🔊</button>
+            <p class="welcome-sub">Find your name. Then type your student number.</p>
+        </div>
+    </div>
+    <div class="login-box">
+        <label for="qpsName">Your name</label>
+        <select id="qpsName"><option value="">Choose your name</option></select>
+        <div id="qpsPinBox" class="login-box" style="margin:0;" hidden>
+            <label for="qpsPin" id="qpsPinLabel">Your student number</label>
+            <input type="password" id="qpsPin" inputmode="numeric" autocomplete="off">
+            <div id="qpsGuestBox" class="login-box" style="margin:0;" hidden>
+                <label for="qpsGuestName">Your first name</label>
+                <input type="text" id="qpsGuestName" maxlength="20" autocomplete="off">
+            </div>
+        </div>
+        <p id="qpsLoginError" class="login-error" role="alert"></p>
+        <button type="button" id="qpsSignIn" class="p-btn p-next">Sign in ➡️</button>
+    </div>
+</main>
+
 <!-- ========== WELCOME SCREEN: the practice path ========== -->
 <main id="welcomeView" class="hub-container">
     <div class="welcome-head">
@@ -533,6 +591,7 @@
         </div>
     </div>
 
+    <section id="planBox" class="plan-box" aria-label="My plan" hidden></section>
     <div id="stopGrid" class="stop-grid" aria-label="Practice stops"></div>
 
     <h2 class="more-title">More to do</h2>
@@ -1600,6 +1659,7 @@
     }
 </script>
 <script src="practice-data.js?v=p1"></script>
-<script src="practice.js?v=p1"></script>
+<script src="practice.js?v=p2"></script>
+<script src="login.js?v=1"></script>
 </body>
 </html>

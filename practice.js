@@ -32,8 +32,10 @@
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
   function button(cls, text, onClick, label) { const b = el('button', cls, text); b.type = 'button'; if (label) b.setAttribute('aria-label', label); b.onclick = onClick; return b; }
 
-  function loadStore() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; } }
-  function saveStore(s) { try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) { /* private window: progress just isn't kept */ } }
+  // Stars are kept per student (login.js sets QPS_STUDENT), so a shared Chromebook keeps each child's own.
+  const storeKey = () => STORE_KEY + (window.QPS_STUDENT ? ':' + window.QPS_STUDENT : '');
+  function loadStore() { try { return JSON.parse(localStorage.getItem(storeKey())) || {}; } catch (e) { return {}; } }
+  function saveStore(s) { try { localStorage.setItem(storeKey(), JSON.stringify(s)); } catch (e) { /* private window: progress just isn't kept */ } }
   function stopRecord(id) { return loadStore()[id] || { reached: 0, stars: 0 }; }
   function saveStopRecord(id, rec) { const s = loadStore(); s[id] = { ...stopRecord(id), ...rec }; saveStore(s); }
 
@@ -130,6 +132,7 @@
       card.append(stars);
       grid.append(card);
     });
+    if (window.QPSLogin) QPSLogin.renderPlan();      // the signed-in student's own stop
   }
 
   function openStop(id) {
