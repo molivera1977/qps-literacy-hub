@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QPS Literacy Hub 2.0 | Teacher Edition</title>
+    <title>QPS Literacy Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -124,6 +124,8 @@
         .tab.active-learn { background: var(--learning); color: white; box-shadow: 0 3px 0 var(--learning-dark); }
         .tab.active-games { background: var(--games); color: white; box-shadow: 0 3px 0 var(--games-dark); }
         .tab-lock { font-size: 0.85em; margin-left: 4px; opacity: 0.85; }
+        /* The Assessment is Mr. O's between-screenings check: only the teacher link (?teacher) shows it. */
+        body:not(.teacher-mode) .teacher-only { display: none !important; }
 
         .view-section { display: none; }
         .view-section.active { display: block; animation: rise 0.35s var(--ease); }
@@ -543,7 +545,7 @@
             <span class="icon" aria-hidden="true">🎮</span>
             <h3>Game Zone</h3>
         </button>
-        <button type="button" class="menu-card teacher" onclick="enterApp('test')" aria-label="Assessment - Teacher grading mode, needs Teacher PIN">
+        <button type="button" class="menu-card teacher teacher-only" onclick="enterApp('test')" aria-label="Assessment - Teacher grading mode, needs Teacher PIN">
             <span class="lock-chip" aria-hidden="true">🔒 Teacher</span>
             <span class="icon" aria-hidden="true">📝</span>
             <h3>Assessment</h3>
@@ -572,7 +574,7 @@
     <div class="tabs" role="tablist" aria-label="App modes">
         <button id="tabLearn" class="tab" onclick="switchTab('learn')" role="tab" aria-controls="learnSection">🎧 Learning Lab</button>
         <button id="tabGames" class="tab" onclick="switchTab('games')" role="tab" aria-controls="gamesSection">🎮 Game Zone</button>
-        <button id="tabTest" class="tab" onclick="switchTab('test')" role="tab" aria-controls="testSection">📝 Assessment<span class="tab-lock" aria-label="locked, needs Teacher PIN">🔒</span></button>
+        <button id="tabTest" class="tab teacher-only" onclick="switchTab('test')" role="tab" aria-controls="testSection">📝 Assessment<span class="tab-lock" aria-label="locked, needs Teacher PIN">🔒</span></button>
     </div>
     </div>
 
@@ -874,6 +876,9 @@
     // ============================================================
     const TEACHER_PIN = '9377';
     let assessmentUnlocked = false;
+    // Kids never see the Assessment. Mr. O opens it from the teacher link: index.html?teacher (still asks for the PIN).
+    const TEACHER_MODE = /[?&]teacher\b/.test(location.search);
+    if (TEACHER_MODE) document.body.classList.add('teacher-mode');
     let afterPin = null;
 
     function askForPin(onUnlock) {
@@ -914,6 +919,7 @@
     }
 
     function enterApp(mode) {
+        if (mode === 'test' && !TEACHER_MODE) return;
         if (mode === 'test' && !assessmentUnlocked) { askForPin(() => enterApp('test')); return; }
         document.getElementById('welcomeView').style.display = 'none';
         document.getElementById('appView').style.display = 'block';
@@ -936,13 +942,14 @@
     function goHome() {
         document.getElementById('appView').style.display = 'none';
         document.getElementById('welcomeView').style.display = 'block';
-        document.title = 'QPS Literacy Hub 2.0 | Teacher Edition';
+        document.title = 'QPS Literacy Hub';
         setAssessmentLock(false);
         if (window.Practice) Practice.renderStops();
         resetAll();
     }
 
     function switchTab(mode) {
+        if (mode === 'test' && !TEACHER_MODE) return;
         if (mode === 'test' && !assessmentUnlocked) { askForPin(() => switchTab('test')); return; }
         setAssessmentLock(mode === 'test');
         document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));

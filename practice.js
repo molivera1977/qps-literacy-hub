@@ -151,7 +151,7 @@
     if (window.speechSynthesis) speechSynthesis.cancel();
     $('practiceView').style.display = 'none';
     $('welcomeView').style.display = 'block';
-    document.title = 'QPS Literacy Hub 2.0 | Teacher Edition';
+    document.title = 'QPS Literacy Hub';
     renderStops();
     window.scrollTo(0, 0);
   }
