@@ -200,6 +200,64 @@
     if (stepIndex + 1 < steps.length) { stepIndex++; showStep(); window.scrollTo(0, 0); }
   }
 
+  /* ---------- lesson lines: words, letter names and sounds ----------
+     In practice-data.js a lesson line marks
+       /sh/  a SOUND — shown as a sound tile; read aloud with Mr. O's recording
+       {sh}  LETTER NAMES — shown in bold; the voice says "s-h"
+     (Marcos 10/16: "where it says 'say' the sound that follows is just the
+     letter names" — the voice read "sh" as S-H.) */
+  function lessonLine(line) {
+    const p = el('p', 'p-learn-line');
+    const segs = [];
+    let text = null;                                  // the current run of spoken words
+    const flushText = () => { text = null; };
+    line.split(/(\/[a-z]+\/|\{[a-z]+\})/).forEach(tok => {
+      if (!tok) return;
+      const sound = tok.match(/^\/([a-z]+)\/$/);
+      if (sound) {
+        const chip = button('p-sound', sound[1], () => sayChunk(sound[1]), `Hear the sound ${sound[1]}`);
+        p.append(chip);
+        segs.push({ kind: 'sound', chunk: sound[1], el: chip });
+        flushText();
+        return;
+      }
+      if (!text) { text = { kind: 'text', el: el('span', 'p-say-run'), say: [] }; p.append(text.el); segs.push(text); }
+      const letters = tok.match(/^\{([a-z]+)\}$/);
+      if (letters) {
+        const w = el('span', 'rw p-letters', letters[1]);
+        text.el.append(w);
+        text.say.push(letters[1].toUpperCase().split('').join('-'));   // S-H, A: capitals so the voice says letter names
+      } else {
+        tok.split(/(\s+)/).forEach(t => {
+          if (!t) return;
+          if (/^\s+$/.test(t)) { text.el.append(document.createTextNode(t)); return; }
+          text.el.append(el('span', 'rw', t));
+          text.say.push(t);
+        });
+      }
+    });
+    // A run that starts right after a sound tile (". C and H say") drops the leading punctuation.
+    segs.forEach(sg => { if (sg.kind === 'text') sg.el.dataset.say = sg.say.join(' ').replace(/^[\s.,;:!?)]+/, ''); });
+    return { el: p, segs };
+  }
+  let lessonRun = 0;
+  async function readLesson(lines) {
+    const mine = ++lessonRun;
+    for (const line of lines) {
+      for (const sg of line.segs) {
+        if (mine !== lessonRun) return;
+        if (sg.kind === 'sound') {
+          sg.el.classList.add('lit');
+          await sayChunk(sg.chunk);
+          sg.el.classList.remove('lit');
+        } else if (/[a-z0-9]/i.test(sg.el.dataset.say)) {
+          if (window.QPSRead) await QPSRead.say(sg.el); else await speakComputer(sg.el.dataset.say);
+        }
+        await new Promise(r => setTimeout(r, 120));
+      }
+    }
+  }
+
   /* ---------- shared pieces ---------- */
   function direction(area, text) {
     const row = el('div', 'p-direction');
@@ -250,15 +308,10 @@
   const ACTIVITIES = {
     learn(area, done) {
       const card = el('div', 'p-learn');
-      const rule = stop.learn.lines.join(' ');
-      const linePs = stop.learn.lines.map(line => window.QPSRead ? QPSRead.wrap(el('p', 'p-learn-line'), line) : el('p', 'p-learn-line', line));
-      const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => {
-        if (window.QPSRead) await QPSRead.sayAll(linePs);
-        else await sayText(rule);
-        done();
-      });
+      const lines = stop.learn.lines.map(lessonLine);
+      const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => { await readLesson(lines); done(); });
       card.append(el('h2', 'p-learn-title', `Learn: ${stop.name}`));
-      linePs.forEach(p => card.append(p));
+      lines.forEach(l => card.append(l.el));
       card.append(sayBtn);
       card.append(el('p', 'p-small', 'Tap a word to hear it.'));
       const ex = el('div', 'p-examples');

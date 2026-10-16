@@ -23,7 +23,7 @@ const PRACTICE_STOPS = [
   {
     id: '2', num: '2', name: 'Short vowels', example: 'cat',
     learn: {
-      lines: ['The vowels are a, e, i, o and u.', 'In a short word like cat, the vowel makes its short sound.', 'Tap each word. Listen for the vowel in the middle.'],
+      lines: ['The vowels are {a}, {e}, {i}, {o} and {u}.', 'In a short word like cat, the vowel makes its short sound: {a} says /a/, {e} says /e/, {i} says /i/, {o} says /o/, {u} says /u/.', 'Tap each word. Listen for the vowel in the middle.'],
       examples: ['c|a|t', 'b|e|d', 'p|i|g', 'h|o|t', 's|u|n']
     },
     real: ['c|a|p','b|e|d','f|i|x','h|o|t','s|u|n','r|i|p','j|o|g','w|e|t','m|u|d','t|a|g','p|e|n','l|i|d','b|u|s','f|a|n','k|i|t','r|u|b'],
@@ -40,7 +40,7 @@ const PRACTICE_STOPS = [
   {
     id: '3', num: '3', name: 'sh ch th', example: 'ship',
     learn: {
-      lines: ['Some letters work in pairs. Two letters make ONE sound.', 's and h say sh. c and h say ch. t and h say th.', 'w and h say w. c and k say k. n and g say ng.'],
+      lines: ['Some letters work in pairs. Two letters make ONE sound.', '{s} and {h} say /sh/. {c} and {h} say /ch/. {t} and {h} say /th/.', '{w} and {h} say /wh/. {c} and {k} say /ck/. {n} and {g} say /ng/.'],
       examples: ['sh|i|p', 'ch|o|p', 'th|i|n', 'wh|e|n', 'd|u|ck', 's|i|ng']
     },
     real: ['sh|i|p','ch|o|p','th|i|n','wh|e|n','d|u|ck','s|i|ng','sh|o|p','ch|i|n','m|a|th','w|i|sh','r|i|ch','b|a|ck','r|i|ng','wh|i|p','b|a|th','m|u|ch'],
@@ -56,7 +56,7 @@ const PRACTICE_STOPS = [
   {
     id: '4', num: '4', name: 'Blends', example: 'frog',
     learn: {
-      lines: ['A blend is two letters side by side. You hear BOTH sounds, said fast.', 'In frog you hear f and r: f-r-og.', 'Do not skip a sound!'],
+      lines: ['A blend is two letters side by side. You hear BOTH sounds, said fast.', 'In frog you hear /f/ and /r/ together: /f/ /r/ /o/ /g/.', 'Do not skip a sound!'],
       examples: ['f|r|o|g', 's|t|o|p', 'c|r|a|b', 'j|u|m|p', 'm|i|l|k']
     },
     real: ['s|t|o|p','f|l|a|g','c|r|a|b','p|l|u|m','s|w|i|m','f|r|o|g','d|r|u|m','g|r|i|n','s|l|i|p','t|r|i|p','b|e|s|t','h|a|n|d','j|u|m|p','m|i|l|k','t|e|n|t','f|a|s|t'],
@@ -68,7 +68,7 @@ const PRACTICE_STOPS = [
   {
     id: '5', num: '5', name: 'Silent e', example: 'cake',
     learn: {
-      lines: ['An e at the end of a word is quiet. You do not hear it.', 'The quiet e makes the vowel say its name: a says A, i says I, o says O.', 'cap has no e, so the a is short. Add e and it turns into cape.'],
+      lines: ['An e at the end of a word is quiet. You do not hear it.', 'The quiet e makes the vowel say its name: {a} says A, {i} says I, {o} says O.', 'cap has no e, so the {a} says /a/. Add e and it turns into cape.'],
       examples: ['m|a|t>m|ate', 'p|i|n>p|ine', 'n|o|t>n|ote']
     },
     real: ['g|ate','l|ate','s|k|ate','p|l|ate','sh|ade','g|r|ade','l|ane','c|r|ane','n|ice','m|ice','r|ice','n|ine','sh|ine','m|ile','s|m|ile','h|ole','p|ole','v|ote','d|une','t|une','f|r|oze'],
@@ -85,7 +85,7 @@ const PRACTICE_STOPS = [
   {
     id: '6', num: '6', name: 'Bossy R', example: 'car',
     learn: {
-      lines: ['When r comes right after a vowel, the r is the boss.', 'The vowel and the r make a new sound together.', 'ar says ar, like car. or says or, like for. er, ir and ur all say er, like her, bird and turn.'],
+      lines: ['When {r} comes right after a vowel, the {r} is the boss.', 'The vowel and the {r} make a new sound together.', '{ar} says /ar/, like car. {or} says /or/, like for. {er}, {ir} and {ur} all say /er/, like her, bird and turn.'],
       examples: ['c|ar', 'f|or|k', 'h|er', 'b|ir|d', 't|ur|n']
     },
     real: ['c|ar','f|ar|m','s|t|ar','h|er','f|er|n','b|ir|d','g|ir|l','sh|ir|t','c|or|n','f|or|k','s|t|or|m','t|ur|n','h|ur|t','b|ur|n','p|ar|k','s|p|or|t'],
@@ -101,7 +101,7 @@ const PRACTICE_STOPS = [
   {
     id: '7', num: '7', name: 'Tricky letters', example: 'knot',
     learn: {
-      lines: ['Some letter groups play tricks.', 'tch says ch, like catch. dge says j, like badge. qu says kw, like quit. x says ks, like fox.', 'Some letters are silent: in kn the k is quiet (knot). In wr the w is quiet (wrap). In gn the g is quiet (gnat).'],
+      lines: ['Some letter groups play tricks.', '{tch} says /tch/, like catch. {dge} says /dge/, like badge. {qu} says /qu/, like quit. {x} says /x/, like fox.', 'Some letters are silent. In {kn} the {k} is quiet, so {kn} says /kn/, like knot. In {wr} the {w} is quiet, so {wr} says /wr/, like wrap. In {gn} the {g} is quiet, so {gn} says /gn/, like gnat.'],
       examples: ['c|a|tch', 'b|a|dge', 'kn|o|t', 'wr|a|p', 'gn|a|t', 'qu|i|t', 'f|o|x']
     },
     real: ['c|a|tch','m|a|tch','d|i|tch','b|a|dge','f|u|dge','b|r|i|dge','kn|o|t','kn|i|t','wr|a|p','wr|i|s|t','qu|i|t','qu|a|ck','f|o|x','s|i|x','qu|i|z','gn|a|t'],
@@ -112,7 +112,7 @@ const PRACTICE_STOPS = [
   {
     id: '8', num: '8', name: 'Vowel teams', example: 'boat',
     learn: {
-      lines: ['In a vowel team, two letters work together to make ONE vowel sound.', 'ai and ay say A (rain, day). oa and oe say O (boat, toe). ea says E (seat). igh says I (night).', 'oo says oo (moon). ew says oo (new). ou says ow (out). oi and oy say oy (coin, toy). au and aw say aw (haul, saw).'],
+      lines: ['In a vowel team, two letters work together to make ONE vowel sound.', '{ai} and {ay} say /ai/, like rain and day. {oa} and {oe} say /oa/, like boat and toe. {ea} says /ea/, like seat. {igh} says /igh/, like night.', '{oo} says /oo/, like moon. {ew} says /ew/, like new. {ou} says /ou/, like out. {oi} and {oy} say /oi/, like coin and toy. {au} and {aw} say /au/, like haul and saw.'],
       examples: ['r|ai|n', 'd|ay', 'b|oa|t', 's|ea|t', 'n|igh|t', 'm|oo|n', 'ou|t', 'c|oi|n', 's|aw']
     },
     real: ['r|ai|n','t|ai|l','p|l|ay','d|ay','s|ea|t','t|ea|m','b|oa|t','s|oa|p','m|oo|n','f|oo|d','ou|t','l|ou|d','c|oi|n','b|oi|l','t|oy','h|au|l','s|aw','l|aw|n','p|aw','n|ew','n|igh|t','l|igh|t'],
@@ -128,7 +128,7 @@ const PRACTICE_STOPS = [
   {
     id: '9a', num: '9a', name: 'Two-part words', example: 'en·joy',
     learn: {
-      lines: ['Big words are made of parts called syllables. Each part has one vowel sound.', 'Read one part at a time. Then put the parts together.', 'con + tent = content.'],
+      lines: ['Big words are made of parts called syllables. Each part has one vowel sound.', 'Read one part at a time. Then put the parts together.', '/con/ + /tent/ = content.'],
       examples: ['con|tent', 'en|joy', 'mo|tor']
     },
     big: true,
@@ -137,7 +137,7 @@ const PRACTICE_STOPS = [
   {
     id: '9b', num: '9b', name: 'Three-part words', example: 'com·pu·ter',
     learn: {
-      lines: ['These big words have three parts. Each part has one vowel sound.', 'Read one part at a time. Then put the parts together.', 'com + pu + ter = computer.'],
+      lines: ['These big words have three parts. Each part has one vowel sound.', 'Read one part at a time. Then put the parts together.', '/com/ + /pu/ + /ter/ = computer.'],
       examples: ['com|pu|ter', 'in|ven|tion', 'his|to|ry']
     },
     big: true,
@@ -146,7 +146,7 @@ const PRACTICE_STOPS = [
   {
     id: '9c', num: '9c', name: 'Four-part words', example: 'in·fi·ni·ty',
     learn: {
-      lines: ['These big words have four parts. Each part has one vowel sound.', 'Go slow. Read one part at a time, then put them together.', 'in + fi + ni + ty = infinity.'],
+      lines: ['These big words have four parts. Each part has one vowel sound.', 'Go slow. Read one part at a time, then put them together.', '/in/ + /fi/ + /ni/ + /ty/ = infinity.'],
       examples: ['in|fi|ni|ty', 'com|pe|ti|tion', 'his|to|ri|cal']
     },
     big: true,
@@ -155,7 +155,7 @@ const PRACTICE_STOPS = [
   {
     id: '10', num: '10', name: 'Word parts', example: 'un·lock',
     learn: {
-      lines: ['A prefix is a part at the START of a word. un means not. re means again. pre means before. dis and non mean not.', 'A suffix is a part at the END. ful means full of. less means without. ness means being. est means the most. able means can be.', 'Find the parts. Read each part. Then read the whole word: un + lock = unlock.'],
+      lines: ['A prefix is a part at the START of a word. un means not. re means again. pre means before. dis and non mean not.', 'A suffix is a part at the END. ful means full of. less means without. ness means being. est means the most. able means can be.', 'Find the parts. Read each part. Then read the whole word: /un/ + lock = unlock.'],
       examples: ['un|lock', 're|tell', 'help|ful', 'end|less']
     },
     big: true, parts: true,

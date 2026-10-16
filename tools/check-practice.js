@@ -51,6 +51,8 @@ for (const stop of stops) {
   ];
   // Stop 1 practices the letters themselves, so its items are the test's letters by design.
   all.forEach(([w, where]) => { words++; if (stop.id !== '1') checkChunks(stop, w, where); else if (!recordings.has(w)) errors.push(`${stop.id}: no recording for "${w}"`); });
+  // Lesson lines: every /sound/ mark plays one of Mr. O's recordings.
+  for (const line of stop.learn.lines) for (const m of line.matchAll(/\/([a-z]+)\//g)) if (!recordings.has(fileFor(stop, m[1]))) errors.push(`${stop.id} lesson: no recording for the sound /${m[1]}/`);
   for (const w of stop.made || []) {
     const chunks = w.split('|');
     const misses = nearMisses(stop, chunks);
