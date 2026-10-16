@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QPS Voice Check</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --ink: #1f2a44; --soft: #5b6478; --line: #e4dccd; --paper: #fffaf2; --bad: #e03131; --good: #1f9d55; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 20px 16px 60px; font-family: 'Segoe UI', system-ui, sans-serif; color: var(--ink); background: #f6efe3; }
+  main { max-width: 900px; margin: 0 auto; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 20px; }
+  h1 { margin: 0 0 6px; font-size: 1.6rem; }
+  h2 { margin: 26px 0 10px; font-size: 1.2rem; border-bottom: 2px solid var(--line); padding-bottom: 6px; }
+  p { font-size: 1.05rem; line-height: 1.5; color: var(--soft); margin: 6px 0; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0; }
+  button { font: inherit; font-size: 1rem; border-radius: 10px; border: 2px solid var(--line); background: #fff; padding: 8px 14px; cursor: pointer; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .row { display: flex; align-items: center; gap: 8px; border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; background: var(--paper); }
+  .row.wrong { border-color: var(--bad); background: #fde4e4; }
+  .row.playing { border-color: #2f6fde; }
+  .word { font-size: 1.4rem; font-weight: 700; flex: 1; }
+  .said { display: block; font-size: 0.8rem; font-weight: 400; color: var(--soft); }
+  .mark.on { background: var(--bad); color: #fff; border-color: var(--bad); }
+  textarea { width: 100%; min-height: 90px; font: inherit; font-size: 1rem; border-radius: 10px; border: 2px solid var(--line); padding: 10px; }
+  .voice { font-weight: 700; color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <h1>QPS Voice Check</h1>
+  <p>For Mr. O, on a student Chromebook. Each made-up word is read by this device's computer voice, from a spelling the voice says correctly (the small grey word). Words with Mr. O's own recording play that recording.</p>
+  <p>Tap ▶ to hear a word. If it sounds wrong, tap <b>✗</b>. The words you mark collect in the box at the bottom.</p>
+  <p>This device's voice: <span class="voice" id="voiceName">checking…</span></p>
+  <div class="bar">
+    <button type="button" id="playAll">▶ Play every word in a row</button>
+    <button type="button" id="stopAll">■ Stop</button>
+  </div>
+  <div id="lists"></div>
+  <h2>Words that sound wrong</h2>
+  <textarea id="wrongList" readonly placeholder="Nothing marked yet."></textarea>
+  <div class="bar"><button type="button" id="copy">Copy the list</button><span id="copied"></span></div>
+</main>
+<script src="respell.js?v=s1"></script>
+<script src="practice-data.js?v=p1"></script>
+<script src="practice.js?v=p5"></script>
+<script>
+  // Recordings of whole made-up words (the site plays these instead of the voice).
+  const WHOLE = new Set(['wat', 'whaf', 'quam', 'celp', 'ralk', 'mant', 'sund']);
+  const wrong = new Set();
+  let stopped = false;
+
+  function speak(text) {
+    return new Promise(resolve => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0; u.onend = resolve; u.onerror = resolve;   // same as the site's speakComputer
+      speechSynthesis.speak(u);
+    });
+  }
+  function playRec(word) {
+    return new Promise(resolve => { const a = new Audio(word + '.m4a'); a.onended = resolve; a.onerror = resolve; a.play().catch(resolve); });
+  }
+  const say = (w) => (WHOLE.has(w.word) ? playRec(w.word) : speak(w.said));
+
+  function showVoice() {
+    const v = speechSynthesis.getVoices();
+    const d = v.find(x => x.default) || v.find(x => /^en/i.test(x.lang));
+    document.getElementById('voiceName').textContent = d ? `${d.name} (${d.lang})` : 'no voice found';
+  }
+  speechSynthesis.onvoiceschanged = showVoice;
+  showVoice();
+
+  function updateList() { document.getElementById('wrongList').value = [...wrong].join(', '); }
+
+  function section(title, words) {
+    const box = document.getElementById('lists');
+    const h = document.createElement('h2'); h.textContent = `${title} (${words.length})`; box.append(h);
+    const grid = document.createElement('div'); grid.className = 'grid'; box.append(grid);
+    words.forEach(w => {
+      const row = document.createElement('div'); row.className = 'row'; w.row = row;
+      const label = document.createElement('span'); label.className = 'word'; label.textContent = w.word;
+      const said = document.createElement('span'); said.className = 'said'; said.textContent = WHOLE.has(w.word) ? 'Mr. O recording' : (w.said === w.word ? 'as written' : `voice reads "${w.said}"`);
+      label.append(said);
+      const play = document.createElement('button'); play.type = 'button'; play.textContent = '▶'; play.setAttribute('aria-label', 'Hear ' + w.word);
+      play.onclick = () => { speechSynthesis.cancel(); say(w); };
+      const mark = document.createElement('button'); mark.type = 'button'; mark.className = 'mark'; mark.textContent = '✗'; mark.setAttribute('aria-label', 'Mark ' + w.word + ' as wrong');
+      mark.onclick = () => { const on = !wrong.has(w.word); on ? wrong.add(w.word) : wrong.delete(w.word); mark.classList.toggle('on', on); row.classList.toggle('wrong', on); updateList(); };
+      row.append(label, play, mark); grid.append(row);
+    });
+    return words;
+  }
+
+  (async function build() {
+    const all = [];
+    const seen = new Set();
+    const add = (list, chunks) => { const word = chunks.join(''); if (seen.has(word)) return; seen.add(word); list.push({ word, said: Respell.respell(chunks) }); };
+    for (const st of PRACTICE_STOPS) {
+      if (!st.made) continue;
+      const list = [];
+      st.made.forEach(w => { const c = w.split('|'); add(list, c); Practice.nearMisses(st, c).forEach(v => add(list, v)); });
+      all.push(...section(`Practice stop ${st.num} · ${st.name} — made-up words and their near misses`, list));
+    }
+    // The Assessment / Learning Lab made-up words live in index.html's word bank.
+    try {
+      const html = await (await fetch('index.html')).text();
+      const bank = html.slice(html.indexOf('const wordBank'), html.indexOf('// Level display names'));
+      const list = [];
+      for (const m of bank.matchAll(/\{w:"([a-z]+)",c:\[([^\]]*)\],n:true\}/g)) add(list, m[2].replace(/"/g, '').split(','));
+      all.push(...section('Learning Lab and Assessment made-up words', list));
+    } catch (e) { /* offline: the practice lists are still here */ }
+
+    document.getElementById('playAll').onclick = async () => {
+      stopped = false;
+      for (const w of all) {
+        if (stopped) break;
+        w.row.classList.add('playing'); w.row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        await say(w); await new Promise(r => setTimeout(r, 500));
+        w.row.classList.remove('playing');
+      }
+    };
+    document.getElementById('stopAll').onclick = () => { stopped = true; speechSynthesis.cancel(); };
+    document.getElementById('copy').onclick = async () => {
+      try { await navigator.clipboard.writeText(document.getElementById('wrongList').value); document.getElementById('copied').textContent = 'Copied.'; }
+      catch (e) { document.getElementById('wrongList').select(); document.getElementById('copied').textContent = 'Press Ctrl+C to copy.'; }
+    };
+  })();
+</script>
+</body>
+</html>

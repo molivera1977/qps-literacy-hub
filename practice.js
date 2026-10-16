@@ -50,30 +50,36 @@
     if (!stop || !stop.split) return chunks;
     return chunks.flatMap(c => stop.split[c] ? split(stop.split[c]) : [c]);
   }
-  const blendCache = {};
-  async function wordBuffer(chunks) {
-    const key = chunks.join('|');
-    if (!(key in blendCache)) {
-      blendCache[key] = (async () => (await loadBuffer(join(chunks).toLowerCase())) || buildBlend(soundParts(chunks).map(fileFor)))();
-    }
-    return blendCache[key];
-  }
   async function guarded(fn) {
     if (busy) return;
     busy = true;
     try { getAudioCtx(); await fn(); } finally { busy = false; }
   }
-  // A whole word: big words use the computer voice for natural stress; all others his voice.
+  // Real words on this stop's lists; anything else (made-up words, near misses) is respelled.
+  let realWords = new Set();
+  function collectReal(st) {
+    const words = [
+      ...(st.real || []), ...(st.letters || []),
+      ...(st.chains || []).flat(),
+      ...st.learn.examples.flatMap(w => w.split('>')),
+      ...((st.sort && st.sort.words) || []).filter(([, key]) => key !== 'made').map(([w]) => w)
+    ];
+    return new Set(words.map(w => w.replace(/\|/g, '')));
+  }
+  // A whole word. Mr. O's own recording of the whole word wins (stop, play, whaf…).
+  // Otherwise the computer voice: real words as written, made-up words respelled
+  // (respell.js) so the voice says them right — joined sound recordings sounded strange.
   function sayWord(chunks) {
     return guarded(async () => {
-      if (stop && stop.big) { const rec = await loadBuffer(join(chunks).toLowerCase()); return rec ? playBuffer(rec) : speakComputer(join(chunks)); }
-      const buf = await wordBuffer(chunks);
-      return buf ? playBuffer(buf) : speakComputer(join(chunks));
+      const word = join(chunks);
+      const rec = await loadBuffer(word.toLowerCase());
+      if (rec) return playBuffer(rec);
+      return speakComputer(realWords.has(word) || !window.Respell ? word : Respell.respell(soundParts(chunks)));
     });
   }
   function sayChunk(chunk) {
     return guarded(async () => {
-      if (stop && stop.split && stop.split[chunk]) { const buf = await wordBuffer([chunk]); return buf ? playBuffer(buf) : speakComputer(chunk); }
+      if (stop && stop.split && stop.split[chunk]) { const rec = await loadBuffer(chunk.toLowerCase()); return rec ? playBuffer(rec) : speakComputer(chunk); }   // a real base word like lock
       const buf = await buildBlend([fileFor(chunk)]);
       return buf ? playBuffer(buf) : speakComputer(chunk);
     });
@@ -138,6 +144,7 @@
   function openStop(id) {
     stop = PRACTICE_STOPS.find(s => s.id === id);
     steps = buildSteps(stop);
+    realWords = collectReal(stop);
     const rec = stopRecord(id);
     // A stop in progress picks up where the student stopped; a finished stop starts over.
     stepIndex = (rec.reached || 0) >= steps.length ? 0 : (rec.reached || 0);
@@ -661,7 +668,7 @@
     return { start, newLen: part.length, newPart: part.join('|') };
   }
 
-  window.Practice = { renderStops, openStop, backToStops, nextStep, nearMisses, buildSteps, diff, _state: () => ({ stop, steps, stepIndex }) };
+  window.Practice = { renderStops, openStop, backToStops, nextStep, nearMisses, buildSteps, diff, _sayWord: sayWord, _state: () => ({ stop, steps, stepIndex }) };
   document.addEventListener('DOMContentLoaded', renderStops);
   if (document.readyState !== 'loading') renderStops();
 })();

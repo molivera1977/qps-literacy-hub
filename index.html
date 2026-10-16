@@ -885,6 +885,8 @@
 
 <!-- Guest view (share.js, the same file on every site): runs first, before anything reads or saves progress. -->
 <script src="share.js?v=3"></script>
+<script src="blend-core.js?v=b1"></script>
+<script src="respell.js?v=s1"></script>
 <script>
     // ============================================================
     // AUDIO BASE PATH - change this one constant if folder moves
@@ -1249,8 +1251,6 @@
         return buf;
     }
 
-    // Where the sound starts and stops, judged in 10 ms windows against the
-    // recording's own background noise, so quiet sounds like s, f and th stay.
     function monoData(buf) {
         if (buf.numberOfChannels === 1) return buf.getChannelData(0);
         const mix = new Float32Array(buf.length);
@@ -1261,58 +1261,24 @@
         return mix;
     }
 
-    function soundSpan(buf) {
-        const data = monoData(buf);
-        const win = Math.max(1, Math.round(buf.sampleRate * 0.01));
-        const rms = [];
-        for (let i = 0; i < data.length; i += win) {
-            let sum = 0;
-            const stop = Math.min(data.length, i + win);
-            for (let j = i; j < stop; j++) sum += data[j] * data[j];
-            rms.push(Math.sqrt(sum / (stop - i)));
-        }
-        const sorted = [...rms].sort((a, b) => a - b);
-        const noise = sorted[Math.floor(sorted.length * 0.2)];
-        const loudest = sorted[sorted.length - 1];
-        if (!loudest) return null;
-        const limit = Math.max(noise * 4, loudest * 0.05);
-        let first = rms.findIndex(v => v > limit);
-        let last = rms.length - 1;
-        while (last > first && rms[last] <= limit) last--;
-        if (first < 0) return null;
-        const before = Math.round(buf.sampleRate * 0.03), after = Math.round(buf.sampleRate * 0.05);
-        return { start: Math.max(0, first * win - before), end: Math.min(data.length, (last + 1) * win + after) };
-    }
-
+    // The trimming, squeezing and joining live in blend-core.js, shared with
+    // tools/blend-sample.js so the samples Mr. O hears match the page.
     async function buildBlend(fileNames) {
         const ctx = getAudioCtx();
-        if (!ctx) return null;
+        if (!ctx || !window.BlendCore) return null;
         const bufs = await Promise.all(fileNames.map(loadBuffer));
         if (bufs.some(b => !b)) return null;
-        const parts = bufs.map(b => ({ data: monoData(b), span: soundSpan(b) }));
-        if (parts.some(p => !p.span)) return null;
-        const fade = Math.round(ctx.sampleRate * 0.008);
-        const total = parts.reduce((n, p) => n + (p.span.end - p.span.start), 0);
-        const out = ctx.createBuffer(1, total, ctx.sampleRate);
-        const o = out.getChannelData(0);
-        let pos = 0;
-        parts.forEach(p => {
-            const src = p.data;
-            const len = p.span.end - p.span.start;
-            for (let i = 0; i < len; i++) {
-                const g = i < fade ? i / fade : (i > len - fade ? (len - i) / fade : 1);
-                o[pos + i] = src[p.span.start + i] * g;
-            }
-            pos += len;
-        });
+        const data = BlendCore.blend(bufs.map(monoData), ctx.sampleRate);
+        if (!data || !data.length) return null;
+        const out = ctx.createBuffer(1, data.length, ctx.sampleRate);
+        out.getChannelData(0).set(data);
         return out;
     }
 
-    // His whole-word recording if he made one (e.g. whaf), otherwise the blend.
+    // His whole-word recording if he made one (e.g. whaf); otherwise sayWholeWord
+    // has the computer voice read a respelling (respell.js) so it says it right.
     async function prepareMadeUpWord(wordObj) {
-        const whole = await loadBuffer(wordObj.w.toLowerCase().trim());
-        if (whole) return whole;
-        return buildBlend(wordObj.c.map(chunkFile));
+        return loadBuffer(wordObj.w.toLowerCase().trim());
     }
 
     function playBuffer(buf) {
@@ -1329,7 +1295,8 @@
     async function sayWholeWord(wordObj, ready) {
         if (!wordObj.n) return playFullWord(wordObj.w);
         const buf = await (ready || prepareMadeUpWord(wordObj));
-        return buf ? playBuffer(buf) : speakComputer(wordObj.w);
+        if (buf) return playBuffer(buf);
+        return speakComputer(window.Respell ? Respell.respell(wordObj.c) : wordObj.w);
     }
 
     async function playGame1Sounds() {
@@ -1734,7 +1701,7 @@
 </script>
 <script src="readaloud.js?v=r2"></script>
 <script src="practice-data.js?v=p1"></script>
-<script src="practice.js?v=p4"></script>
+<script src="practice.js?v=p5"></script>
 <script src="comp-data.js?v=c2"></script>
 <script src="comp.js?v=c3"></script>
 <script src="login.js?v=8"></script>
