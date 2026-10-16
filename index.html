@@ -665,16 +665,11 @@
     <section id="planBox" class="plan-box" aria-label="My plan" hidden></section>
     <div id="stopGrid" class="stop-grid" aria-label="Practice stops"></div>
 
-    <h2 class="more-title">More to do</h2>
-    <div class="menu-grid small">
-        <button type="button" class="menu-card learn" onclick="enterApp('learn')" aria-label="Learning Lab - Practice blending">
-            <span class="icon" aria-hidden="true">🎧</span>
-            <h3>Learning Lab</h3>
-        </button>
-        <button type="button" class="menu-card games" onclick="enterApp('games')" aria-label="Game Zone - Interactive practice">
-            <span class="icon" aria-hidden="true">🎮</span>
-            <h3>Game Zone</h3>
-        </button>
+    <!-- Learning Lab and Game Zone removed from the home screen 10/16 (Marcos): both used the
+         Assessment's own test words; the practice stops cover the same skills with new words.
+         Their code stays in the page, unreachable, in case he wants them back. -->
+    <h2 class="more-title teacher-only">Teacher</h2>
+    <div class="menu-grid small teacher-only">
         <button type="button" class="menu-card teacher teacher-only" onclick="enterApp('test')" aria-label="Assessment - Teacher grading mode, needs Teacher PIN">
             <span class="lock-chip" aria-hidden="true">🔒<span class="lock-word"> Teacher</span></span>
             <span class="icon" aria-hidden="true">📝</span>
@@ -705,8 +700,8 @@
         <div class="brand"><span class="brand-mark" aria-hidden="true">Q</span><span class="brand-name">QPS Literacy Hub</span></div>
         <button class="home-btn" onclick="goHome()" aria-label="Back to main menu">🏠 Home</button>
     <div class="tabs" role="tablist" aria-label="App modes">
-        <button id="tabLearn" class="tab" onclick="switchTab('learn')" role="tab" aria-controls="learnSection">🎧 Learning Lab</button>
-        <button id="tabGames" class="tab" onclick="switchTab('games')" role="tab" aria-controls="gamesSection">🎮 Game Zone</button>
+        <button id="tabLearn" class="tab" hidden onclick="switchTab('learn')" role="tab" aria-controls="learnSection">🎧 Learning Lab</button>
+        <button id="tabGames" class="tab" hidden onclick="switchTab('games')" role="tab" aria-controls="gamesSection">🎮 Game Zone</button>
         <button id="tabTest" class="tab teacher-only" onclick="switchTab('test')" role="tab" aria-controls="testSection">📝 Assessment<span class="tab-lock" aria-label="locked, needs Teacher PIN">🔒</span></button>
     </div>
     </div>
