@@ -196,7 +196,7 @@
     }
     if (track) {
       const stars = starsFor(track.id);
-      const line = `Your stop is number ${track.num}, ${track.name}. Tap Start.`;
+      const line = `Your stop is number ${track.num}, ${track.sayName || track.name}. Tap Start.`;
       const dir = document.createElement('div');
       dir.className = 'p-direction';
       const sayBtn = document.createElement('button');
@@ -206,12 +206,17 @@
       const p = document.createElement('p');
       p.className = 'plan-line';
       p.textContent = `Your stop is ${track.num} · ${track.name}.`;
-      if (window.QPSRead) { QPSRead.wrap(p, p.textContent); sayBtn.onclick = () => QPSRead.say(p); }
+      if (window.QPSRead) {
+        QPSRead.wrap(p, p.textContent);
+        // A stop named with letters (sh ch th) is spoken by its sayName, so the voice doesn't read S-H.
+        if (track.sayName) p.dataset.say = `Your stop is ${track.num}, ${track.sayName}.`;
+        sayBtn.onclick = () => QPSRead.say(p);
+      }
       dir.append(sayBtn, p);
 
       const card = document.createElement('button');
       card.type = 'button'; card.className = 'plan-card';
-      card.setAttribute('aria-label', `Start stop ${track.num}, ${track.name}. ${stars} of 3 stars.`);
+      card.setAttribute('aria-label', `Start stop ${track.num}, ${track.sayName || track.name}. ${stars} of 3 stars.`);
       card.onclick = () => Practice.openStop(track.id);
       card.innerHTML = '<span class="stop-num"></span><span class="plan-example"></span><span class="plan-name"></span><span class="stop-stars"></span><span class="plan-go">Start ▶</span>';
       card.querySelector('.stop-num').textContent = track.num;

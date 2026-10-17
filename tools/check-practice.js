@@ -66,6 +66,28 @@ for (const stop of stops) {
   }
 }
 
+// Nothing the computer voice says may come out as letter NAMES (Marcos 10/16: "a few sounds
+// come out as just naming letters"). Short or vowel-less strings get read as letters.
+const Respell = require('../respell.js');
+const OK_SHORT = new Set(['bo', 'my']);           // approved by ear 10/15 (boe, migh)
+const PARTS = new Set(['sh','ch','th','wh','ck','ng','tch','dge','kn','wr','gn','qu','ai','ay','ea','oa','oe','oo','ew','ou','oi','oy','au','aw','igh','ar','or','er','ir','ur','un','re','pre','dis','non','ful','ness','est','ate','ine','ole']);
+for (const stop of stops) {
+  const real = new Set([...(stop.real || []), ...(stop.letters || []), ...(stop.chains || []).flat(), ...stop.learn.examples.flatMap(w => w.split('>')), ...((stop.sort && stop.sort.words) || []).filter(([, k]) => k !== 'made').map(([w]) => w)].map(w => w.replace(/\|/g, '')));
+  const items = [...(stop.real || []), ...(stop.chains || []).flat(), ...stop.learn.examples.flatMap(w => w.split('>')), ...((stop.sort && stop.sort.words) || []).map(([w]) => w)];
+  for (const w of stop.made || []) { items.push(w); nearMisses(stop, w.split('|')).forEach(v => items.push(v.join('|'))); }
+  for (const it of items) {
+    const c = it.split('|'), word = c.join('');
+    if (recordings.has(word) || stop.id === '1') continue;          // his recording plays, or stop 1's letters
+    const tts = real.has(word) ? word : Respell.respell(c);
+    if ((tts.length <= 2 || !/[aeiouy]/.test(tts)) && !OK_SHORT.has(tts)) errors.push(`${stop.id}: "${word}" goes to the voice as "${tts}" — may be read as letter names`);
+  }
+  for (const line of stop.learn.lines) {
+    const spoken = line.replace(/\/[a-z]+\//g, ' ').replace(/\{[a-z]+\}/g, ' ');
+    for (const w of spoken.toLowerCase().match(/[a-z]+/g) || []) if (PARTS.has(w)) errors.push(`${stop.id} lesson: the voice reads the word part "${w}" — mark it /${w}/ (sound) or {${w}} (letter names)`);
+  }
+  if (!stop.sayName && /^[a-z]{1,3}( [a-z]{1,3})+$/.test(stop.name)) errors.push(`stop ${stop.id} "${stop.name}" needs a sayName so the voice doesn't read letters`);
+}
+
 console.log(`${stops.length} stops, ${words} words checked against ${recordings.size} recordings and ${testWords.size} test words.`);
 warnings.forEach(w => console.log('warning: ' + w));
 if (errors.length) { errors.forEach(e => console.log('ERROR: ' + e)); process.exit(1); }

@@ -79,7 +79,12 @@
   }
   function sayChunk(chunk) {
     return guarded(async () => {
-      if (stop && stop.split && stop.split[chunk]) { const rec = await loadBuffer(chunk.toLowerCase()); return rec ? playBuffer(rec) : speakComputer(chunk); }   // a real base word like lock
+      if (stop && stop.split && stop.split[chunk]) {            // a base word like lock (or the ac in action)
+        const rec = await loadBuffer(chunk.toLowerCase());
+        if (rec) return playBuffer(rec);
+        // two letters like "ac" are read as letter names; hand the voice a spelling it sounds out ("akk")
+        return speakComputer(chunk.length <= 2 && window.Respell ? Respell.respell(split(stop.split[chunk])) : chunk);
+      }
       const buf = await buildBlend([fileFor(chunk)]);
       return buf ? playBuffer(buf) : speakComputer(chunk);
     });
@@ -721,7 +726,7 @@
     return { start, newLen: part.length, newPart: part.join('|') };
   }
 
-  window.Practice = { renderStops, openStop, backToStops, nextStep, nearMisses, buildSteps, diff, _sayWord: sayWord, _state: () => ({ stop, steps, stepIndex }) };
+  window.Practice = { renderStops, openStop, backToStops, nextStep, nearMisses, buildSteps, diff, _sayWord: sayWord, _sayChunk: sayChunk, _state: () => ({ stop, steps, stepIndex }) };
   document.addEventListener('DOMContentLoaded', renderStops);
   if (document.readyState !== 'loading') renderStops();
 })();

@@ -38,7 +38,7 @@ const PRACTICE_STOPS = [
     sentences: ['The pig sat in the mud.','Ten red bugs ran up the log.','Did Dan get a hot dog?','Pam has a big tan cat.','Sam can hop and jog.','The fox hid in a box.']
   },
   {
-    id: '3', num: '3', name: 'sh ch th', example: 'ship',
+    id: '3', num: '3', name: 'sh ch th', sayName: 'letter pairs', example: 'ship',
     learn: {
       lines: ['Some letters work in pairs. Two letters make ONE sound.', '{s} and {h} say /sh/. {c} and {h} say /ch/. {t} and {h} say /th/.', '{w} and {h} say /wh/. {c} and {k} say /ck/. {n} and {g} say /ng/.'],
       examples: ['sh|i|p', 'ch|o|p', 'th|i|n', 'wh|e|n', 'd|u|ck', 's|i|ng']
@@ -122,7 +122,7 @@ const PRACTICE_STOPS = [
       words: [['r|ai|n','real'],['z|ai|t','made'],['s|ea|t','real'],['d|ea|p','made'],['b|oa|t','real'],['l|oa|b','made'],['m|oo|n','real'],['z|oo|t','made'],['c|oi|n','real'],['d|oi|l','made'],['n|ew','real'],['t|r|ew','made']]
     },
     made: ['z|ai|t','v|ay','d|ea|p','l|oa|b','z|oo|t','m|ou|t','d|oi|l','z|oy','f|au|l','z|aw','b|oe','t|r|ew','m|igh','sh|oa|m','g|ea|t','n|ol|t'],
-    contrast: { ai: ['a','oa'], ay: ['a','oy'], ea: ['e','oa'], oa: ['o','ea'], oo: ['o','ou'], ou: ['o','oo'], oi: ['o','ai'], oy: ['o','ay'], au: ['a','ou'], aw: ['a','ew'], oe: ['o','ew'], ew: ['e','aw'], igh: ['i','ay'], ol: ['o','oo'] },
+    contrast: { ai: ['a','oa'], ay: ['oy','aw'], ea: ['e','oa'], oa: ['o','ea'], oo: ['o','ou'], ou: ['o','oo'], oi: ['o','ai'], oy: ['ay','aw'], au: ['a','ou'], aw: ['ay','ew'], oe: ['ew','oy'], ew: ['e','aw'], igh: ['ay','aw'], ol: ['o','oo'] },
     sentences: ['The boat sails in the rain.','Roy has a toy coin.','Dad saw the moon at night.','Pay for the soap and the food.','Paul saw a hawk in the light.','We can eat at noon.']
   },
   {
@@ -155,7 +155,7 @@ const PRACTICE_STOPS = [
   {
     id: '10', num: '10', name: 'Word parts', example: 'un·lock',
     learn: {
-      lines: ['A prefix is a part at the START of a word. un means not. re means again. pre means before. dis and non mean not.', 'A suffix is a part at the END. ful means full of. less means without. ness means being. est means the most. able means can be.', 'Find the parts. Read each part. Then read the whole word: /un/ + lock = unlock.'],
+      lines: ['A prefix is a part at the START of a word. /un/ means not. /re/ means again. /pre/ means before. /dis/ and /non/ mean not.', 'A suffix is a part at the END. /ful/ means full of. /less/ means without. /ness/ means being. /est/ means the most. /able/ means can be.', 'Find the parts. Read each part. Then read the whole word: /un/ + lock = unlock.'],
       examples: ['un|lock', 're|tell', 'help|ful', 'end|less']
     },
     big: true, parts: true,
