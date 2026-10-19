@@ -277,7 +277,9 @@
       // Part 1: what the word means
       q.append(block('p', 'c-ask', `What does *${word}* mean in this passage?`, { mark: true, label: 'Hear the question' }));
       const opts = el('div', 'c-choices');
-      let tries = 0, firstRight = null;
+      // Practice lists every passage not right on the first try (Marcos 10/18: "list those too"),
+      // with both picks: "(picked: hungry, then right)" or "(picked: hungry, then lazy)".
+      let tries = 0, firstRight = null, firstPick = '';
       shuffle(item.choices).forEach(text => {
         opts.append(choice(text, (b) => {
           if (b.disabled) return;
@@ -293,17 +295,19 @@
           if (right) {
             b.classList.add('right'); lock(opts);
             fb.textContent = tries === 1 ? '✅ Yes!' : '✅ Yes, you got it.';
+            if (tries > 1) missed.push(`[${item.id}] ${word} (picked: ${firstPick}, then right)`);
             return partTwo();
           }
           b.classList.add('wrong'); b.disabled = true;
           if (tries === 1) {
+            firstPick = text;
             fb.textContent = 'Not quite. Read the words around it again. Try one more time.';
             markClue(passage, item.clues[0]);
           } else {
             lock(opts);
             [...opts.children].forEach(c => { if (c.querySelector('.c-words').dataset.say === item.choices[0]) c.classList.add('right'); });
             fb.textContent = `It means "${item.choices[0]}."`;
-            missed.push(`[${item.id}] ${word} (picked: ${text})`);
+            missed.push(`[${item.id}] ${word} (picked: ${firstPick}, then ${text})`);
             partTwo();
           }
         }));

@@ -110,7 +110,7 @@
     const err = $('qpsLoginError');
     err.textContent = '';
     if (!val) { err.textContent = 'Pick your name first.'; return; }
-    if (!pin) { err.textContent = 'Type your student number.'; return; }
+    if (!pin) { err.textContent = val.startsWith('GUEST:') ? 'Type your guest code.' : 'Type your student number.'; return; }
     let name = '';
     if (val.startsWith('GUEST:')) {
       if (pin !== val.slice(6)) { err.textContent = 'That guest code is not right. Try again.'; return; }

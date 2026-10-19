@@ -29,7 +29,10 @@ window.QPSRead = (function () {
     return host;
   }
 
-  function wordsOf(host) { return [...host.querySelectorAll('.rw, .c-w')]; }
+  // Only real words are lit: a comma or "·" on its own (after a marked word, or between a stop's
+  // number and name) is not said, so lighting it put the highlight one word behind the voice.
+  const isWord = (s) => /[A-Za-z0-9]/.test(s);
+  function wordsOf(host) { return [...host.querySelectorAll('.rw, .c-w')].filter(w => isWord(w.textContent)); }
   function light(words, i) { words.forEach((w, k) => w.classList.toggle('lit', k === i)); }
   function clear() {
     if (timer) { clearInterval(timer); timer = null; }
@@ -48,7 +51,7 @@ window.QPSRead = (function () {
   // Read a block aloud, lighting its words. Resolves when the voice finishes.
   function say(host) {
     stop();
-    gen++;
+    const mine = ++gen;
     return new Promise(resolve => {
       const words = wordsOf(host);
       const text = host.dataset.say || words.map(w => w.textContent).join(' ') || host.textContent;
@@ -57,14 +60,16 @@ window.QPSRead = (function () {
       u.rate = RATE;
       current = host;
       let reported = false;
-      const finish = () => { if (endCurrent === finish) endCurrent = null; clear(); resolve(); };
+      // A reading that was cut off still reports its end later (Chrome: an "interrupted" error);
+      // by then another block is being read, so only the reading still going may clear the light.
+      const finish = () => { if (endCurrent === finish) endCurrent = null; if (mine === gen) clear(); resolve(); };
       endCurrent = finish;
       // charIndex → the word it falls in (count the words before it)
       u.onboundary = (e) => {
         if (e.name && e.name !== 'word') return;
         reported = true;
         if (timer) { clearInterval(timer); timer = null; }
-        light(words, text.slice(0, e.charIndex).split(/\s+/).filter(Boolean).length);
+        light(words, text.slice(0, e.charIndex).split(/\s+/).filter(isWord).length);
       };
       u.onstart = () => {
         if (!words.length) return;
