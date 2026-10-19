@@ -381,6 +381,9 @@
         .login-box select:focus-visible, .login-box input:focus-visible { outline: 3px solid var(--learning); outline-offset: 2px; }
         .login-box .p-btn { align-self: stretch; margin-top: 6px; }
         .login-error { min-height: 1.4em; margin: 0; color: #b42318; font-weight: 600; font-size: 1.15rem; }
+        /* Teacher Access (10/19, the same look as Mr. O's other sites): picks Mr. O and asks the Teacher PIN */
+        .teacher-access-btn { font-size: 15px; font-weight: 700; font-family: inherit; color: #444; background: #f2f2f2; border: 2px solid #999; border-radius: 10px; padding: 6px 14px; cursor: pointer; align-self: flex-end; margin-top: 4px; }
+        .teacher-access-btn:focus-visible { outline: 3px solid var(--learning); outline-offset: 2px; }
         .plan-box { margin: 4px 0 22px; text-align: left; }
         .plan-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
         .plan-hi { margin: 0; font-size: 1.9rem; font-weight: 700; color: var(--ink); }
@@ -646,6 +649,7 @@
         </div>
         <p id="qpsLoginError" class="login-error" role="alert"></p>
         <button type="button" id="qpsSignIn" class="p-btn p-next">Sign in ➡️</button>
+        <button type="button" id="qpsTeacher" class="teacher-access-btn">🔑 Teacher Access</button>
     </div>
 </main>
 
@@ -1707,6 +1711,6 @@
 <script src="practice.js?v=p7"></script>
 <script src="comp-data.js?v=c2"></script>
 <script src="comp.js?v=c4"></script>
-<script src="login.js?v=10"></script>
+<script src="login.js?v=11"></script>
 </body>
 </html>

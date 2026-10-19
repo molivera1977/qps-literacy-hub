@@ -100,8 +100,15 @@
     $('qpsLoginError').textContent = '';
     $('qpsPinBox').hidden = !val;
     $('qpsGuestBox').hidden = !guest;
-    $('qpsPinLabel').textContent = guest ? 'Guest code' : 'Your student number';
+    $('qpsPinLabel').textContent = guest ? 'Guest code' : val === TEACHER ? 'Teacher PIN' : 'Your student number';
     if (val) setTimeout(() => $('qpsPin').focus(), 60);
+  }
+
+  // Teacher Access (Marcos 10/19: "every site should have teacher access"): picks Mr. O and asks
+  // the Teacher PIN — the same sign-in as choosing his name, so he sees every stop and the Assessment.
+  function teacherAccess() {
+    $('qpsName').value = TEACHER;
+    onNamePick();
   }
 
   function trySignIn() {
@@ -366,6 +373,7 @@
   $('qpsName').addEventListener('change', onNamePick);
   ['qpsPin', 'qpsGuestName'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter') trySignIn(); }));
   $('qpsSignIn').addEventListener('click', trySignIn);
+  $('qpsTeacher').addEventListener('click', teacherAccess);
 
   window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, _tracks: TRACKS };
 
