@@ -50,7 +50,8 @@ const PRACTICE_STOPS = [
       words: [['sh|i|p','sh'],['w|i|sh','sh'],['f|i|sh','sh'],['d|i|sh','sh'],['ch|o|p','ch'],['ch|i|n','ch'],['r|i|ch','ch'],['m|u|ch','ch'],['th|i|n','th'],['m|a|th','th'],['b|a|th','th'],['m|o|th','th']]
     },
     made: ['sh|u|b','ch|o|g','th|u|p','wh|i|d','f|u|sh','z|e|th','n|i|ch','v|a|ck','j|i|ng','sh|o|m','ch|e|p','th|a|b','wh|e|g','r|a|th','z|e|ck','d|u|sh'],
-    contrast: { sh: ['s','ch'], ch: ['sh','t'], th: ['t','sh'], wh: ['th','h'], ck: ['ch','sh'], ng: ['n','m'] },
+    // a filler choice must not sound like the right one for the wrong reason (m next to n: jing/jim, 10/19)
+    contrast: { sh: ['s','ch'], ch: ['sh','t'], th: ['t','sh'], wh: ['th','h'], ck: ['ch','sh'], ng: ['n','b'] },
     sentences: ['The ship is in the dock.','Chad and Beth sing a song.','When can I get a fish?','That duck is on the path.','Seth has a chip in his lunch.','Which shell is thick?']
   },
   {
@@ -79,7 +80,7 @@ const PRACTICE_STOPS = [
     },
     chains: [['m|a|t','m|ate'],['h|a|t','h|ate'],['r|a|t','r|ate'],['m|a|d','m|ade'],['c|a|n','c|ane'],['p|l|a|n','p|l|ane'],['f|i|n','f|ine'],['p|i|n','p|ine'],['s|p|i|n','s|p|ine'],['sh|i|n','sh|ine'],['t|w|i|n','t|w|ine'],['n|o|t','n|ote']],
     made: ['j|ate','t|ade','h|ane','j|ine','z|ile','b|ice','f|ole','l|oze','z|ote','b|une','p|l|ote','g|r|ine','c|l|ade','ch|ice','sh|ile','th|une'],
-    contrast: { ate: ['a|t','ote'], ade: ['a|d','ate'], ane: ['a|n','ine'], ine: ['i|n','ane'], ile: ['i|l','ole'], ice: ['i|c','ine'], ole: ['o|l','ile'], oze: ['o|z','ole'], ote: ['o|t','ate'], une: ['u|n','ine'] },
+    contrast: { ate: ['a|t','ote'], ade: ['a|d','ine'], ane: ['a|n','ine'], ine: ['i|n','ane'], ile: ['i|l','ole'], ice: ['i|c','ine'], ole: ['o|l','ile'], oze: ['o|z','ole'], ote: ['o|t','ate'], une: ['u|n','ine'] },
     sentences: ['The cat ate a bite of cake.','Five mice hid in a hole.','Dave made a kite with a pole.','Nine kids rode their bikes home.','Kate will use tape on the note.','The dog ran to the gate at the end of the lane.','Can Rose hide the cube in the box?','Mike has a plane and a white kite.']
   },
   {
@@ -106,7 +107,8 @@ const PRACTICE_STOPS = [
     },
     real: ['c|a|tch','m|a|tch','d|i|tch','b|a|dge','f|u|dge','b|r|i|dge','kn|o|t','kn|i|t','wr|a|p','wr|i|s|t','qu|i|t','qu|a|ck','f|o|x','s|i|x','qu|i|z','gn|a|t'],
     made: ['z|a|tch','r|i|tch','f|o|dge','l|i|dge','kn|o|p','kn|u|g','kn|e|b','wr|a|b','wr|e|m','wr|i|b','gn|e|t','gn|o|p','qu|i|b','qu|o|t','j|e|x','v|i|x'],
-    contrast: { tch: ['t','sh'], dge: ['g','ch'], kn: ['k','m'], wr: ['w','l'], gn: ['g','m'], qu: ['k','w'], x: ['s','z'] },
+    // fillers that sounded like the right one or each other (kneb/meb, gnet/met, jes/jez — Marcos 10/19) → p and t
+    contrast: { tch: ['t','sh'], dge: ['g','ch'], kn: ['k','p'], wr: ['w','l'], gn: ['g','p'], qu: ['k','w'], x: ['s','t'] },
     sentences: ['The quick fox ran to the ditch.','Kate will wrap a gift for Madge.','I can knit a hat.','Six ducks sat on the bridge.','Do not let the cat catch the fish.','The fudge is on the top shelf.']
   },
   {

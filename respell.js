@@ -13,18 +13,24 @@
     // magic-e endings
     ate: 'ayt', ade: 'ayd', ane: 'ayn', ape: 'ayp',
     ine: 'yne', ile: 'yle', ice: 'yse',
-    ole: 'ohl', oze: 'ohz', ote: 'oht', une: 'oon',
+    // "oh" + a consonant came out SHORT on the Mac voice (zoht = zot, lohz = loz, ploht = plot — the same
+    // audio, 10/19); "oat"/"oaz" come out exactly like note/vote/doze. ole stays: hohl = hole.
+    ole: 'ohl', oze: 'oaz', ote: 'oat', une: 'oon',
     // vowel teams
     ai: 'ay', ay: 'ay', ea: 'ee', oa: 'oa', oo: 'oo', ou: 'ow',
     oi: 'oy', oy: 'oy', au: 'aw', aw: 'aw', oe: 'o', ew: 'oo', ol: 'ohl', al: 'awl',
     // bossy R: er, ir and ur all say er
     ir: 'er', ur: 'er',
     // tricky letters
-    tch: 'ch', dge: 'j', kn: 'n', wr: 'r', gn: 'n', qu: 'kw', x: 'ks', ck: 'k', ph: 'f', wh: 'w', c: 'k'
+    // tch and dge stay as written: "zach" was read like the name Zach and "lij" letter by letter (10/19)
+    kn: 'n', wr: 'r', gn: 'n', qu: 'kw', x: 'ks', ck: 'k', ph: 'f', wh: 'w', c: 'k'
   };
   // Whole words that need a hand-made spelling (made-up word: voice spelling).
   const WORDS = {
-    hes: 'hess'
+    hes: 'hess',
+    // measured 10/19 on the Mac voice: these were read letter by letter (mib, tep, igg) or sounded
+    // exactly like another choice (zat = zot)
+    mib: 'mihb', tep: 'tehp', ig: 'ihgg', zat: 'zatt'
   };
 
   function respell(chunks) {
@@ -38,6 +44,7 @@
       if (k === 'oa' && i === parts.length - 2 && /^[bcdfgklmnprstvz]$/.test(next)) { out += 'o' + next + 'e'; break; }
       if (k === 'igh') { out += i === parts.length - 1 ? 'y' : 'igh'; continue; }   // migh → my
       if (k === 'g' && next && /^[eiy]/.test(next)) { out += 'gh'; continue; }        // gerd stays a hard g: gherd
+      if (k === 'ch' && i > 0 && i === parts.length - 1) { out += 'tch'; continue; }   // zech was read "zek": zetch
       out += CHUNKS[k] !== undefined ? CHUNKS[k] : k;
     }
     // A two-letter word like "ab" or "ot" can be read as letter names: double the end ("abb").
