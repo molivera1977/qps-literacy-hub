@@ -578,7 +578,8 @@
         .p-locked { opacity: 0.45; filter: grayscale(0.4); }
         .p-direction.p-must-hear .p-say { box-shadow: 0 0 0 4px #FFD44D; animation: hearPulse 1.2s ease-in-out infinite; }
         @keyframes hearPulse { 50% { transform: scale(1.12); } }
-        @media (prefers-reduced-motion: reduce) { .p-direction.p-must-hear .p-say { animation: none; } }
+        .p-hear.p-pulse { box-shadow: 0 0 0 4px #FFD44D; animation: hearPulse 1.2s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .p-direction.p-must-hear .p-say, .p-hear.p-pulse { animation: none; } }
         .p-hear-note { font-size: 21px; font-weight: 600; color: #8a4b00; margin: 6px 0 10px; }
         .p-read-it { margin-left: 8px; }
         .p-examples { display: flex; flex-wrap: wrap; gap: 12px; }
@@ -1744,7 +1745,7 @@
 </script>
 <script src="readaloud.js?v=r4"></script>
 <script src="practice-data.js?v=p3"></script>
-<script src="practice.js?v=p8"></script>
+<script src="practice.js?v=p9"></script>
 <script src="comp-data.js?v=c2"></script>
 <script src="comp.js?v=c4"></script>
 <script src="login.js?v=11"></script>

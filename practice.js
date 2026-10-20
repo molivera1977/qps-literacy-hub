@@ -377,10 +377,12 @@
       const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => {
         if (!(await readLesson(lines))) return;
         lockables().forEach(e => { e.inert = false; e.classList.remove('p-locked'); });
+        sayBtn.classList.remove('p-pulse');
         if (note.isConnected) note.remove();
         done();
       });
       const note = el('p', 'p-hear-note', '👆 Tap Hear the lesson first.');
+      sayBtn.classList.add('p-pulse');                    // pulses until the lesson is heard (Marcos 10/19)
       card.append(el('h2', 'p-learn-title', `Learn: ${stop.name}`));
       lines.forEach(l => card.append(l.el));
       card.append(sayBtn, note);
