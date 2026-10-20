@@ -574,6 +574,13 @@
         }
         .p-sound::before { content: "🔊 "; font-size: 0.75em; }
         .p-sound.lit { background: var(--learning); color: #fff; }
+        /* Directions first (10/19): the step's work is dimmed and can't be tapped until the 🔊 directions are heard */
+        .p-locked { opacity: 0.45; filter: grayscale(0.4); }
+        .p-direction.p-must-hear .p-say { box-shadow: 0 0 0 4px #FFD44D; animation: hearPulse 1.2s ease-in-out infinite; }
+        @keyframes hearPulse { 50% { transform: scale(1.12); } }
+        @media (prefers-reduced-motion: reduce) { .p-direction.p-must-hear .p-say { animation: none; } }
+        .p-hear-note { font-size: 21px; font-weight: 600; color: #8a4b00; margin: 6px 0 10px; }
+        .p-read-it { margin-left: 8px; }
         .p-examples { display: flex; flex-wrap: wrap; gap: 12px; }
         .p-example { background: #fff; border: 2px solid var(--line); border-radius: 16px; padding: 8px; cursor: pointer; }
         .p-example { display: inline-flex; align-items: center; gap: 8px; }
@@ -892,7 +899,7 @@
 
 <!-- Guest view (share.js, the same file on every site): runs first, before anything reads or saves progress. -->
 <script src="share.js?v=3"></script>
-<script src="blend-core.js?v=b1"></script>
+<script src="blend-core.js?v=b2"></script>
 <script src="respell.js?v=s1"></script>
 <script>
     // ============================================================
@@ -1207,10 +1214,17 @@
         });
     }
 
+    // Chrome sometimes never reports that a reading ended (cut off, too long, or an utterance it
+    // let go of). Waiting on that froze every sound after it (Marcos 10/19: "clicking too much
+    // anywhere and the sounds stop working"). So: hold on to the utterance, and never wait forever.
     function speakComputer(text) {
         return new Promise((resolve) => {
             const msg = new SpeechSynthesisUtterance(text);
-            msg.rate = 1.0; msg.onend = resolve; msg.onerror = resolve;
+            speakComputer.last = msg;
+            let done = false;
+            const end = () => { if (done) return; done = true; clearTimeout(limit); resolve(); };
+            const limit = setTimeout(end, 2500 + String(text).length * 150);
+            msg.rate = 1.0; msg.onend = end; msg.onerror = end;
             window.speechSynthesis.speak(msg);
         });
     }
@@ -1288,13 +1302,35 @@
         return loadBuffer(wordObj.w.toLowerCase().trim());
     }
 
+    // Every recording plays at the same loudness, about the computer voice's (blend-core.js levelGain;
+    // the files themselves are not changed). gain → limiter → speakers; the limiter's curve covers
+    // ±MAX_OVER, so the gain is divided by MAX_OVER on the way in.
+    const levelOf = new WeakMap();
+    let limiter = null;
+    // Every sound still playing, so a new tap can cut it off and play at once (practice.js guarded)
+    const nowPlaying = new Set();
+    function stopSounds() { nowPlaying.forEach(src => { try { src.stop(); } catch (e) {} }); nowPlaying.clear(); }
     function playBuffer(buf) {
         return new Promise((resolve) => {
             const ctx = getAudioCtx();
             const src = ctx.createBufferSource();
             src.buffer = buf;
-            src.connect(ctx.destination);
-            src.onended = resolve;
+            let out = ctx.destination;
+            if (window.BlendCore && ctx.createGain && ctx.createWaveShaper) {
+                if (!limiter) {
+                    limiter = ctx.createWaveShaper();
+                    limiter.curve = BlendCore.limitCurve();
+                    limiter.connect(ctx.destination);
+                }
+                if (!levelOf.has(buf)) levelOf.set(buf, BlendCore.levelGain(monoData(buf), buf.sampleRate));
+                const gain = ctx.createGain();
+                gain.gain.value = levelOf.get(buf) / BlendCore.MAX_OVER;
+                gain.connect(limiter);
+                out = gain;
+            }
+            src.connect(out);
+            src.onended = () => { nowPlaying.delete(src); try { src.disconnect(); if (out !== ctx.destination) out.disconnect(); } catch (e) {} resolve(); };
+            nowPlaying.add(src);
             src.start();
         });
     }
@@ -1706,9 +1742,9 @@
         }
     }
 </script>
-<script src="readaloud.js?v=r3"></script>
+<script src="readaloud.js?v=r4"></script>
 <script src="practice-data.js?v=p3"></script>
-<script src="practice.js?v=p7"></script>
+<script src="practice.js?v=p8"></script>
 <script src="comp-data.js?v=c2"></script>
 <script src="comp.js?v=c4"></script>
 <script src="login.js?v=11"></script>

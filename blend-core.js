@@ -125,7 +125,41 @@
     return out;
   }
 
-  const api = { span, squeeze, blend, MAX_SOUND, OVERLAP };
+  /* LOUDNESS (Marcos 10/19: "all of the recorded sounds are too low and hard to hear").
+     Measured 10/19 on all 195 recordings: loudness -37 to -14 dBFS (median -24), well under the
+     computer voice, and 22 dB apart from each other. Each recording is brought to TARGET_DB as it
+     plays (the files are not changed). Loudness = RMS of the loudest fifth of its 10 ms windows,
+     so the silence around a sound doesn't count. A short click (t, p) may then peak past full
+     scale, so the page runs the sound through limitCurve(): untouched up to KNEE, rounded off above. */
+  const TARGET_DB = -14;     // about the level of a computer voice
+  const MAX_BOOST_DB = 26;   // never more than this (a near-silent file stays quiet, not hiss)
+  const MAX_OVER = 2;        // the boosted peak may reach 2× full scale; the limiter rounds it off
+  const KNEE = 0.7;
+  function levelGain(data, rate) {
+    const win = Math.max(1, Math.round(rate * 0.01));
+    const rms = [];
+    let peak = 0;
+    for (let i = 0; i < data.length; i += win) {
+      let sum = 0;
+      const stop = Math.min(data.length, i + win);
+      for (let j = i; j < stop; j++) { const v = Math.abs(data[j]); sum += v * v; if (v > peak) peak = v; }
+      rms.push(Math.sqrt(sum / (stop - i)));
+    }
+    if (!peak) return 1;
+    rms.sort((a, b) => b - a);
+    const top = rms.slice(0, Math.max(1, Math.ceil(rms.length * 0.2)));
+    const loud = Math.sqrt(top.reduce((s, x) => s + x * x, 0) / top.length);
+    return Math.min(Math.pow(10, TARGET_DB / 20) / loud, Math.pow(10, MAX_BOOST_DB / 20), MAX_OVER / peak);
+  }
+  // The limiter as a curve for a WaveShaper: input -1..1 stands for -MAX_OVER..MAX_OVER.
+  function limit(x) { const a = Math.abs(x); return a <= KNEE ? x : Math.sign(x) * (KNEE + (1 - KNEE) * Math.tanh((a - KNEE) / (1 - KNEE))); }
+  function limitCurve(n = 2049) {
+    const c = new Float32Array(n);
+    for (let i = 0; i < n; i++) c[i] = limit((i / (n - 1) * 2 - 1) * MAX_OVER);
+    return c;
+  }
+
+  const api = { span, squeeze, blend, levelGain, limit, limitCurve, MAX_SOUND, OVERLAP, TARGET_DB, MAX_OVER };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.BlendCore = api;
 })(typeof window !== 'undefined' ? window : this);

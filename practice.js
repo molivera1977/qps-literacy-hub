@@ -19,7 +19,10 @@
     letterHear: 'Listen', check: 'Check'
   };
 
-  let stop = null, steps = [], stepIndex = 0, busy = false, checkStarted = null;
+  let stop = null, steps = [], stepIndex = 0, busy = false, playRun = 0, checkStarted = null;
+  let lessonRun = 0, exampleRun = 0, fromSequence = false;
+  // A lesson or an example plays its own sounds one after another; those calls are not a student's tap.
+  const inSequence = (fn) => { fromSequence = true; try { return fn(); } finally { fromSequence = false; } };
   const QA = /[?&]qa\b/.test(location.search);        // test runs only: each round names its answer
   const mark = (box, answer) => { if (QA) box.dataset.answer = answer; };
   const $ = (id) => document.getElementById(id);
@@ -51,9 +54,14 @@
     return chunks.flatMap(c => stop.split[c] ? split(stop.split[c]) : [c]);
   }
   async function guarded(fn) {
-    if (busy) return;
+    // A tap plays at once (Marcos 10/19: "hitting letters too soon makes the second letter not be
+    // heard. I should hear the sound as soon as I hit the letter"): whatever is still playing stops.
+    if (window.stopSounds) stopSounds();
+    if (window.QPSRead) QPSRead.stop(); else if (window.speechSynthesis) speechSynthesis.cancel();
+    if (!fromSequence) { lessonRun++; exampleRun++; }   // a student's tap also ends a lesson or example being read
+    const mine = ++playRun;
     busy = true;
-    try { getAudioCtx(); await fn(); } finally { busy = false; }
+    try { getAudioCtx(); await fn(); } finally { if (mine === playRun) busy = false; }
   }
   // Real words on this stop's lists; anything else (made-up words, near misses) is respelled.
   let realWords = new Set();
@@ -245,22 +253,29 @@
     segs.forEach(sg => { if (sg.kind === 'text') sg.el.dataset.say = sg.say.join(' ').replace(/^[\s.,;:!?)]+/, ''); });
     return { el: p, segs };
   }
-  let lessonRun = 0;
+  // Pauses in a lesson (Marcos 10/19: "this sounds confusing since it is said too fast"): a beat
+  // before and after each of Mr. O's sounds, so "the a says … /a/ … Add e" doesn't run together,
+  // and a longer one between lines.
+  const PAUSE = { word: 150, sound: 450, line: 900 };
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  // true = read to the end; false = another reading of the lesson took over
   async function readLesson(lines) {
     const mine = ++lessonRun;
     for (const line of lines) {
-      for (const sg of line.segs) {
-        if (mine !== lessonRun) return;
+      for (const [k, sg] of line.segs.entries()) {
+        if (mine !== lessonRun) return false;
         if (sg.kind === 'sound') {
           sg.el.classList.add('lit');
-          await sayChunk(sg.chunk);
+          await inSequence(() => sayChunk(sg.chunk));
           sg.el.classList.remove('lit');
         } else if (/[a-z0-9]/i.test(sg.el.dataset.say)) {
           if (window.QPSRead) await QPSRead.say(sg.el); else await speakComputer(sg.el.dataset.say);
         }
-        await new Promise(r => setTimeout(r, 120));
+        const next = line.segs[k + 1];
+        await wait(!next ? PAUSE.line : sg.kind === 'sound' || next.kind === 'sound' ? PAUSE.sound : PAUSE.word);
       }
     }
+    return mine === lessonRun;
   }
 
   /* ---------- shared pieces ---------- */
@@ -268,8 +283,50 @@
     const row = el('div', 'p-direction');
     const p = window.QPSRead ? QPSRead.wrap(el('p', ''), text) : el('p', '', text);
     // A speaker always answers: it stops whatever is being read and reads this line.
-    row.append(button('p-say', '🔊', () => (window.QPSRead ? QPSRead.say(p) : sayText(text)), 'Hear the directions'), p);
+    const btn = button('p-say', '🔊', () => (window.QPSRead ? QPSRead.say(p) : sayText(text)), 'Hear the directions');
+    row.append(btn, p);
     area.append(row);
+    return { row, btn, p, text };
+  }
+
+  /* Directions first (Marcos 10/19: "the directions should be forced to be hit before they can hit
+     anything. Kids are clicking without knowing what to do."). A step's work stays locked until its
+     directions are heard to the end; stopped early does not count. A device with no voice gets a
+     reading wait, then "I read it". Once open, the 🔊 reads them again any time. */
+  const READ_MS_PER_WORD = 450, READ_MIN_MS = 3000;
+  function lockUntilHeard(dir, work) {
+    let open = false, reading = false;
+    work.inert = true;
+    work.classList.add('p-locked');
+    dir.row.classList.add('p-must-hear');
+    const note = el('p', 'p-hear-note', '👆 Tap 🔊 to hear the directions first.');
+    dir.row.after(note);
+    const unlock = () => {
+      open = true;
+      work.inert = false;
+      work.classList.remove('p-locked');
+      dir.row.classList.remove('p-must-hear');
+      note.remove();
+    };
+    dir.btn.onclick = async () => {
+      if (reading) return;                                // a second tap must not cut the reading off
+      reading = true;
+      const how = window.QPSRead ? await QPSRead.say(dir.p) : (await sayText(dir.text), 'end');
+      reading = false;
+      if (open) return;
+      if (how === 'end') return unlock();
+      if (how === 'novoice') return readItYourself();
+      note.textContent = '👆 It stopped early. Tap 🔊 to hear the directions to the end.';
+    };
+    // No voice on this device: wait long enough to read the line, then the student says they read it.
+    function readItYourself() {
+      note.textContent = '📖 Read the directions. Then tap I read it.';
+      const ok = button('p-btn p-read-it', '⏳ Read it first', unlock);
+      ok.disabled = true;
+      note.append(' ', ok);
+      const words = dir.text.split(/\s+/).filter(Boolean).length;
+      setTimeout(() => { ok.disabled = false; ok.textContent = '✅ I read it'; }, Math.max(READ_MIN_MS, words * READ_MS_PER_WORD));
+    }
   }
   function progress(area, n, total) {
     const dots = el('div', 'p-dots');
@@ -291,8 +348,9 @@
   function rounds(area, items, round, done, introText) {
     let i = 0;
     const box = el('div', 'p-round');
-    direction(area, introText);
+    const dir = direction(area, introText);
     area.append(box);
+    lockUntilHeard(dir, box);
     const step = () => {
       box.innerHTML = '';
       progress(box, i, items.length);
@@ -314,25 +372,45 @@
     learn(area, done) {
       const card = el('div', 'p-learn');
       const lines = stop.learn.lines.map(lessonLine);
-      const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => { await readLesson(lines); done(); });
+      // The lesson is this step's directions: its sound tiles and examples open once it is heard.
+      const lockables = () => [ex, ...card.querySelectorAll('.p-sound')];
+      const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => {
+        if (!(await readLesson(lines))) return;
+        lockables().forEach(e => { e.inert = false; e.classList.remove('p-locked'); });
+        if (note.isConnected) note.remove();
+        done();
+      });
+      const note = el('p', 'p-hear-note', '👆 Tap Hear the lesson first.');
       card.append(el('h2', 'p-learn-title', `Learn: ${stop.name}`));
       lines.forEach(l => card.append(l.el));
-      card.append(sayBtn);
+      card.append(sayBtn, note);
       card.append(el('p', 'p-small', 'Tap a word to hear it.'));
       const ex = el('div', 'p-examples');
       // "a>b" shows a before-and-after pair, like mat → mate.
       stop.learn.examples.forEach(w => {
         const words = w.split('>').map(split);
+        // m · a · t … mat → m · ate … mate, with a beat between sounds, before the word, and between words
         const b = button('p-example', '', async () => {
-          for (const chunks of words) {
-            for (const c of chunks.length > 1 ? chunks : []) { await sayChunk(c); }
-            await sayWord(chunks);
+          if (window.stopSounds) stopSounds();
+          if (window.QPSRead) QPSRead.stop();
+          lessonRun++;
+          const mine = ++exampleRun;                       // another tap ends this example
+          const still = () => mine === exampleRun;
+          for (const [k, chunks] of words.entries()) {
+            if (k) await wait(900);
+            if (chunks.length > 1) {
+              for (const c of chunks) { if (!still()) return; await inSequence(() => sayChunk(c)); await wait(350); }
+              await wait(150);
+            }
+            if (!still()) return;
+            await inSequence(() => sayWord(chunks));
           }
         }, `Hear ${words.map(join).join(' and ')}`);
         words.forEach((chunks, k) => { if (k) b.append(el('span', 'p-arrow', '→')); b.append(tiles(chunks)); });
         ex.append(b);
       });
       card.append(ex);
+      lockables().forEach(e => { e.inert = true; e.classList.add('p-locked'); });
       area.append(card);
     },
 
@@ -349,12 +427,14 @@
         blendBtn.disabled = true;
         chunks.forEach((c, i) => {
           const t = button('p-tile tap' + (i === 0 ? ' glow' : ''), c, async () => {
-            if (i !== next || busy) return;
-            await sayChunk(c);
+            if (i > next) return;                           // not yet: the sounds go in order
+            if (i < next) return sayChunk(c);              // a sound already heard: hear it again (Marcos 10/19)
+            // the tap moves on at once, so a quick next tap is taken (and cuts this sound off)
             t.classList.remove('glow'); t.classList.add('heard');
             next++;
             if (next < chunks.length) row.children[next].classList.add('glow');
-            else blendBtn.disabled = false;
+            await sayChunk(c);
+            if (next >= chunks.length) blendBtn.disabled = false;
           }, `Sound ${i + 1}: ${c}`);
           row.append(t);
         });
@@ -457,7 +537,8 @@
         });
         line.dataset.say = sentence;
         box.append(line, button('p-btn p-hear', '🔊 Hear the sentence', async () => {
-          if (window.QPSRead) await QPSRead.say(line); else await sayText(sentence);
+          // cut off by a tap on a word = not heard yet; tap Hear the sentence again
+          if (window.QPSRead) { if ((await QPSRead.say(line)) === 'stopped') return; } else await sayText(sentence);
           finish();
         }));
       }, done, 'Read the sentence out loud. Tap a word if you need help. Then tap Hear the sentence to check yourself.');
@@ -501,9 +582,10 @@
       else items = shuffle([...pick(stop.made, 6).map(w => ({ kind: 'decode', chunks: split(w) })), ...pick(stop.made, 4).map(w => ({ kind: 'spell', chunks: split(w) }))]);
       const results = [];
       checkStarted = new Date();
-      direction(area, 'Practice Check. Do your best. This time the site does not tell you the answer until the end.');
+      const dir = direction(area, 'Practice Check. Do your best. This time the site does not tell you the answer until the end.');
       const box = el('div', 'p-round');
       area.append(box);
+      lockUntilHeard(dir, box);
       let i = 0;
       const next = () => {
         box.innerHTML = '';
@@ -532,6 +614,8 @@
     const pool = el('div', 'p-pool');
     const filled = chunks.map(() => null);
     const decoys = decoysFor(chunks);
+    // Load every part's recording now, so the first tap on a part plays without waiting for it
+    if (window.loadBuffer) [...chunks, ...decoys].forEach(c => { if (!(stop.split && stop.split[c])) loadBuffer(fileFor(c)); });
     const cards = shuffle([...chunks.map((c, i) => ({ c, id: 'w' + i })), ...decoys.map((c, i) => ({ c, id: 'd' + i }))]);
     const slotEls = chunks.map((_, i) => {
       const s = button('p-tile slot', '', () => { if (filled[i]) { filled[i].btn.style.visibility = 'visible'; filled[i] = null; s.textContent = ''; s.classList.add('slot'); } }, `Box ${i + 1}`);

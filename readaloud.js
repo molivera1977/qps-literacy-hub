@@ -13,7 +13,7 @@
 window.QPSRead = (function () {
   const RATE = 0.82;
   const MS_PER_LETTER = 58, PACE_BASE = 0.92;   // measured on the science lessons at 0.92
-  let current = null, timer = null, endCurrent = null, gen = 0;
+  let current = null, timer = null, endCurrent = null, gen = 0, held = null;
 
   // Put each word of `text` in its own span (class rw) inside host.
   function wrap(host, text) {
@@ -48,21 +48,36 @@ window.QPSRead = (function () {
     if (end) end();
   }
 
-  // Read a block aloud, lighting its words. Resolves when the voice finishes.
+  // Read a block aloud, lighting its words. Resolves when the voice is done, with HOW it ended:
+  //   'end'     — heard to the end
+  //   'stopped' — cut off (another speaker, leaving the screen) or the voice failed
+  //   'novoice' — nothing started within NO_VOICE_MS: this device has no voice to read with
+  // (Practice uses it to open a step only once its directions are heard — Marcos 10/19.)
+  const NO_VOICE_MS = 4000;
   function say(host) {
     stop();
     const mine = ++gen;
     return new Promise(resolve => {
       const words = wordsOf(host);
       const text = host.dataset.say || words.map(w => w.textContent).join(' ') || host.textContent;
-      if (!text || !window.speechSynthesis) { resolve(); return; }
+      if (!text) { resolve('end'); return; }
+      if (!window.speechSynthesis) { resolve('novoice'); return; }
       const u = new SpeechSynthesisUtterance(text);
+      held = u;                                            // held, so Chrome can't let it go mid-reading
       u.rate = RATE;
       current = host;
-      let reported = false;
+      let reported = false, started = false, settled = false;
       // A reading that was cut off still reports its end later (Chrome: an "interrupted" error);
       // by then another block is being read, so only the reading still going may clear the light.
-      const finish = () => { if (endCurrent === finish) endCurrent = null; if (mine === gen) clear(); resolve(); };
+      const finish = (how = 'stopped') => {
+        if (endCurrent === finish) endCurrent = null;
+        if (mine === gen) clear();
+        if (!settled) { settled = true; clearTimeout(watch); clearTimeout(tooLong); resolve(how); }
+      };
+      const watch = setTimeout(() => { if (!started && !settled) { if (mine === gen) { endCurrent = null; speechSynthesis.cancel(); } finish('novoice'); } }, NO_VOICE_MS);
+      // Chrome can go quiet without ever reporting the end (a long reading, or an utterance it let go
+      // of): after twice the time the text should take, it counts as read, so nothing waits forever.
+      let tooLong = null;
       endCurrent = finish;
       // charIndex → the word it falls in (count the words before it)
       u.onboundary = (e) => {
@@ -72,6 +87,8 @@ window.QPSRead = (function () {
         light(words, text.slice(0, e.charIndex).split(/\s+/).filter(isWord).length);
       };
       u.onstart = () => {
+        started = true;
+        tooLong = setTimeout(() => { if (!settled) { if (mine === gen) { endCurrent = null; speechSynthesis.cancel(); } finish('end'); } }, 2500 + text.length * 2 * MS_PER_LETTER * (PACE_BASE / RATE));
         if (!words.length) return;
         const per = Math.max(170, (text.length * MS_PER_LETTER) / words.length * (PACE_BASE / RATE));
         let i = 0;
@@ -83,8 +100,9 @@ window.QPSRead = (function () {
           light(words, i);
         }, per);
       };
-      u.onend = u.onerror = finish;
-      try { speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { finish(); }
+      u.onend = () => finish(started ? 'end' : 'stopped');
+      u.onerror = () => finish('stopped');
+      try { speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { finish('stopped'); }
     });
   }
 
