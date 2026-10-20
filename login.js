@@ -166,12 +166,15 @@
   }
 
   /* ---------- my plan ---------- */
-  function starsFor(stopId) {
+  function recordFor(stopId) {
     try {
       const store = JSON.parse(localStorage.getItem('qps_practice_v1:' + student)) || {};
-      return (store[stopId] && store[stopId].stars) || 0;
-    } catch (e) { return 0; }
+      return store[stopId] || {};
+    } catch (e) { return {}; }
   }
+  const starsFor = (stopId) => recordFor(stopId).stars || 0;
+  // Passed Checks on this device (practice.js PASSES_NEEDED = 2): "Pass 1 of 2", then "Ready for Mr. O"
+  const passLine = (stopId) => { const n = recordFor(stopId).passes || 0; return n >= 2 ? '✅ Ready for Mr. O' : n ? `Pass ${n} of 2` : ''; };
 
   function renderPlan() {
     const box = $('planBox');
@@ -225,11 +228,12 @@
       card.type = 'button'; card.className = 'plan-card';
       card.setAttribute('aria-label', `Start stop ${track.num}, ${track.sayName || track.name}. ${stars} of 3 stars.`);
       card.onclick = () => Practice.openStop(track.id);
-      card.innerHTML = '<span class="stop-num"></span><span class="plan-example"></span><span class="plan-name"></span><span class="stop-stars"></span><span class="plan-go">Start ▶</span>';
+      card.innerHTML = '<span class="stop-num"></span><span class="plan-example"></span><span class="plan-name"></span><span class="stop-stars"></span><span class="plan-pass"></span><span class="plan-go">Start ▶</span>';
       card.querySelector('.stop-num').textContent = track.num;
       card.querySelector('.plan-example').textContent = track.example;
       card.querySelector('.plan-name').textContent = track.name;
       card.querySelector('.stop-stars').textContent = '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars);
+      card.querySelector('.plan-pass').textContent = passLine(track.id);
       box.append(dir, card);
       if (sub) sub.parentElement.hidden = true;     // no "pick your stop" — Mr. O picked it
       if (grid) grid.hidden = true;
@@ -363,6 +367,7 @@
       elapsed,
       tabSwitches: 0,
       wrongQuestions: r.missed.join(' | '),
+      passes: r.passes || 0,                                  // passed Checks on this stop so far (2 = ready)
       startedAt: started.toISOString(),
       finishedAt: r.finished.toISOString()
     });

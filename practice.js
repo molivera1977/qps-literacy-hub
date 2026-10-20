@@ -12,6 +12,11 @@
 (function () {
   const STORE_KEY = 'qps_practice_v1';
   const PASS = 80;                                   // same as the Assessment's mastery mark
+  // Two passes (Marcos 10/20: "make them do the entire level twice with a required 80 % check every time
+  // to guarantee mastery before testing with Mr. O"): a pass = the practice steps, then a Check at PASS or
+  // better. "Ready for Mr. O's check" only after PASSES_NEEDED of them.
+  const PASSES_NEEDED = 2;
+  const CHECK_N = 10, RECENT_KEEP = 40;               // a Check's items; how many past Check words a stop remembers
   const COUNTS = { blend: 5, sort: 8, chains: 6, build: 5, decode: 6, spell: 5, sentences: 4 };
   const STEP_NAMES = {
     learn: 'Learn', blend: 'Blend', sort: 'Listen', chains: 'Change', build: 'Build',
@@ -149,6 +154,7 @@
       stars.setAttribute('aria-label', `${rec.stars} of 3 stars`);
       stars.textContent = '★★★'.slice(0, rec.stars) + '☆☆☆'.slice(0, 3 - rec.stars);
       card.append(stars);
+      if (rec.passes) card.append(el('span', 'stop-pass', rec.passes >= PASSES_NEEDED ? '✅ Ready' : `Pass ${rec.passes} of ${PASSES_NEEDED}`));
       grid.append(card);
     });
     if (window.QPSLogin) QPSLogin.renderPlan();      // the signed-in student's own stop
@@ -159,7 +165,7 @@
     steps = buildSteps(stop);
     realWords = collectReal(stop);
     const rec = stopRecord(id);
-    // A stop in progress picks up where the student stopped; a finished stop starts over.
+    // A stop in progress picks up where the student stopped (after a Check: back at the practice steps).
     stepIndex = (rec.reached || 0) >= steps.length ? 0 : (rec.reached || 0);
     $('welcomeView').style.display = 'none';
     $('appView').style.display = 'none';
@@ -578,10 +584,13 @@
     },
 
     check(area, done) {
+      // 10 different words, the ones this student has not had in a Check lately first (Marcos 10/20: a retry
+      // must not pass on remembered answers — about half of a Check's words used to come back next time)
+      const words = checkWords(stop.letters || (stop.big ? stop.real : stop.made));
       let items;
-      if (stop.letters) items = pick(stop.letters, 10).map((l, i) => ({ kind: i % 2 ? 'letterHear' : 'letterRead', chunks: [l] }));
-      else if (stop.big) items = shuffle([...pick(stop.real, 5).map(w => ({ kind: 'chop', chunks: split(w) })), ...pick(stop.real, 5).map(w => ({ kind: 'build', chunks: split(w) }))]);
-      else items = shuffle([...pick(stop.made, 6).map(w => ({ kind: 'decode', chunks: split(w) })), ...pick(stop.made, 4).map(w => ({ kind: 'spell', chunks: split(w) }))]);
+      if (stop.letters) items = words.map((l, i) => ({ kind: i % 2 ? 'letterHear' : 'letterRead', chunks: [l] }));
+      else if (stop.big) items = shuffle(words.map((w, i) => ({ kind: i < 5 ? 'chop' : 'build', chunks: split(w) })));
+      else items = shuffle(words.map((w, i) => ({ kind: i < 6 ? 'decode' : 'spell', chunks: split(w) })));
       const results = [];
       checkStarted = new Date();
       const dir = direction(area, 'Practice Check. Do your best. This time the site does not tell you the answer until the end.');
@@ -776,18 +785,32 @@
     box.append(opts);
   }
 
+  // The Check's words: all different; first the ones not used in this student's recent Checks (shuffled),
+  // then the longest-ago ones. The words are remembered as the Check starts, so leaving halfway still rotates.
+  function checkWords(pool) {
+    const recent = (stopRecord(stop.id).recent || []).filter(w => pool.includes(w));     // oldest first
+    const words = [...shuffle(pool.filter(w => !recent.includes(w))), ...recent].slice(0, CHECK_N);
+    while (words.length < CHECK_N) words.push(pick(pool, 1)[0]);                       // only a list under 10 words
+    saveStopRecord(stop.id, { recent: [...recent.filter(w => !words.includes(w)), ...words].slice(-RECENT_KEEP) });
+    return words;
+  }
+
   function finishCheck(area, box, items, results, done) {
     const right = results.filter(Boolean).length;
     const pct = Math.round((right / items.length) * 100);
     const stars = pct >= 90 ? 3 : pct >= 70 ? 2 : 1;
     const rec = stopRecord(stop.id);
-    saveStopRecord(stop.id, { stars: Math.max(rec.stars || 0, stars), reached: steps.length, lastScore: pct });
+    const passed = pct >= PASS;
+    const passes = Math.min(PASSES_NEEDED, (rec.passes || 0) + (passed ? 1 : 0));
+    saveStopRecord(stop.id, { stars: Math.max(rec.stars || 0, stars), passes, lastScore: pct });
     box.append(el('div', 'p-score', `${right} of ${items.length}`), el('div', 'p-stars', '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars)));
-    box.append(el('p', 'p-well', pct >= PASS ? '🎉 You are ready for Mr. O\'s check!' : 'Good work. Practice this stop again to get ready for Mr. O\'s check.'));
+    box.append(el('p', 'p-well', passed && passes >= PASSES_NEEDED ? `🎉 ${PASSES_NEEDED} passes! You are ready for Mr. O's check!`
+      : passed ? `⭐ Pass ${passes} of ${PASSES_NEEDED}! Do the practice once more and pass the Check again. Then you are ready for Mr. O's check.`
+      : `Good work. You need ${PASS}% to pass. Do the practice again, then try the Check. Passes: ${passes} of ${PASSES_NEEDED}.`));
     const missed = items.filter((_, k) => !results[k]);
     // Send the Check to Mr. O's results sheet (login.js knows who is signed in).
     if (window.QPSLogin) QPSLogin.saveCheck({
-      stop, right, total: items.length, percent: pct, started: checkStarted, finished: new Date(),
+      stop, right, total: items.length, percent: pct, passes, started: checkStarted, finished: new Date(),
       missed: missed.map(it => `${join(it.chunks)} (${STEP_NAMES[it.kind] || it.kind})`)
     });
     if (missed.length) {
@@ -800,6 +823,11 @@
     again.append(button('p-btn p-go', '🏠 Back to all stops', backToStops), button('p-btn p-again', '🔁 Do this stop again', () => { stepIndex = 1; showStep(); window.scrollTo(0, 0); }));
     box.append(again);
     done();
+    // After any Check the practice steps come first again (the Check reopens after the last practice step),
+    // so a second pass is a whole second run of the stop, not a retake. Set after done(), which marks the
+    // step reached, and the chips redrawn so the Check chip locks at once.
+    saveStopRecord(stop.id, { reached: 1 });
+    renderChips();
   }
 
   // Where two chunk lists differ: start index, how many new chunks, and the new part.
