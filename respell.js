@@ -47,6 +47,16 @@
       if (k === 'ch' && i > 0 && i === parts.length - 1) { out += 'tch'; continue; }   // zech was read "zek": zetch
       out += CHUNKS[k] !== undefined ? CHUNKS[k] : k;
     }
+    // A short vowel closed by one consonant is spelled the way English writes a short vowel, so the
+    // voice says it short (Marcos 10/20: "many short vowel words are being spoken as long vowel"): the
+    // last consonant doubled (guf → guff, zub → zubb, mut → mutt), a k as ck (tuk → tuck). Measured on the
+    // Mac voice: 40 of 40 real short words (cut, cub, hug…) sound exactly the same spelled that way,
+    // and 51 of 336 made-up voice strings did not match their doubled spelling. Not "al": "all" says aw;
+    // not pul/ful/bul: pull, full, bull say the u of "book".
+    const n = parts.length, last = parts[n - 1], vowel = parts[n - 2];
+    if (n >= 2 && /^[aeiou]$/.test(vowel) && /^[bdfgklmnprstvz]$/.test(last) && out.endsWith(last) && !(vowel === 'a' && last === 'l') && !(vowel === 'u' && last === 'l' && /[pfb]$/.test(parts[n - 3] || ''))) {
+      out = last === 'k' ? out.slice(0, -1) + 'ck' : out + last;
+    }
     // A two-letter word like "ab" or "ot" can be read as letter names: double the end ("abb").
     if (/^[aeiou][bcdfghjklmnpqrstvwxyz]$/.test(out)) out += out[1];
     return out;

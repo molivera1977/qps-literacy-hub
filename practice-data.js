@@ -63,7 +63,7 @@ const PRACTICE_STOPS = [
     },
     real: ['s|t|o|p','f|l|a|g','c|r|a|b','p|l|u|m','s|w|i|m','f|r|o|g','d|r|u|m','g|r|i|n','s|l|i|p','t|r|i|p','b|e|s|t','h|a|n|d','j|u|m|p','m|i|l|k','t|e|n|t','f|a|s|t'],
     chains: [['l|a|p','c|l|a|p'],['t|o|p','s|t|o|p'],['r|i|p','t|r|i|p'],['l|i|p','f|l|i|p'],['n|a|p','s|n|a|p'],['w|i|n','t|w|i|n'],['t|e|n','t|e|n|t'],['b|a|n','b|a|n|d']],
-    made: ['b|l|i|m','c|r|a|d','f|l|e|p','s|n|o|p','t|r|a|b','p|l|i|n','s|p|e|t','g|r|o|t','d|r|i|b','s|w|u|b','f|r|e|m','s|t|i|d','l|u|s|k','m|e|s|t','r|i|l|d','j|u|s|k'],
+    made: ['b|l|i|m','c|r|a|d','f|l|e|p','s|n|o|p','t|r|a|b','p|l|i|n','s|p|e|t','g|r|o|t','d|r|i|b','s|w|u|b','f|r|e|m','s|t|i|d','l|u|s|k','m|e|s|t','r|i|l|d','d|r|e|p'],
     contrast: 'drop',
     sentences: ['The frog can jump in the pond.','Brad and Glen swim fast.','Stop the sled at the tent.','A crab is in the sand.','Can Fran spin the drum?','Trish left her milk on the desk.']
   },
