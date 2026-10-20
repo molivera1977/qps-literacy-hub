@@ -50,8 +50,9 @@ const PRACTICE_STOPS = [
       words: [['sh|i|p','sh'],['w|i|sh','sh'],['f|i|sh','sh'],['d|i|sh','sh'],['ch|o|p','ch'],['ch|i|n','ch'],['r|i|ch','ch'],['m|u|ch','ch'],['th|i|n','th'],['m|a|th','th'],['b|a|th','th'],['m|o|th','th']]
     },
     made: ['sh|u|b','ch|o|g','th|u|p','wh|i|d','f|u|sh','z|e|th','n|i|ch','v|a|ck','j|i|ng','sh|o|m','ch|e|p','th|a|b','wh|e|g','r|a|th','z|e|ck','d|u|sh'],
-    // a filler choice must not sound like the right one for the wrong reason (m next to n: jing/jim, 10/19)
-    contrast: { sh: ['s','ch'], ch: ['sh','t'], th: ['t','sh'], wh: ['th','h'], ck: ['ch','sh'], ng: ['n','b'] },
+    // a filler choice must not sound like the right one for the wrong reason (m next to n: jing/jim, 10/19);
+    // th's t filler too (zeth/zet, rath/rat — Marcos voted No 10/20) → ch
+    contrast: { sh: ['s','ch'], ch: ['sh','t'], th: ['ch','sh'], wh: ['th','h'], ck: ['ch','sh'], ng: ['n','b'] },
     sentences: ['The ship is in the dock.','Chad and Beth sing a song.','When can I get a fish?','That duck is on the path.','Seth has a chip in his lunch.','Which shell is thick?']
   },
   {
@@ -62,7 +63,7 @@ const PRACTICE_STOPS = [
     },
     real: ['s|t|o|p','f|l|a|g','c|r|a|b','p|l|u|m','s|w|i|m','f|r|o|g','d|r|u|m','g|r|i|n','s|l|i|p','t|r|i|p','b|e|s|t','h|a|n|d','j|u|m|p','m|i|l|k','t|e|n|t','f|a|s|t'],
     chains: [['l|a|p','c|l|a|p'],['t|o|p','s|t|o|p'],['r|i|p','t|r|i|p'],['l|i|p','f|l|i|p'],['n|a|p','s|n|a|p'],['w|i|n','t|w|i|n'],['t|e|n','t|e|n|t'],['b|a|n','b|a|n|d']],
-    made: ['b|l|i|m','c|r|a|d','f|l|e|p','s|n|o|p','t|r|a|b','p|l|i|n','s|p|e|t','g|r|o|t','d|r|i|b','s|w|u|b','f|r|e|m','s|t|i|d','l|u|s|k','m|e|s|t','r|i|l|d','b|a|m|p'],
+    made: ['b|l|i|m','c|r|a|d','f|l|e|p','s|n|o|p','t|r|a|b','p|l|i|n','s|p|e|t','g|r|o|t','d|r|i|b','s|w|u|b','f|r|e|m','s|t|i|d','l|u|s|k','m|e|s|t','r|i|l|d','j|u|s|k'],
     contrast: 'drop',
     sentences: ['The frog can jump in the pond.','Brad and Glen swim fast.','Stop the sled at the tent.','A crab is in the sand.','Can Fran spin the drum?','Trish left her milk on the desk.']
   },
@@ -107,8 +108,9 @@ const PRACTICE_STOPS = [
     },
     real: ['c|a|tch','m|a|tch','d|i|tch','b|a|dge','f|u|dge','b|r|i|dge','kn|o|t','kn|i|t','wr|a|p','wr|i|s|t','qu|i|t','qu|a|ck','f|o|x','s|i|x','qu|i|z','gn|a|t'],
     made: ['z|a|tch','r|i|tch','f|o|dge','l|i|dge','kn|o|p','kn|u|g','kn|e|b','wr|a|b','wr|e|m','wr|i|b','gn|e|t','gn|o|p','qu|i|b','qu|o|t','j|e|x','v|i|x'],
-    // fillers that sounded like the right one or each other (kneb/meb, gnet/met, jes/jez — Marcos 10/19) → p and t
-    contrast: { tch: ['t','sh'], dge: ['g','ch'], kn: ['k','p'], wr: ['w','l'], gn: ['g','p'], qu: ['k','w'], x: ['s','t'] },
+    // fillers that sounded like the right one or each other (kneb/meb, gnet/met, jes/jez — Marcos 10/19) → p and t;
+    // dge's ch filler too (fodge/foch, lidge/lich — voted No 10/20) → t
+    contrast: { tch: ['t','sh'], dge: ['g','t'], kn: ['k','p'], wr: ['w','l'], gn: ['g','p'], qu: ['k','w'], x: ['s','t'] },
     sentences: ['The quick fox ran to the ditch.','Kate will wrap a gift for Madge.','I can knit a hat.','Six ducks sat on the bridge.','Do not let the cat catch the fish.','The fudge is on the top shelf.']
   },
   {
