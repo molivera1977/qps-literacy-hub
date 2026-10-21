@@ -32,6 +32,7 @@
     { name: "Pettway, Lanaura",          id: "10060616" },
     { name: "Polanco Soriano, Thiara",   id: "10060503" },
     { name: "Roberts, Robyn",            id: "10060925" },
+    { name: "Rodriguez-Jimenez, Marcos", id: "10048936" },
     { name: "Rojas, Alanie",             id: "10076388" },
     { name: "Sanchez Rodriguez, Johanelyz", id: "10076767" },
     { name: "Vega, Taishmara",           id: "10054043" },
@@ -50,6 +51,7 @@
   // "comp" = the comprehension track (comp.js) for students who passed every QPS level.
   const TRACKS = {
     "Castaneda, Kelvin":              "2",
+    "Rodriguez-Jimenez, Marcos":      "2",   // new 10/19; Mr. O 10/21: "start the new student at stop 2 for now"
     "Watts, Autumn":                  "3",
     "Rojas, Alanie":                  "5",
     "Madero, Jovany":                 "5",
