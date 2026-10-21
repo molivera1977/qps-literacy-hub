@@ -33,7 +33,9 @@ const PRACTICE_STOPS = [
       words: [['c|a|p','a'],['f|a|n','a'],['b|e|d','e'],['w|e|t','e'],['r|i|p','i'],['k|i|t','i'],['h|o|t','o'],['j|o|g','o'],['s|u|n','u'],['m|u|d','u']]
     },
     chains: [['c|a|t','c|o|t'],['c|o|t','c|u|t'],['c|u|t','h|u|t'],['h|u|t','h|i|t'],['p|i|g','p|i|n'],['p|i|n','p|e|n'],['p|e|n','t|e|n'],['b|e|d','b|a|d'],['b|a|d','b|a|t'],['b|a|t','b|i|t']],
-    made: ['t|i|b','g|o|k','v|u|p','z|a|t','h|e|s','l|o|m','f|i|d','n|e|p','r|o|g','k|a|b','j|u|d','w|i|m','p|o|f','m|i|b','v|e|p','a|b','o|t','u|g'],
+    made: ['t|i|b','g|o|k','v|u|p','z|a|t','m|e|p','l|o|m','f|i|d','n|e|p','r|o|g','k|a|b','j|u|d','k|a|p','l|i|g','m|i|b','v|e|p','a|b','o|t','u|g',
+           // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
+           'h|i|b','v|i|k','t|o|k','m|u|t','p|i|b','b|o|f','p|a|f','d|a|t','r|u|z','v|a|d','p|e|b','m|a|b','g|e|b','z|u|b','v|i|z','d|e|s'],
     contrast: { a: ['i','o'], e: ['a','u'], i: ['e','a'], o: ['u','a'], u: ['o','i'] },
     sentences: ['The pig sat in the mud.','Ten red bugs ran up the log.','Did Dan get a hot dog?','Pam has a big tan cat.','Sam can hop and jog.','The fox hid in a box.']
   },
@@ -49,7 +51,9 @@ const PRACTICE_STOPS = [
       bins: [{ label: 'sh', key: 'sh' }, { label: 'ch', key: 'ch' }, { label: 'th', key: 'th' }],
       words: [['sh|i|p','sh'],['w|i|sh','sh'],['f|i|sh','sh'],['d|i|sh','sh'],['ch|o|p','ch'],['ch|i|n','ch'],['r|i|ch','ch'],['m|u|ch','ch'],['th|i|n','th'],['m|a|th','th'],['b|a|th','th'],['m|o|th','th']]
     },
-    made: ['sh|u|b','ch|o|g','th|u|p','wh|i|d','f|u|sh','z|e|th','n|i|ch','v|a|ck','j|i|ng','sh|o|m','ch|e|p','th|a|b','wh|e|g','r|a|th','z|e|ck','d|u|sh'],
+    made: ['sh|u|b','ch|o|g','th|u|p','wh|i|d','f|u|sh','z|e|th','n|i|ch','v|a|ck','j|i|ng','sh|o|m','ch|e|p','th|a|b','wh|e|g','r|a|th','z|e|ck','d|u|sh',
+           // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
+           'v|i|ck','w|e|ck','ch|e|d','wh|e|m','h|i|th','g|o|ck','sh|e|z','g|a|th','d|a|ck','wh|u|t','ch|o|s','sh|e|m','ch|u|k','r|i|sh','d|i|th','wh|e|p'],
     // a filler choice must not sound like the right one for the wrong reason (m next to n: jing/jim, 10/19);
     // th's t filler too (zeth/zet, rath/rat — Marcos voted No 10/20) → ch
     contrast: { sh: ['s','ch'], ch: ['sh','t'], th: ['ch','sh'], wh: ['th','h'], ck: ['ch','sh'], ng: ['n','b'] },
@@ -63,7 +67,9 @@ const PRACTICE_STOPS = [
     },
     real: ['s|t|o|p','f|l|a|g','c|r|a|b','p|l|u|m','s|w|i|m','f|r|o|g','d|r|u|m','g|r|i|n','s|l|i|p','t|r|i|p','b|e|s|t','h|a|n|d','j|u|m|p','m|i|l|k','t|e|n|t','f|a|s|t'],
     chains: [['l|a|p','c|l|a|p'],['t|o|p','s|t|o|p'],['r|i|p','t|r|i|p'],['l|i|p','f|l|i|p'],['n|a|p','s|n|a|p'],['w|i|n','t|w|i|n'],['t|e|n','t|e|n|t'],['b|a|n','b|a|n|d']],
-    made: ['b|l|i|m','c|r|a|d','f|l|e|p','s|n|o|p','t|r|a|b','p|l|i|n','s|p|e|t','g|r|o|t','d|r|i|b','s|w|u|b','f|r|e|m','s|t|i|d','l|u|s|k','m|e|s|t','r|i|l|d','d|r|e|p'],
+    made: ['b|l|i|m','c|r|a|d','f|l|e|p','s|n|o|p','t|r|a|b','p|l|i|n','s|p|e|t','g|r|o|t','d|r|i|b','s|w|u|b','f|r|e|m','s|t|i|d','l|u|s|k','m|e|s|t','d|r|i|n','d|r|e|p',
+           // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
+           't|u|s|t','p|l|u|z','d|r|i|g','f|l|u|p','g|r|e|t','c|r|e|p','g|r|u|k','s|w|i|t','c|l|u|f','p|r|e|f','g|u|f|t','s|t|i|f','s|m|i|g','h|a|l|d','s|l|o|m','t|r|u|t'],
     contrast: 'drop',
     sentences: ['The frog can jump in the pond.','Brad and Glen swim fast.','Stop the sled at the tent.','A crab is in the sand.','Can Fran spin the drum?','Trish left her milk on the desk.']
   },
@@ -80,7 +86,9 @@ const PRACTICE_STOPS = [
       words: [['m|a|t','short'],['m|ate','long'],['p|i|n','short'],['p|ine','long'],['c|a|n','short'],['c|ane','long'],['n|o|t','short'],['n|ote','long'],['h|a|t','short'],['h|ate','long'],['f|i|n','short'],['f|ine','long']]
     },
     chains: [['m|a|t','m|ate'],['h|a|t','h|ate'],['r|a|t','r|ate'],['m|a|d','m|ade'],['c|a|n','c|ane'],['p|l|a|n','p|l|ane'],['f|i|n','f|ine'],['p|i|n','p|ine'],['s|p|i|n','s|p|ine'],['sh|i|n','sh|ine'],['t|w|i|n','t|w|ine'],['n|o|t','n|ote']],
-    made: ['j|ate','t|ade','h|ane','j|ine','z|ile','b|ice','f|ole','l|oze','z|ote','b|une','p|l|ote','g|r|ine','c|l|ade','ch|ice','sh|ile','th|une'],
+    made: ['z|ade','t|ade','h|ane','j|ine','z|ile','b|ice','f|ole','l|oze','z|ote','b|une','p|l|ote','g|r|ine','c|l|ade','ch|ice','sh|ile','th|une',
+           // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
+           'f|r|ice','b|r|ate','b|r|ade','h|ote','h|ile','f|r|ade','p|une','b|l|ane','p|l|ine','b|l|ice','f|l|ate','k|ade','b|l|ote','b|r|ile','k|oze','g|r|ote'],
     contrast: { ate: ['a|t','ote'], ade: ['a|d','ine'], ane: ['a|n','ine'], ine: ['i|n','ane'], ile: ['i|l','ole'], ice: ['i|c','ine'], ole: ['o|l','ile'], oze: ['o|z','ole'], ote: ['o|t','ate'], une: ['u|n','ine'] },
     sentences: ['The cat ate a bite of cake.','Five mice hid in a hole.','Dave made a kite with a pole.','Nine kids rode their bikes home.','Kate will use tape on the note.','The dog ran to the gate at the end of the lane.','Can Rose hide the cube in the box?','Mike has a plane and a white kite.']
   },
@@ -96,7 +104,9 @@ const PRACTICE_STOPS = [
       bins: [{ label: 'ar — like car', key: 'ar' }, { label: 'or — like for', key: 'or' }, { label: 'er ir ur — like her', key: 'er' }],
       words: [['f|ar|m','ar'],['s|t|ar','ar'],['p|ar|k','ar'],['d|ar|k','ar'],['c|or|n','or'],['s|t|or|m','or'],['s|p|or|t','or'],['h|or|n','or'],['f|er|n','er'],['b|ir|d','er'],['g|ir|l','er'],['t|ur|n','er']]
     },
-    made: ['t|ar|k','b|er|p','d|ir|b','l|or|p','m|ur|f','s|ar|n','g|er|d','k|ir|b','v|or|n','n|ur|t','j|ar|p','p|er|n','z|ir|t','h|or|t','l|ur|b','g|ar|f'],
+    made: ['t|ar|k','b|er|p','d|ir|b','l|or|p','m|ur|f','s|ar|n','g|er|d','k|ir|b','v|or|n','n|ur|t','j|ar|p','p|er|n','z|ir|t','h|or|t','l|ur|b','g|ar|f',
+           // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
+           'm|ar|d','v|ir|k','h|ar|z','h|ur|k','h|er|f','b|or|k','k|ar|f','r|ir|f','b|er|b','p|ur|g','p|ar|g','p|ur|f','k|er|d','k|or|s','r|ar|p','d|ur|d'],
     contrast: { ar: ['a','or'], or: ['o','ar'], er: ['e','ar'], ir: ['i','or'], ur: ['u','ar'] },
     sentences: ['The bird sat on the fork.','Mark has a dark red car.','The girl will turn the corn.','Her shirt got torn in the storm.','Burt hurt his arm.','We can play in the park.']
   },
@@ -107,7 +117,9 @@ const PRACTICE_STOPS = [
       examples: ['c|a|tch', 'b|a|dge', 'kn|o|t', 'wr|a|p', 'gn|a|t', 'qu|i|t', 'f|o|x']
     },
     real: ['c|a|tch','m|a|tch','d|i|tch','b|a|dge','f|u|dge','b|r|i|dge','kn|o|t','kn|i|t','wr|a|p','wr|i|s|t','qu|i|t','qu|a|ck','f|o|x','s|i|x','qu|i|z','gn|a|t'],
-    made: ['z|a|tch','r|i|tch','f|o|dge','l|i|dge','kn|o|p','kn|u|g','kn|e|b','wr|a|b','wr|e|m','wr|i|b','gn|e|t','gn|o|p','qu|i|b','qu|o|t','j|e|x','v|i|x'],
+    made: ['z|a|tch','r|i|tch','f|o|dge','l|i|dge','kn|o|p','kn|u|g','kn|e|b','wr|i|d','wr|e|m','wr|i|b','gn|e|t','gn|o|p','qu|i|b','qu|o|t','j|e|x','v|i|x',
+           // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
+           'l|e|x','h|i|dge','kn|i|k','wr|o|g','gn|a|k','qu|i|f','g|i|tch','g|i|x','h|o|dge','kn|u|f','wr|e|f','gn|a|d','qu|u|n','l|o|tch','m|o|x','kn|e|p'],
     // fillers that sounded like the right one or each other (kneb/meb, gnet/met, jes/jez — Marcos 10/19) → p and t;
     // dge's ch filler too (fodge/foch, lidge/lich — voted No 10/20) → t
     contrast: { tch: ['t','sh'], dge: ['g','t'], kn: ['k','p'], wr: ['w','l'], gn: ['g','p'], qu: ['k','w'], x: ['s','t'] },
@@ -125,7 +137,9 @@ const PRACTICE_STOPS = [
       bins: [{ label: 'Real word', key: 'real' }, { label: 'Made-up word', key: 'made' }],
       words: [['r|ai|n','real'],['z|ai|t','made'],['s|ea|t','real'],['d|ea|p','made'],['b|oa|t','real'],['l|oa|b','made'],['m|oo|n','real'],['z|oo|t','made'],['c|oi|n','real'],['d|oi|l','made'],['n|ew','real'],['t|r|ew','made']]
     },
-    made: ['z|ai|t','v|ay','d|ea|p','l|oa|b','z|oo|t','m|ou|t','d|oi|l','z|oy','f|au|l','z|aw','b|oe','t|r|ew','m|igh','sh|oa|m','g|ea|t','n|ol|t'],
+    made: ['z|ai|t','v|ay','d|ea|p','l|oa|b','z|oo|t','m|ou|t','d|oi|l','z|oy','f|au|l','z|aw','b|oe','t|r|ew','m|igh','sh|oa|m','g|ea|t','n|ol|t',
+           // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
+           'd|ai|k','v|ai|t','g|ea|f','z|ea|k','k|oi|t','l|ol|t','k|oi|p','z|ay','p|oi|p','h|ai|p','j|oo|f','h|oi|g','g|oa|b','v|ol|z','h|ai|d','p|ea|b'],
     contrast: { ai: ['a','oa'], ay: ['oy','aw'], ea: ['e','oa'], oa: ['o','ea'], oo: ['o','ou'], ou: ['o','oo'], oi: ['o','ai'], oy: ['ay','aw'], au: ['a','ou'], aw: ['ay','ew'], oe: ['ew','oy'], ew: ['e','aw'], igh: ['ay','aw'], ol: ['o','oo'] },
     sentences: ['The boat sails in the rain.','Roy has a toy coin.','Dad saw the moon at night.','Pay for the soap and the food.','Paul saw a hawk in the light.','We can eat at noon.']
   },
@@ -136,7 +150,9 @@ const PRACTICE_STOPS = [
       examples: ['con|tent', 'en|joy', 'mo|tor']
     },
     big: true,
-    real: ['con|tent','com|pare','en|joy','hon|est','mo|tor','par|ade','play|er','fear|less','dis|play','en|ter','mas|ter','sol|ar','pe|tal','com|ment','con|tain','fast|er','joy|ful','play|ful']
+    real: ['con|tent','com|pare','en|joy','hon|est','mo|tor','par|ade','play|er','fear|less','dis|play','en|ter','mas|ter','sol|ar','pe|tal','com|ment','con|tain','fast|er','joy|ful','play|ful',
+           // added 10/20 for two passes and new words each Check
+           'un|der','lit|ter','tic|ket','par|ty','mo|lar','count|er']
   },
   {
     id: '9b', num: '9b', name: 'Three-part words', example: 'com·pu·ter',
@@ -145,7 +161,9 @@ const PRACTICE_STOPS = [
       examples: ['com|pu|ter', 'in|ven|tion', 'his|to|ry']
     },
     big: true,
-    real: ['com|pu|ter','his|to|ry','gen|er|ous','en|or|mous','in|ven|tion','con|tain|er','en|joy|ment','dis|or|der','dis|hon|est','com|mu|ter','ca|vi|ty','con|ven|tion','in|ven|tor','con|tent|ment','in|ter|est']
+    real: ['com|pu|ter','his|to|ry','gen|er|ous','en|or|mous','in|ven|tion','con|tain|er','en|joy|ment','dis|or|der','dis|hon|est','com|mu|ter','ca|vi|ty','con|ven|tion','in|ven|tor','con|tent|ment','in|ter|est',
+           // added 10/20
+           'mas|ter|ful','pre|ven|tion','mo|tion|less','joy|ful|ness','play|ful|ness','en|count|er','gen|er|al','jew|el|ry','mer|ri|ment','his|tor|ic','fear|less|ness','un|der|play']
   },
   {
     id: '9c', num: '9c', name: 'Four-part words', example: 'in·fi·ni·ty',
@@ -154,7 +172,9 @@ const PRACTICE_STOPS = [
       examples: ['in|fi|ni|ty', 'com|pe|ti|tion', 'his|to|ri|cal']
     },
     big: true,
-    real: ['com|pe|ti|tion','his|to|ri|cal','in|fi|ni|ty','in|com|pe|tent','in|com|par|able','in|ter|ven|tion','dis|hon|or|able','dis|con|tent|ment']
+    real: ['com|pe|ti|tion','his|to|ri|cal','in|fi|ni|ty','in|com|pe|tent','in|com|par|able','in|ter|ven|tion','dis|hon|or|able','dis|con|tent|ment',
+           // added 10/20
+           're|pe|ti|tion','com|pe|ti|tor','pe|ti|tion|er','mas|ter|ful|ness','mo|tion|less|ness','un|en|joy|able']
   },
   {
     id: '10', num: '10', name: 'Word parts', example: 'un·lock',
@@ -163,7 +183,11 @@ const PRACTICE_STOPS = [
       examples: ['un|lock', 're|tell', 'help|ful', 'end|less']
     },
     big: true, parts: true,
-    real: ['un|lock','un|fit','re|tell','pre|heat','dis|trust','non|fat','thank|ful','help|ful','sad|ness','soft|est','quick|est','fix|able','end|less','pain|less','ac|tion','joy|ful'],
-    split: { lock: 'l|o|ck', fit: 'f|i|t', tell: 't|e|ll', heat: 'h|ea|t', trust: 't|r|u|s|t', fat: 'f|a|t', thank: 'th|a|n|k', help: 'h|e|l|p', sad: 's|a|d', soft: 's|o|f|t', quick: 'qu|i|ck', fix: 'f|i|x', end: 'e|n|d', pain: 'p|ai|n', ac: 'a|c' }
+    real: ['un|lock','un|fit','re|tell','pre|heat','dis|trust','non|fat','thank|ful','help|ful','sad|ness','soft|est','quick|est','fix|able','end|less','pain|less','ac|tion','joy|ful',
+           // added 10/20
+           'un|pack','un|wrap','un|plug','re|fill','pre|pay','non|stick','dark|ness','sick|ness','rest|ful','wish|ful','cold|est','dark|est','bend|able'],
+    split: { lock: 'l|o|ck', fit: 'f|i|t', tell: 't|e|ll', heat: 'h|ea|t', trust: 't|r|u|s|t', fat: 'f|a|t', thank: 'th|a|n|k', help: 'h|e|l|p', sad: 's|a|d', soft: 's|o|f|t', quick: 'qu|i|ck', fix: 'f|i|x', end: 'e|n|d', pain: 'p|ai|n', ac: 'a|c',
+             pack: 'p|a|ck', wrap: 'wr|a|p', plug: 'p|l|u|g', fill: 'f|i|ll', pay: 'p|ay', stick: 's|t|i|ck', dark: 'd|ar|k',
+             sick: 's|i|ck', rest: 'r|e|s|t', wish: 'w|i|sh', cold: 'c|ol|d', bend: 'b|e|n|d' }
   }
 ];

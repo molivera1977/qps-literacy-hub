@@ -57,6 +57,8 @@
     if (n >= 2 && /^[aeiou]$/.test(vowel) && /^[bdfgklmnprstvz]$/.test(last) && out.endsWith(last) && !(vowel === 'a' && last === 'l') && !(vowel === 'u' && last === 'l' && /[pfb]$/.test(parts[n - 3] || ''))) {
       out = last === 'k' ? out.slice(0, -1) + 'ck' : out + last;
     }
+    // a ck ending keeps its ck after a short vowel (wak was read "wok"; wack is not) — 10/20
+    else if (n >= 2 && /^[aeiou]$/.test(vowel) && last === 'ck' && out.endsWith('k')) out = out.slice(0, -1) + 'ck';
     // A two-letter word like "ab" or "ot" can be read as letter names: double the end ("abb").
     if (/^[aeiou][bcdfghjklmnpqrstvwxyz]$/.test(out)) out += out[1];
     return out;

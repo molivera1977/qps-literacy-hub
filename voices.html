@@ -21,6 +21,7 @@
   .row.playing { border-color: #2f6fde; }
   .word { font-size: 1.4rem; font-weight: 700; flex: 1; }
   .said { display: block; font-size: 0.8rem; font-weight: 400; color: var(--soft); }
+  .row.heard:not(.wrong) { border-color: #b9dcc6; }
   .mark.on { background: var(--bad); color: #fff; border-color: var(--bad); }
   textarea { width: 100%; min-height: 90px; font: inherit; font-size: 1rem; border-radius: 10px; border: 2px solid var(--line); padding: 10px; }
   .voice { font-weight: 700; color: var(--ink); }
@@ -33,21 +34,27 @@
   <p>Tap ▶ to hear a word. If it sounds wrong, tap <b>✗</b>. The words you mark collect in the box at the bottom.</p>
   <p>This device's voice: <span class="voice" id="voiceName">checking…</span></p>
   <div class="bar">
-    <button type="button" id="playAll">▶ Play every word in a row</button>
+    <button type="button" id="playAll">▶ Play the words not heard yet, in a row</button>
     <button type="button" id="stopAll">■ Stop</button>
   </div>
+  <p class="voice" id="count"></p>
   <div id="lists"></div>
   <h2>Words that sound wrong</h2>
   <textarea id="wrongList" readonly placeholder="Nothing marked yet."></textarea>
   <div class="bar"><button type="button" id="copy">Copy the list</button><span id="copied"></span></div>
 </main>
-<script src="respell.js?v=s1"></script>
-<script src="practice-data.js?v=p3"></script>
+<script src="respell.js?v=s4"></script>
+<script src="practice-data.js?v=p7"></script>
 <script src="practice.js?v=p7"></script>
 <script>
   // Recordings of whole made-up words (the site plays these instead of the voice).
   const WHOLE = new Set(['wat', 'whaf', 'quam', 'celp', 'ralk', 'mant', 'sund']);
-  const wrong = new Set();
+  // ✗ marks and words already heard are kept on this device, so the check can be done in parts (10/20)
+  const KEY = 'qps_voice_check_v1';
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
+  const wrong = new Set(saved.wrong || []), heard = new Set(saved.heard || []);
+  function keep() { try { localStorage.setItem(KEY, JSON.stringify({ wrong: [...wrong], heard: [...heard] })); } catch (e) { /* private window: marks last until the page closes */ } }
   let stopped = false;
 
   function speak(text) {
@@ -60,7 +67,18 @@
   function playRec(word) {
     return new Promise(resolve => { const a = new Audio(word + '.m4a'); a.onended = resolve; a.onerror = resolve; a.play().catch(resolve); });
   }
-  const say = (w) => (WHOLE.has(w.word) ? playRec(w.word) : speak(w.said));
+  // Like the hub (practice.js sayWord): Mr. O's recording of the word if there is one, else the voice.
+  function recOrVoice(w) {
+    return new Promise(resolve => {
+      const a = new Audio(w.word + '.m4a'); let done = false;
+      const voice = () => { if (done) return; done = true; speak(w.said).then(resolve); };
+      a.onended = () => { if (done) return; done = true; const s = w.row && w.row.querySelector('.said'); if (s) s.textContent = 'Mr. O recording'; resolve(); };
+      a.onerror = voice; a.play().catch(voice);
+    });
+  }
+  function showCount() { const n = ALL.length, h = ALL.filter(w => heard.has(w.key)).length; document.getElementById('count').textContent = `Heard ${h} of ${n} · marked wrong ${wrong.size}`; }
+  const ALL = [];
+  const say = (w) => { heard.add(w.key); w.row.classList.add('heard'); keep(); showCount(); return WHOLE.has(w.word) ? playRec(w.word) : recOrVoice(w); };
 
   function showVoice() {
     const v = speechSynthesis.getVoices();
@@ -70,48 +88,64 @@
   speechSynthesis.onvoiceschanged = showVoice;
   showVoice();
 
-  function updateList() { document.getElementById('wrongList').value = [...wrong].join(', '); }
+  function updateList() { document.getElementById('wrongList').value = [...wrong].join(', '); keep(); if (ALL.length) showCount(); }
 
   function section(title, words) {
     const box = document.getElementById('lists');
     const h = document.createElement('h2'); h.textContent = `${title} (${words.length})`; box.append(h);
     const grid = document.createElement('div'); grid.className = 'grid'; box.append(grid);
     words.forEach(w => {
-      const row = document.createElement('div'); row.className = 'row'; w.row = row;
+      const row = document.createElement('div'); row.className = 'row' + (wrong.has(w.key) ? ' wrong' : '') + (heard.has(w.key) ? ' heard' : ''); w.row = row;
       const label = document.createElement('span'); label.className = 'word'; label.textContent = w.word;
       const said = document.createElement('span'); said.className = 'said'; said.textContent = WHOLE.has(w.word) ? 'Mr. O recording' : (w.said === w.word ? 'as written' : `voice reads "${w.said}"`);
-      label.append(said);
+      if (w.where) { const wh = document.createElement('span'); wh.className = 'said'; wh.textContent = w.where; label.append(said, wh); } else label.append(said);
       const play = document.createElement('button'); play.type = 'button'; play.textContent = '▶'; play.setAttribute('aria-label', 'Hear ' + w.word);
       play.onclick = () => { speechSynthesis.cancel(); say(w); };
       const mark = document.createElement('button'); mark.type = 'button'; mark.className = 'mark'; mark.textContent = '✗'; mark.setAttribute('aria-label', 'Mark ' + w.word + ' as wrong');
-      mark.onclick = () => { const on = !wrong.has(w.word); on ? wrong.add(w.word) : wrong.delete(w.word); mark.classList.toggle('on', on); row.classList.toggle('wrong', on); updateList(); };
+      if (wrong.has(w.key)) mark.classList.add('on');
+      mark.onclick = () => { const on = !wrong.has(w.key); on ? wrong.add(w.key) : wrong.delete(w.key); mark.classList.toggle('on', on); row.classList.toggle('wrong', on); updateList(); };
       row.append(label, play, mark); grid.append(row);
     });
     return words;
   }
 
   (async function build() {
-    const all = [];
+    const all = ALL;
     const seen = new Set();
-    const add = (list, chunks) => { const word = chunks.join(''); if (seen.has(word)) return; seen.add(word); list.push({ word, said: Respell.respell(chunks) }); };
+    // key = what the voice is handed (two words the voice reads the same way are heard once)
+    const add = (list, word, said, where) => { const key = WHOLE.has(word) ? 'rec:' + word : said; if (seen.has(key)) return; seen.add(key); list.push({ word, said, key, where }); };
+    const realOf = st => new Set([...(st.real || []), ...(st.letters || []), ...(st.chains || []).flat(), ...st.learn.examples.flatMap(w => w.split('>')),
+      ...((st.sort && st.sort.words) || []).filter(([, k]) => k !== 'made').map(([w]) => w)].map(w => w.replace(/\|/g, '')));
+    const parts = (st, c) => (st.split ? c.flatMap(x => st.split[x] ? st.split[x].split('|') : [x]) : c);
     for (const st of PRACTICE_STOPS) {
-      if (!st.made) continue;
-      const list = [];
-      st.made.forEach(w => { const c = w.split('|'); add(list, c); Practice.nearMisses(st, c).forEach(v => add(list, v)); });
-      all.push(...section(`Practice stop ${st.num} · ${st.name} — made-up words and their near misses`, list));
+      const real = realOf(st), list = [];
+      // made-up words and their choices, then the choices for the stop's real words (said as written when
+      // they are on this stop's lists, otherwise respelled — exactly as practice.js sayWord does)
+      for (const w of [...(st.made || []), ...(st.real || [])]) {
+        const c = w.split('|');
+        for (const o of [c, ...Practice.nearMisses(st, c)]) {
+          const word = o.join('');
+          if (real.has(word)) continue;                  // a real word on the list: the voice reads it as written
+          add(list, word, Respell.respell(parts(st, o)), o === c ? '' : 'a choice for ' + c.join(''));
+        }
+      }
+      // big-word pieces the voice says (Mr. O has no recording of them): ac, ex… respelled, base words as written
+      for (const k of Object.keys(st.split || {})) add(list, k, k.length <= 2 ? Respell.respell(st.split[k].split('|')) : k, 'a word part');
+      if (list.length) all.push(...section(`Practice stop ${st.num} · ${st.name}`, list));
     }
     // The Assessment / Learning Lab made-up words live in index.html's word bank.
     try {
       const html = await (await fetch('index.html')).text();
       const bank = html.slice(html.indexOf('const wordBank'), html.indexOf('// Level display names'));
       const list = [];
-      for (const m of bank.matchAll(/\{w:"([a-z]+)",c:\[([^\]]*)\],n:true\}/g)) add(list, m[2].replace(/"/g, '').split(','));
+      for (const m of bank.matchAll(/\{w:"([a-z]+)",c:\[([^\]]*)\],n:true\}/g)) { const c = m[2].replace(/"/g, '').split(','); add(list, c.join(''), Respell.respell(c), 'Assessment'); }
       all.push(...section('Learning Lab and Assessment made-up words', list));
     } catch (e) { /* offline: the practice lists are still here */ }
+    updateList(); showCount();
 
     document.getElementById('playAll').onclick = async () => {
       stopped = false;
-      for (const w of all) {
+      for (const w of all.filter(x => !heard.has(x.key))) {   // picks up where the last session stopped
         if (stopped) break;
         w.row.classList.add('playing'); w.row.scrollIntoView({ block: 'center', behavior: 'smooth' });
         await say(w); await new Promise(r => setTimeout(r, 500));
