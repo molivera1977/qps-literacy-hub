@@ -222,7 +222,7 @@
   }
   const starsFor = (stopId) => recordFor(stopId).stars || 0;
   // Passed Checks on this device (practice.js PASSES_NEEDED = 2): "Pass 1 of 2", then "Ready for Mr. O"
-  const passLine = (stopId) => { const n = recordFor(stopId).passes || 0; return n >= 2 ? '✅ Ready for Mr. O' : n ? `Pass ${n} of 2` : ''; };
+  const passLine = (stopId) => { const n = recordFor(stopId).passes || 0; return n >= 2 ? '✅✅ 2 of 2 passes — ready for Mr. O' : n ? `✅⬜ ${n} of 2 passes — pass 1 more time` : ''; };
 
   function renderPlan() {
     const box = $('planBox');

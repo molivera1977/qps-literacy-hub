@@ -579,7 +579,10 @@
         .p-direction.p-must-hear .p-say { box-shadow: 0 0 0 4px #FFD44D; animation: hearPulse 1.2s ease-in-out infinite; }
         @keyframes hearPulse { 50% { transform: scale(1.12); } }
         .p-hear.p-pulse { box-shadow: 0 0 0 4px #FFD44D; animation: hearPulse 1.2s ease-in-out infinite; }
-        @media (prefers-reduced-motion: reduce) { .p-direction.p-must-hear .p-say, .p-hear.p-pulse { animation: none; } }
+        /* A device set to "reduce motion" (some Chromebooks) got no pulse at all (Marcos 10/21: "I don't see the
+           pulsing on everyone's device"): there the ring GLOWS brighter and dimmer instead — nothing moves or grows. */
+        @keyframes hearGlow { 50% { box-shadow: 0 0 0 7px #FFB800, 0 0 22px 8px rgba(255, 184, 0, .8); } }
+        @media (prefers-reduced-motion: reduce) { .p-direction.p-must-hear .p-say, .p-hear.p-pulse { animation: hearGlow 1.2s ease-in-out infinite !important; } }   /* beats the page-wide animation: none below */
         .p-hear-note { font-size: 21px; font-weight: 600; color: #8a4b00; margin: 6px 0 10px; }
         .p-read-it { margin-left: 8px; }
         .plan-pass, .stop-pass { font-weight: 700; color: var(--success, #1f8f55); font-size: 0.95rem; }
@@ -590,6 +593,14 @@
         .p-arrow { font-size: 1.6rem; font-weight: 700; color: var(--learning-dark); }
         .p-example .p-tile { font-size: 1.5rem; padding: 4px 10px; min-width: 40px; box-shadow: none; }
         .p-score { font-size: 2.6rem; font-weight: 700; }
+        /* the end of a Check (10/21): passes as stars, the result read aloud, one big next button */
+        .p-pass-meter { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 0; font-size: 1.6rem; }
+        .p-pass-dot { opacity: .55; } .p-pass-dot.on { opacity: 1; }
+        .p-pass-label { font-size: 1.1rem; font-weight: 700; margin-left: 6px; }
+        .p-result { display: flex; align-items: flex-start; gap: 10px; justify-content: center; text-align: left; max-width: 640px; margin: 0 auto; }
+        .p-result .p-well { font-size: 1.3rem; }
+        .p-well.not-yet { color: var(--slate-dark, #475569); }
+        .p-next-big { font-size: 1.35rem; padding: 14px 26px; background: var(--success, #1f8f55); color: #fff; box-shadow: 0 5px 0 var(--success-dark, #166c40); }
         .p-stars { font-size: 2.4rem; color: #e8a317; letter-spacing: 6px; }
         .p-end-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 8px; }
 
@@ -1750,10 +1761,10 @@
     }
 </script>
 <script src="readaloud.js?v=r4"></script>
-<script src="practice-data.js?v=p10"></script>
-<script src="practice.js?v=p13"></script>
+<script src="practice-data.js?v=p11"></script>
+<script src="practice.js?v=p14"></script>
 <script src="comp-data.js?v=c3"></script>
 <script src="comp.js?v=c4"></script>
-<script src="login.js?v=14"></script>
+<script src="login.js?v=15"></script>
 </body>
 </html>

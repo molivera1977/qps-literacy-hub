@@ -88,7 +88,7 @@ const PRACTICE_STOPS = [
     chains: [['m|a|t','m|ate'],['h|a|t','h|ate'],['r|a|t','r|ate'],['m|a|d','m|ade'],['c|a|n','c|ane'],['p|l|a|n','p|l|ane'],['f|i|n','f|ine'],['p|i|n','p|ine'],['s|p|i|n','s|p|ine'],['sh|i|n','sh|ine'],['t|w|i|n','t|w|ine'],['n|o|t','n|ote']],
     made: ['z|ade','t|ade','h|ane','j|ine','z|ile','b|ice','f|ole','l|oze','z|ote','b|une','p|l|ote','g|r|ine','c|l|ade','ch|ice','sh|ile','th|une',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
-           'f|r|ice','b|r|ate','b|r|ade','h|ote','h|ile','f|r|ade','p|une','b|l|ane','p|l|ine','b|l|ice','f|l|ate','k|ade','b|l|ote','b|r|ile','k|oze','g|r|ote'],
+           'z|ine','b|r|ate','b|r|ade','h|ote','h|ile','f|r|ade','p|une','b|l|ane','p|l|ine','b|l|ice','f|l|ate','k|ade','b|l|ote','b|r|ile','k|oze','g|r|ote'],
     contrast: { ate: ['a|t','ote'], ade: ['a|d','ine'], ane: ['a|n','ine'], ine: ['i|n','ane','ile'], ile: ['i|l','ine'], ice: ['i|c','ine'], ole: ['o|l','ile','ate'], oze: ['o|z','ote'], ote: ['o|t','ate'], une: ['u|n','ine'] },
     sentences: ['The cat ate a bite of cake.','Five mice hid in a hole.','Dave made a kite with a pole.','Nine kids rode their bikes home.','Kate will use tape on the note.','The dog ran to the gate at the end of the lane.','Can Rose hide the cube in the box?','Mike has a plane and a white kite.']
   },
@@ -98,15 +98,15 @@ const PRACTICE_STOPS = [
       lines: ['When {r} comes right after a vowel, the {r} is the boss.', 'The vowel and the {r} make a new sound together.', '{ar} says /ar/, like car. {or} says /or/, like for. {er}, {ir} and {ur} all say /er/, like her, bird and turn.'],
       examples: ['c|ar', 'f|or|k', 'h|er', 'b|ir|d', 't|ur|n']
     },
-    real: ['c|ar','f|ar|m','s|t|ar','h|er','f|er|n','b|ir|d','g|ir|l','sh|ir|t','c|or|n','f|or|k','s|t|or|m','t|ur|n','h|ur|t','b|ur|n','p|ar|k','s|p|or|t'],
+    real: ['c|ar','f|ar|m','s|t|ar','t|er|m','f|er|n','b|ir|d','g|ir|l','sh|ir|t','c|or|n','c|or|d','s|t|or|m','t|ur|n','h|ur|t','b|ur|n','p|ar|k','s|p|or|t'],
     sort: {
       prompt: 'Which sound do you hear?',
       bins: [{ label: 'ar — like car', key: 'ar' }, { label: 'or — like for', key: 'or' }, { label: 'er ir ur — like her', key: 'er' }],
       words: [['f|ar|m','ar'],['s|t|ar','ar'],['p|ar|k','ar'],['d|ar|k','ar'],['c|or|n','or'],['s|t|or|m','or'],['s|p|or|t','or'],['h|or|n','or'],['f|er|n','er'],['b|ir|d','er'],['g|ir|l','er'],['t|ur|n','er']]
     },
-    made: ['t|ar|k','b|er|p','n|ir|k','l|or|p','m|ur|f','s|ar|n','g|er|d','d|er|t','m|ur|z','n|ur|t','j|ar|p','p|er|n','z|ir|t','h|or|t','d|ar|d','g|ar|f',
+    made: ['t|ar|k','b|er|p','n|ir|k','l|or|p','k|or|m','s|ar|n','z|ar|t','d|er|t','m|ur|z','n|ur|t','j|ar|p','p|er|n','p|ar|n','h|or|t','d|ar|d','g|ar|f',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
-           'm|ar|d','v|ir|k','h|ar|z','h|ur|k','h|er|f','b|or|k','k|ar|f','r|ir|f','g|ur|g','p|ur|g','p|ar|g','p|ur|f','k|er|d','k|or|s','r|ar|p','d|ur|d'],
+           'm|ar|d','v|ir|k','t|ir|t','h|ur|k','h|er|f','b|or|k','k|ar|f','r|ir|f','g|ur|g','p|ur|g','p|ar|g','p|ur|f','k|er|d','k|or|s','r|ar|p','d|ur|d'],
     contrast: { ar: ['a','or','ur'], or: ['o','ar','er'], er: ['e','ar','or'], ir: ['i','or','o'], ur: ['u','ar'] },   // 3rd = fills in for a blocked choice
     sentences: ['The bird sat on the fork.','Mark has a dark red car.','The girl will turn the corn.','Her shirt got torn in the storm.','Burt hurt his arm.','We can play in the park.']
   },

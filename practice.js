@@ -114,11 +114,15 @@
   const NEVER = new Set(('fag fagg jap japp shit shitt fok fock fuk fuck fuc fuq suk sux cum kum cok cock dik dick nig nigg ' +
     'kike spic spik chink gook wop dyke homo slut hoe ho pimp thug rape porn sex nude boob tit tits titt puss butt ass ' +
     'poop pee piss pis shat crap damn hell bitch jiz jizz cuck kuck turd fart wang dong prick prik twat wank bum gay ' +
-    'dope doap weed coke koke kok vape vayp meth gun kill die nazi yid goy paki coon kune spaz gyp').split(' '));
+    'dope doap weed coke koke kok vape vayp meth gun kill die nazi yid goy paki coon kune spaz gyp ' +
+    'fark hor hore whore horz hors muff zit feck fick fak fack frick').split(' '));   // 10/21 stop 6: her→hor, fork→fark, harz→horz
   // …and no choice that ends in a lone vowel: car → "ca", her → "he" read with a LONG vowel (10/20, "sta")
   // …nor w/wh/qu + short a: the voice says "wo" (wat → "what", waf, quap; Marcos 10/20). wack and wap measured right.
   const VOICE_CANT = new Set(['shin', 'fol']);
-  const allowed = (v) => !NEVER.has(join(v).toLowerCase()) && !(window.Respell && NEVER.has(window.Respell.respell(v))) &&
+  // compared loosely, as the tests do: ph→f, ck/c/q→k, doubled consonants once ("frik" = frick, "shitt" = shit)
+  const fold = (w) => String(w).toLowerCase().replace(/ph/g, 'f').replace(/ck/g, 'k').replace(/c(?=[aou]|$)/g, 'k').replace(/q/g, 'k').replace(/([^aeiou])\1+/g, '$1');
+  const NEVER_FOLDED = new Set([...NEVER].map(fold));
+  const allowed = (v) => !NEVER_FOLDED.has(fold(join(v))) && !(window.Respell && NEVER_FOLDED.has(fold(window.Respell.respell(v)))) &&
     !/^[aeiou]$/.test(v[v.length - 1]) && !/^(w|wh|qu)\|a\|(?!ck$|p$)/.test(v.join('|')) &&
     join(v).length > 2 &&   // no two-letter choice: ot, ib were read wrong (10/20)
     !/(^|\|)c\|[eiy]/.test(v.join('|')) &&   // no c before e/i/y: a soft c ("cid" reads "sid"), the voice says k
@@ -172,7 +176,7 @@
       stars.setAttribute('aria-label', `${rec.stars} of 3 stars`);
       stars.textContent = '★★★'.slice(0, rec.stars) + '☆☆☆'.slice(0, 3 - rec.stars);
       card.append(stars);
-      if (rec.passes) card.append(el('span', 'stop-pass', rec.passes >= PASSES_NEEDED ? '✅ Ready' : `Pass ${rec.passes} of ${PASSES_NEEDED}`));
+      if (rec.passes) card.append(el('span', 'stop-pass', rec.passes >= PASSES_NEEDED ? '✅✅ 2 of 2 passes' : `✅⬜ ${rec.passes} of ${PASSES_NEEDED} passes`));
       grid.append(card);
     });
     if (window.QPSLogin) QPSLogin.renderPlan();      // the signed-in student's own stop
@@ -821,7 +825,9 @@
     const passed = pct >= PASS;
     const passes = Math.min(PASSES_NEEDED, (rec.passes || 0) + (passed ? 1 : 0));
     saveStopRecord(stop.id, { stars: Math.max(rec.stars || 0, stars), passes, lastScore: pct });
-    box.append(el('div', 'p-score', `${right} of ${items.length}`), el('div', 'p-stars', '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars)));
+    // Marcos 10/21: the score as a percent, the same as the 80% they need ("both should be a percentage"),
+    // what "pass 1 of 2" means in words, and one clear button for what to do next
+    box.append(el('div', 'p-score', `${pct}%`), el('div', 'p-stars', '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars)));
     const missed = items.filter((_, k) => !results[k]);
     const movesOn = !!(window.QPSLogin && QPSLogin.movesOn && QPSLogin.movesOn(stop.id));
     // Send the Check to Mr. O's results sheet (login.js knows who is signed in). Two passes on the student's
@@ -830,10 +836,24 @@
       stop, right, total: items.length, percent: pct, passed, passes, started: checkStarted, finished: new Date(),
       missed: missed.map(it => `${join(it.chunks)} (${STEP_NAMES[it.kind] || it.kind})`)
     }) : null;
-    box.append(el('p', 'p-well', moved ? `🎉 ${PASSES_NEEDED} passes! You move on to stop ${moved.num}, ${moved.name}! Mr. O will check stop ${stop.num} with you soon.`
-      : passed && passes >= PASSES_NEEDED ? `🎉 ${PASSES_NEEDED} passes! You are ready for Mr. O's check!`
-      : passed ? `⭐ Pass ${passes} of ${PASSES_NEEDED}! Do the practice once more and pass the Check again. Then you ${movesOn ? 'move on to the next stop' : 'are ready for Mr. O\'s check'}.`
-      : `Good work. You need ${PASS}% to pass. Do the practice again, then try the Check. Passes: ${passes} of ${PASSES_NEEDED}.`));
+    const got = `You got ${pct}%.`;
+    const msg = moved ? `${got} You passed again! That is 2 of 2 passes. You move on to stop ${moved.num}, ${moved.name}! Mr. O will check stop ${stop.num} with you soon.`
+      : passed && passes >= PASSES_NEEDED ? `${got} You passed! That is 2 of 2 passes. You are ready for Mr. O's check!`
+      : passed ? `${got} You passed! That is 1 of 2 passes. Do the whole stop one more time and pass the Check again ${movesOn ? 'to move on to the next stop' : 'to be ready for Mr. O\'s check'}.`
+      : passes >= PASSES_NEEDED ? `${got} You need ${PASS}% to pass. You still have your 2 of 2 passes.`
+      : `${got} You need ${PASS}% to pass. Not this time. Practice the stop again, then take the Check again. Passes so far: ${passes} of ${PASSES_NEEDED}.`;
+    const meter = el('div', 'p-pass-meter');
+    meter.setAttribute('aria-label', `${passes} of ${PASSES_NEEDED} passes`);
+    for (let k = 0; k < PASSES_NEEDED; k++) meter.append(el('span', 'p-pass-dot' + (k < passes ? ' on' : ''), k < passes ? '✅' : '⬜'));   // boxes, not stars: stars are the score
+    meter.append(el('span', 'p-pass-label', `${passes} of ${PASSES_NEEDED} passes`));
+    const p = window.QPSRead ? QPSRead.wrap(el('p', 'p-well' + (passed ? '' : ' not-yet')), msg) : el('p', 'p-well' + (passed ? '' : ' not-yet'), msg);
+    // a stop named with letters (sh ch th) is spoken by its sayName, so the voice doesn't spell S-H (as on the plan card)
+    const spoken = moved && moved.sayName ? msg.replace(moved.name, moved.sayName) : msg;
+    if (spoken !== msg) p.dataset.say = spoken;
+    const hear = button('p-say', '🔊', () => (window.QPSRead ? QPSRead.say(p) : sayText(spoken)), 'Hear how you did');
+    const line = el('div', 'p-result');
+    line.append(hear, p);
+    box.append(meter, line);
     if (missed.length) {
       box.append(el('p', 'p-small', 'Words to practice — tap to hear:'));
       const list = el('div', 'p-examples');
@@ -841,7 +861,11 @@
       box.append(list);
     }
     const again = el('div', 'p-end-buttons');
-    again.append(button('p-btn p-go', '🏠 Back to all stops', backToStops), button('p-btn p-again', '🔁 Do this stop again', () => { stepIndex = 1; showStep(); window.scrollTo(0, 0); }));
+    const restart = () => { stepIndex = 1; showStep(); window.scrollTo(0, 0); };
+    if (moved) again.append(button('p-btn p-next-big', `▶ Start stop ${moved.num}, ${moved.name}`, () => openStop(moved.id)), button('p-btn p-again', '🏠 Back to all stops', backToStops));
+    else if (passed && passes < PASSES_NEEDED) again.append(button('p-btn p-next-big', '▶ Start pass 2', restart), button('p-btn p-again', '🏠 Back to all stops', backToStops));
+    else if (!passed && passes < PASSES_NEEDED) again.append(button('p-btn p-next-big', '▶ Practice again', restart), button('p-btn p-again', '🏠 Back to all stops', backToStops));
+    else again.append(button('p-btn p-go', '🏠 Back to all stops', backToStops), button('p-btn p-again', '🔁 Do this stop again', restart));
     box.append(again);
     done();
     // After any Check the practice steps come first again (the Check reopens after the last practice step),
