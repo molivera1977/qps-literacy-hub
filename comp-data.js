@@ -242,4 +242,5 @@ const COMP_SKILLS = [
 
 // Where each comprehension student starts (the site moves them from here).
 // Everyone else on the comprehension track starts at level 2.
-const COMP_START_LEVEL = { 'Pettway, Lanaura': 3 };
+// Everyone starts at Level 1 (Marcos 10/21). A student who should start higher can be listed here: { 'Last, First': 2 }
+const COMP_START_LEVEL = {};

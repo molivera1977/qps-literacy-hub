@@ -17,7 +17,12 @@
    Every Practice and Check row sent to the sheet names the level.
    ===================================================================== */
 (function () {
-  const PRACTICE_N = 8, CHECK_N = 5, MAX_LEVEL = 4, DEFAULT_START = 2;
+  const PRACTICE_N = 8, CHECK_N = 5, MAX_LEVEL = 4, DEFAULT_START = 1;
+  // Everyone starts over at Level 1 and earns each level (Marcos 10/21: "why not just put them all at Level 1 and let
+  // them earn their way up"): progress saved before the restart — on a device or on the sheet — is set aside. Saved
+  // progress carries the course version (v); anything without this one is old. (A version, not a time: a device
+  // with a wrong clock must not lose its progress.)
+  const COURSE_V = 2;
   const CHECK_PASS = 8, PASSES_NEEDED = 2;          // 8 of 10 points = 80%, twice per level
   const STORE = 'qps_comp_v1:';
   const SEEN_KEEP = 24;
@@ -40,7 +45,7 @@
   const who = () => window.QPS_STUDENT || '';
   const startLevel = (name) => (typeof COMP_START_LEVEL !== 'undefined' && COMP_START_LEVEL[name]) || DEFAULT_START;
   function load(name) {
-    try { return JSON.parse(localStorage.getItem(STORE + name)) || null; } catch (e) { return null; }
+    try { const st = JSON.parse(localStorage.getItem(STORE + name)) || null; return st && st.v === COURSE_V ? st : null; } catch (e) { return null; }
   }
   function save(name, st) { try { localStorage.setItem(STORE + name, JSON.stringify(st)); } catch (e) { /* private window */ } }
   function stateFor(name) { return load(name) || { skills: {}, t: 0 }; }
@@ -48,7 +53,7 @@
   function putSkill(name, id, sk) {
     const st = stateFor(name);
     const { moved, ...keep } = sk;
-    save(name, { ...st, skills: { ...st.skills, [id]: keep }, t: Date.now() });
+    save(name, { ...st, skills: { ...st.skills, [id]: keep }, t: Date.now(), v: COURSE_V });
   }
   function levelOf(name, id) { return skillState(name, id).level; }
 
@@ -61,7 +66,7 @@
     const form = ent.map(([k, v]) => `${k}=${v.level}`).join(';') + `|t=${st.t || Date.now()}` +
       `|p=${ent.map(([k, v]) => `${k}:${v.passes || 0}`).join(',')}` +
       `|f=${ent.filter(([, v]) => v.finished).map(([k]) => k).join(',')}` +
-      `|l=${ent.filter(([, v]) => v.learned).map(([k]) => k).join(',')}`;
+      `|l=${ent.filter(([, v]) => v.learned).map(([k]) => k).join(',')}|v=${COURSE_V}`;
     QPSLogin.send({
       game: 'qps-levels', sessionId: 'lvl-' + name.replace(/[^A-Za-z0-9]+/g, '-'),
       form, score: 0, correct: 0, total: 0, maxScore: 0, percent: 0, done: false,
@@ -86,7 +91,8 @@
       if (k && lv >= 1 && lv <= MAX_LEVEL) skills[k] = { ...freshSkill(lv), passes: passes[k] || 0, finished: finished.has(k), learned: learned.has(k) };
     });
     if (!Object.keys(skills).length) return false;
-    save(name, { skills, t: Number(get('t')) || Date.now() });
+    if (Number(get('v')) !== COURSE_V) return false;   // a row from before the restart
+    save(name, { skills, t: Number(get('t')) || Date.now(), v: COURSE_V });
     return true;
   }
 
