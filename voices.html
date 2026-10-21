@@ -43,12 +43,12 @@
   <textarea id="wrongList" readonly placeholder="Nothing marked yet."></textarea>
   <div class="bar"><button type="button" id="copy">Copy the list</button><span id="copied"></span></div>
 </main>
-<script src="respell.js?v=s4"></script>
-<script src="practice-data.js?v=p8"></script>
-<script src="practice.js?v=p11"></script>
+<script src="respell.js?v=s5"></script>
+<script src="practice-data.js?v=p9"></script>
+<script src="practice.js?v=p12"></script>
 <script>
   // Recordings of whole made-up words (the site plays these instead of the voice).
-  const WHOLE = new Set(['wat', 'whaf', 'quam', 'celp', 'ralk', 'mant', 'sund']);
+  const WHOLE = new Set(['wat', 'whaf', 'quam', 'ralk', 'mant', 'sund']);   // celp: the computer says it (index.html COMPUTER_SAYS)
   // ✗ marks and words already heard are kept on this device, so the check can be done in parts (10/20)
   const KEY = 'qps_voice_check_v1';
   let saved = {};
@@ -78,7 +78,7 @@
   }
   function showCount() { const n = ALL.length, h = ALL.filter(w => heard.has(w.key)).length; document.getElementById('count').textContent = `Heard ${h} of ${n} · marked wrong ${wrong.size}`; }
   const ALL = [];
-  const say = (w) => { heard.add(w.key); w.row.classList.add('heard'); keep(); showCount(); return WHOLE.has(w.word) ? playRec(w.word) : recOrVoice(w); };
+  const say = (w) => { heard.add(w.key); w.row.classList.add('heard'); keep(); showCount(); return WHOLE.has(w.word) ? playRec(w.word) : (w.choice ? speak(w.said) : recOrVoice(w)); };   // a choice never plays a recording (as in the hub)
 
   function showVoice() {
     const v = speechSynthesis.getVoices();
@@ -97,7 +97,7 @@
     words.forEach(w => {
       const row = document.createElement('div'); row.className = 'row' + (wrong.has(w.key) ? ' wrong' : '') + (heard.has(w.key) ? ' heard' : ''); w.row = row;
       const label = document.createElement('span'); label.className = 'word'; label.textContent = w.word;
-      const said = document.createElement('span'); said.className = 'said'; said.textContent = WHOLE.has(w.word) ? 'Mr. O recording' : (w.said === w.word ? 'as written' : `voice reads "${w.said}"`);
+      const said = document.createElement('span'); said.className = 'said'; said.textContent = WHOLE.has(w.word) && !w.choice ? 'Mr. O recording' : (w.said === w.word ? 'as written' : `voice reads "${w.said}"`);
       if (w.where) { const wh = document.createElement('span'); wh.className = 'said'; wh.textContent = w.where; label.append(said, wh); } else label.append(said);
       const play = document.createElement('button'); play.type = 'button'; play.textContent = '▶'; play.setAttribute('aria-label', 'Hear ' + w.word);
       play.onclick = () => { speechSynthesis.cancel(); say(w); };
@@ -113,7 +113,7 @@
     const all = ALL;
     const seen = new Set();
     // key = what the voice is handed (two words the voice reads the same way are heard once)
-    const add = (list, word, said, where) => { const key = WHOLE.has(word) ? 'rec:' + word : said; if (seen.has(key)) return; seen.add(key); list.push({ word, said, key, where }); };
+    const add = (list, word, said, where, choice) => { const key = WHOLE.has(word) && !choice ? 'rec:' + word : said; if (seen.has(key)) return; seen.add(key); list.push({ word, said, key, where, choice }); };
     const realOf = st => new Set([...(st.real || []), ...(st.letters || []), ...(st.chains || []).flat(), ...st.learn.examples.flatMap(w => w.split('>')),
       ...((st.sort && st.sort.words) || []).filter(([, k]) => k !== 'made').map(([w]) => w)].map(w => w.replace(/\|/g, '')));
     const parts = (st, c) => (st.split ? c.flatMap(x => st.split[x] ? st.split[x].split('|') : [x]) : c);
@@ -126,7 +126,7 @@
         for (const o of [c, ...Practice.nearMisses(st, c)]) {
           const word = o.join('');
           if (real.has(word)) continue;                  // a real word on the list: the voice reads it as written
-          add(list, word, Respell.respell(parts(st, o)), o === c ? '' : 'a choice for ' + c.join(''));
+          add(list, word, Respell.respell(parts(st, o)), o === c ? '' : 'a choice for ' + c.join(''), o !== c);
         }
       }
       // big-word pieces the voice says (Mr. O has no recording of them): ac, ex… respelled, base words as written

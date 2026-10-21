@@ -33,10 +33,10 @@ const PRACTICE_STOPS = [
       words: [['c|a|p','a'],['f|a|n','a'],['b|e|d','e'],['w|e|t','e'],['r|i|p','i'],['k|i|t','i'],['h|o|t','o'],['j|o|g','o'],['s|u|n','u'],['m|u|d','u']]
     },
     chains: [['c|a|t','c|o|t'],['c|o|t','c|u|t'],['c|u|t','h|u|t'],['h|u|t','h|i|t'],['p|i|g','p|i|n'],['p|i|n','p|e|n'],['p|e|n','t|e|n'],['b|e|d','b|a|d'],['b|a|d','b|a|t'],['b|a|t','b|i|t']],
-    made: ['t|i|b','g|o|k','v|u|p','z|a|t','m|e|p','l|o|m','f|i|d','n|e|p','r|o|g','k|a|b','j|u|d','k|a|p','l|i|g','m|i|b','v|e|p','a|b','o|t','u|g',
+    made: ['p|a|g','g|o|k','v|u|p','z|a|t','m|e|p','l|o|m','f|i|d','n|e|p','r|o|g','m|e|k','j|u|d','k|a|p','l|i|g','p|i|d','v|e|p','w|e|z',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
-           'h|i|b','v|i|k','t|o|k','m|u|t','p|i|b','b|o|f','p|a|f','d|a|t','r|u|z','v|a|d','p|e|b','m|a|b','g|e|b','z|u|b','v|i|z','d|e|s'],
-    contrast: { a: ['i','o'], e: ['a','u'], i: ['e','a'], o: ['u','a'], u: ['o','i'] },
+           'f|e|g','v|i|k','t|o|k','m|u|t','b|i|p','b|o|f','p|a|f','d|a|t','r|u|z','v|a|d','k|a|z','v|i|t','n|a|d','t|e|t','v|i|z','d|e|s'],
+    contrast: { a: ['i','o','u'], e: ['a','u','i'], i: ['e','a','o'], o: ['u','a','i'], u: ['o','i','e'] },   // 3rd = fills in for a blocked choice
     sentences: ['The pig sat in the mud.','Ten red bugs ran up the log.','Did Dan get a hot dog?','Pam has a big tan cat.','Sam can hop and jog.','The fox hid in a box.']
   },
   {
@@ -51,12 +51,12 @@ const PRACTICE_STOPS = [
       bins: [{ label: 'sh', key: 'sh' }, { label: 'ch', key: 'ch' }, { label: 'th', key: 'th' }],
       words: [['sh|i|p','sh'],['w|i|sh','sh'],['f|i|sh','sh'],['d|i|sh','sh'],['ch|o|p','ch'],['ch|i|n','ch'],['r|i|ch','ch'],['m|u|ch','ch'],['th|i|n','th'],['m|a|th','th'],['b|a|th','th'],['m|o|th','th']]
     },
-    made: ['sh|u|b','ch|o|g','th|u|p','wh|i|d','f|u|sh','z|e|th','n|i|ch','v|a|ck','j|i|ng','sh|o|m','ch|e|p','th|a|b','wh|e|g','r|a|th','z|e|ck','d|u|sh',
+    made: ['d|a|th','ch|o|g','th|u|p','wh|i|d','f|u|sh','z|e|th','n|i|ch','v|a|ck','j|i|ng','sh|o|m','ch|e|p','z|o|ck','wh|e|g','r|a|th','z|e|ck','d|u|sh',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'v|i|ck','w|e|ck','ch|e|d','wh|e|m','h|i|th','g|o|ck','sh|e|z','g|a|th','d|a|ck','wh|u|t','ch|o|s','sh|e|m','ch|u|k','r|i|sh','d|i|th','wh|e|p'],
     // a filler choice must not sound like the right one for the wrong reason (m next to n: jing/jim, 10/19);
     // th's t filler too (zeth/zet, rath/rat — Marcos voted No 10/20) → ch
-    contrast: { sh: ['s','ch'], ch: ['sh','t'], th: ['ch','sh'], wh: ['th','h'], ck: ['ch','sh'], ng: ['n','b'] },
+    contrast: { sh: ['s','ch'], ch: ['sh','t','th'], th: ['ch','sh','t'], wh: ['th','h'], ck: ['ch','sh'], ng: ['n','m'] },
     sentences: ['The ship is in the dock.','Chad and Beth sing a song.','When can I get a fish?','That duck is on the path.','Seth has a chip in his lunch.','Which shell is thick?']
   },
   {
@@ -67,9 +67,9 @@ const PRACTICE_STOPS = [
     },
     real: ['s|t|o|p','c|l|a|p','c|r|a|b','p|l|u|m','s|w|i|m','f|r|o|g','d|r|u|m','g|r|i|n','s|l|i|p','t|r|i|p','b|e|s|t','h|a|n|d','j|u|m|p','m|i|l|k','t|e|n|t','f|a|s|t'],
     chains: [['l|a|p','c|l|a|p'],['t|o|p','s|t|o|p'],['r|i|p','t|r|i|p'],['l|i|p','f|l|i|p'],['n|a|p','s|n|a|p'],['w|i|n','t|w|i|n'],['t|e|n','t|e|n|t'],['b|a|n','b|a|n|d']],
-    made: ['b|l|i|m','c|r|a|d','f|l|e|p','s|n|o|p','t|r|a|b','p|l|i|n','s|p|e|t','g|r|o|t','d|r|i|b','s|w|u|b','f|r|e|m','s|t|i|d','l|u|s|k','m|e|s|t','d|r|i|n','d|r|e|p',
+    made: ['b|l|i|m','c|r|a|d','f|l|e|p','s|n|o|p','p|l|a|g','p|l|i|n','s|p|e|t','g|r|o|t','d|r|e|n','t|r|o|p','f|r|e|m','s|t|i|d','l|u|s|k','m|e|s|t','d|r|i|n','d|r|e|p',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
-           't|u|s|t','p|l|u|z','d|r|i|g','f|l|u|p','g|r|e|t','c|r|e|p','g|r|u|k','s|w|i|t','c|l|u|f','p|r|e|f','g|u|f|t','s|t|i|f','s|m|i|g','h|a|l|d','s|l|o|m','t|r|u|t'],
+           't|u|s|t','p|l|u|z','d|r|i|g','f|l|u|p','g|r|e|t','g|r|e|z','g|r|u|k','s|w|i|t','c|l|u|f','p|r|e|f','g|u|f|t','s|t|i|f','s|m|i|g','h|a|l|d','s|l|o|m','t|r|u|t'],
     contrast: 'drop',
     sentences: ['The frog can jump in the pond.','Brad and Glen swim fast.','Stop the sled at the tent.','A crab is in the sand.','Can Fran spin the drum?','Trish left her milk on the desk.']
   },
@@ -89,7 +89,7 @@ const PRACTICE_STOPS = [
     made: ['z|ade','t|ade','h|ane','j|ine','z|ile','b|ice','f|ole','l|oze','z|ote','b|une','p|l|ote','g|r|ine','c|l|ade','ch|ice','sh|ile','th|une',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'f|r|ice','b|r|ate','b|r|ade','h|ote','h|ile','f|r|ade','p|une','b|l|ane','p|l|ine','b|l|ice','f|l|ate','k|ade','b|l|ote','b|r|ile','k|oze','g|r|ote'],
-    contrast: { ate: ['a|t','ote'], ade: ['a|d','ine'], ane: ['a|n','ine'], ine: ['i|n','ane'], ile: ['i|l','ole'], ice: ['i|c','ine'], ole: ['o|l','ile'], oze: ['o|z','ole'], ote: ['o|t','ate'], une: ['u|n','ine'] },
+    contrast: { ate: ['a|t','ote'], ade: ['a|d','ine'], ane: ['a|n','ine'], ine: ['i|n','ane','ile'], ile: ['i|l','ine'], ice: ['i|c','ine'], ole: ['o|l','ile','ale'], oze: ['o|z','ote'], ote: ['o|t','ate'], une: ['u|n','ine'] },
     sentences: ['The cat ate a bite of cake.','Five mice hid in a hole.','Dave made a kite with a pole.','Nine kids rode their bikes home.','Kate will use tape on the note.','The dog ran to the gate at the end of the lane.','Can Rose hide the cube in the box?','Mike has a plane and a white kite.']
   },
   {
@@ -104,10 +104,10 @@ const PRACTICE_STOPS = [
       bins: [{ label: 'ar — like car', key: 'ar' }, { label: 'or — like for', key: 'or' }, { label: 'er ir ur — like her', key: 'er' }],
       words: [['f|ar|m','ar'],['s|t|ar','ar'],['p|ar|k','ar'],['d|ar|k','ar'],['c|or|n','or'],['s|t|or|m','or'],['s|p|or|t','or'],['h|or|n','or'],['f|er|n','er'],['b|ir|d','er'],['g|ir|l','er'],['t|ur|n','er']]
     },
-    made: ['t|ar|k','b|er|p','d|ir|b','l|or|p','m|ur|f','s|ar|n','g|er|d','k|ir|b','v|or|n','n|ur|t','j|ar|p','p|er|n','z|ir|t','h|or|t','l|ur|b','g|ar|f',
+    made: ['t|ar|k','b|er|p','n|ir|k','l|or|p','m|ur|f','s|ar|n','g|er|d','d|er|t','m|ur|z','n|ur|t','j|ar|p','p|er|n','z|ir|t','h|or|t','d|ar|d','g|ar|f',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
-           'm|ar|d','v|ir|k','h|ar|z','h|ur|k','h|er|f','b|or|k','k|ar|f','r|ir|f','b|er|b','p|ur|g','p|ar|g','p|ur|f','k|er|d','k|or|s','r|ar|p','d|ur|d'],
-    contrast: { ar: ['a','or','er'], or: ['o','ar','er'], er: ['e','ar'], ir: ['i','or','o'], ur: ['u','ar'] },   // 3rd = fills in for a blocked choice
+           'm|ar|d','v|ir|k','h|ar|z','h|ur|k','h|er|f','b|or|k','k|ar|f','r|ir|f','g|ur|g','p|ur|g','p|ar|g','p|ur|f','k|er|d','k|or|s','r|ar|p','d|ur|d'],
+    contrast: { ar: ['a','or','ur'], or: ['o','ar','er'], er: ['e','ar','or'], ir: ['i','or','o'], ur: ['u','ar'] },   // 3rd = fills in for a blocked choice
     sentences: ['The bird sat on the fork.','Mark has a dark red car.','The girl will turn the corn.','Her shirt got torn in the storm.','Burt hurt his arm.','We can play in the park.']
   },
   {
@@ -117,7 +117,7 @@ const PRACTICE_STOPS = [
       examples: ['c|a|tch', 'b|a|dge', 'kn|o|t', 'wr|a|p', 'gn|a|t', 'qu|i|t', 'f|o|x']
     },
     real: ['c|a|tch','m|a|tch','d|i|tch','b|a|dge','f|u|dge','b|r|i|dge','kn|o|t','kn|i|t','wr|a|p','wr|i|s|t','qu|i|t','qu|a|ck','f|o|x','s|i|x','qu|i|z','gn|a|t'],
-    made: ['z|a|tch','r|i|tch','f|o|dge','l|i|dge','kn|o|p','kn|u|g','kn|e|b','wr|i|d','wr|e|m','wr|i|b','gn|e|t','gn|o|p','qu|i|b','qu|o|t','j|e|x','v|i|x',
+    made: ['z|a|tch','r|i|tch','f|o|dge','l|i|dge','kn|o|p','kn|u|g','kn|o|d','wr|i|d','wr|e|m','k|i|dge','gn|e|t','gn|o|p','qu|e|m','qu|o|t','j|e|x','v|i|x',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'l|e|x','h|i|dge','kn|i|k','wr|o|g','gn|a|k','qu|i|f','g|i|tch','g|i|x','h|o|dge','kn|u|f','wr|e|f','gn|a|d','qu|u|n','l|o|tch','m|o|x','kn|e|p'],
     // fillers that sounded like the right one or each other (kneb/meb, gnet/met, jes/jez — Marcos 10/19) → p and t;
@@ -135,12 +135,12 @@ const PRACTICE_STOPS = [
     sort: {
       prompt: 'Is it a real word or a made-up word?', seeWord: true,
       bins: [{ label: 'Real word', key: 'real' }, { label: 'Made-up word', key: 'made' }],
-      words: [['r|ai|n','real'],['z|ai|t','made'],['s|ea|t','real'],['d|ea|p','made'],['b|oa|t','real'],['l|oa|b','made'],['m|oo|n','real'],['z|oo|t','made'],['c|oi|n','real'],['d|oi|l','made'],['n|ew','real'],['t|r|ew','made']]
+      words: [['r|ai|n','real'],['z|ai|t','made'],['s|ea|t','real'],['d|ea|p','made'],['b|oa|t','real'],['k|oa|m','made'],['m|oo|n','real'],['z|oo|t','made'],['c|oi|n','real'],['d|oi|l','made'],['n|ew','real'],['t|r|ew','made']]
     },
-    made: ['z|ai|t','v|ay','d|ea|p','l|oa|b','z|oo|t','m|ou|t','d|oi|l','z|oy','f|au|l','z|aw','b|oe','t|r|ew','m|igh','sh|oa|m','g|ea|t','n|ol|t',
+    made: ['z|ai|t','v|ay','d|ea|p','k|oa|m','z|oo|t','m|ou|t','d|oi|l','z|oy','t|oo|z','z|aw','b|oe','t|r|ew','m|igh','sh|oa|m','g|ea|t','n|ol|t',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
-           'd|ai|k','v|ai|t','g|ea|f','z|ea|k','k|oi|t','l|ol|t','k|oi|p','z|ay','p|oi|p','h|ai|p','j|oo|f','h|oi|g','g|oa|b','v|ol|z','h|ai|d','p|ea|b'],
-    contrast: { ai: ['a','oa'], ay: ['oy','aw'], ea: ['e','oa','ai'], oa: ['o','ea'], oo: ['o','ou'], ou: ['o','oo'], oi: ['o','ai'], oy: ['ay','aw'], au: ['a','ou'], aw: ['ay','ew'], oe: ['ew','oy'], ew: ['e','aw'], igh: ['ay','aw'], ol: ['o','oo'] },
+           'd|ai|k','v|ai|t','g|ea|f','z|ea|k','k|oi|t','l|ol|t','k|oi|p','z|ay','p|oi|p','h|ai|p','j|oo|f','h|oi|g','f|oi|t','v|ol|z','h|ai|d','f|ea|m'],
+    contrast: { ai: ['a','oa'], ay: ['oy','aw'], ea: ['e','oa','ai'], oa: ['o','ea'], oo: ['o','ou'], ou: ['o','oo','oi'], oi: ['o','ai','oa'], oy: ['ay','aw'], au: ['a','ou','oi'], aw: ['ay','ew'], oe: ['ew','oy'], ew: ['e','aw','oy'], igh: ['ay','aw'], ol: ['o','oo'] },
     sentences: ['The boat sails in the rain.','Roy has a toy coin.','Dad saw the moon at night.','Pay for the soap and the food.','Paul saw a hawk in the light.','We can eat at noon.']
   },
   {

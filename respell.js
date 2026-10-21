@@ -12,10 +12,11 @@
   const CHUNKS = {
     // magic-e endings
     ate: 'ayt', ade: 'ayd', ane: 'ayn', ape: 'ayp',
-    ine: 'yne', ile: 'yle', ice: 'yse',
+    ine: 'yne', ile: 'yle', ice: 'yce',   // ice: yce = nice rice dice slice price spice (yse missed 4 of 6; Marcos 10/20 "sice … totally wrong")
     // "oh" + a consonant came out SHORT on the Mac voice (zoht = zot, lohz = loz, ploht = plot — the same
     // audio, 10/19); "oat"/"oaz" come out exactly like note/vote/doze. ole stays: hohl = hole.
-    ole: 'ohl', oze: 'oaz', ote: 'oat', une: 'oon',
+    // ole: oal (10/20: "ohl" was wrong after l and sh — lole, shole; oal = hole pole role mole sole too)
+    ole: 'oal', oze: 'oaz', ote: 'oat', une: 'oon',
     // vowel teams
     ai: 'ay', ay: 'ay', ea: 'ee', oa: 'oa', oo: 'oo', ou: 'ow',
     oi: 'oy', oy: 'oy', au: 'aw', aw: 'aw', oe: 'o', ew: 'oo', ol: 'ohl', al: 'awl',
@@ -30,7 +31,13 @@
     hes: 'hess',
     // measured 10/19 on the Mac voice: these were read letter by letter (mib, tep, igg) or sounded
     // exactly like another choice (zat = zot)
-    mib: 'mihb', tep: 'tehp', ig: 'ihgg', zat: 'zatt'
+    mib: 'mihb', tep: 'tehp', ig: 'ihgg', zat: 'zatt',
+    // 10/20: once a choice stopped playing Mr. O's syllable recording, "tal" was read as letters T-A-L
+    tal: 'tahl',
+    // Assessment Task 7(a), Advanced Consonants: soft c and soft g (c, g before e say /s/, /j/)
+    celp: 'selp', gerb: 'jerb',
+    // 10/20: "shinn" was heard as "sheen"; the real word as written is right
+    shin: 'shin'
   };
 
   function respell(chunks) {
@@ -41,7 +48,8 @@
     for (let i = 0; i < parts.length; i++) {
       const k = parts[i], next = parts[i + 1];
       // oa before one last consonant reads best as o_e: loab → lobe, shoam → shome
-      if (k === 'oa' && i === parts.length - 2 && /^[bcdfgklmnprstvz]$/.test(next)) { out += 'o' + next + 'e'; break; }
+      // …but not before m: "kome" was heard like "come" (10/20); oam as written is a long o
+      if (k === 'oa' && i === parts.length - 2 && /^[bcdfgklnprstvz]$/.test(next)) { out += 'o' + next + 'e'; break; }
       if (k === 'igh') { out += i === parts.length - 1 ? 'y' : 'igh'; continue; }   // migh → my
       if (k === 'g' && next && /^[eiy]/.test(next)) { out += 'gh'; continue; }        // gerd stays a hard g: gherd
       if (k === 'ch' && i > 0 && i === parts.length - 1) { out += 'tch'; continue; }   // zech was read "zek": zetch
@@ -56,6 +64,8 @@
     const n = parts.length, last = parts[n - 1], vowel = parts[n - 2];
     if (n >= 2 && /^[aeiou]$/.test(vowel) && /^[bdfgklmnprstvz]$/.test(last) && out.endsWith(last) && !(vowel === 'a' && last === 'l') && !(vowel === 'u' && last === 'l' && /[pfb]$/.test(parts[n - 3] || ''))) {
       out = last === 'k' ? out.slice(0, -1) + 'ck' : out + last;
+      // short o + l: "poll" says a LONG o (10/20, "pol sounds like pole"); "pahl" is heard short, like pop and pot
+      if (vowel === 'o' && last === 'l') out = out.slice(0, -3) + 'ahl';
     }
     // a ck ending keeps its ck after a short vowel (wak was read "wok"; wack is not) — 10/20
     else if (n >= 2 && /^[aeiou]$/.test(vowel) && last === 'ck' && out.endsWith('k')) out = out.slice(0, -1) + 'ck';

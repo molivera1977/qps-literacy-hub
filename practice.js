@@ -85,7 +85,10 @@
   function sayWord(chunks) {
     return guarded(async () => {
       const word = join(chunks);
-      const rec = await loadBuffer(word.toLowerCase());
+      // Mr. O's recording only for a word of this stop (real, or a made-up word he recorded): a choice spelled
+      // like one of his big-word syllables (sta, ca, con…) must not play that syllable (10/20: "sta" said "stay")
+      const own = realWords.has(word) || (stop && (stop.made || []).some(m => m.replace(/\|/g, '') === word));
+      const rec = own ? await loadBuffer(word.toLowerCase()) : null;
       if (rec) return playBuffer(rec);
       return speakComputer(realWords.has(word) || !window.Respell ? word : Respell.respell(soundParts(chunks)));
     });
@@ -112,7 +115,14 @@
     'kike spic spik chink gook wop dyke homo slut hoe ho pimp thug rape porn sex nude boob tit tits titt puss butt ass ' +
     'poop pee piss pis shat crap damn hell bitch jiz jizz cuck kuck turd fart wang dong prick prik twat wank bum gay ' +
     'dope doap weed coke koke kok vape vayp meth gun kill die nazi yid goy paki coon kune spaz gyp').split(' '));
-  const allowed = (v) => !NEVER.has(join(v).toLowerCase()) && !(window.Respell && NEVER.has(window.Respell.respell(v)));
+  // …and no choice that ends in a lone vowel: car → "ca", her → "he" read with a LONG vowel (10/20, "sta")
+  // …nor w/wh/qu + short a: the voice says "wo" (wat → "what", waf, quap; Marcos 10/20). wack and wap measured right.
+  const VOICE_CANT = new Set(['shin', 'fol']);
+  const allowed = (v) => !NEVER.has(join(v).toLowerCase()) && !(window.Respell && NEVER.has(window.Respell.respell(v))) &&
+    !/^[aeiou]$/.test(v[v.length - 1]) && !/^(w|wh|qu)\|a\|(?!ck$|p$)/.test(v.join('|')) &&
+    join(v).length > 2 &&   // no two-letter choice: ot, ib were read wrong (10/20)
+    !/(^|\|)c\|[eiy]/.test(v.join('|')) &&   // no c before e/i/y: a soft c ("cid" reads "sid"), the voice says k
+    !VOICE_CANT.has(join(v));   // the voice cannot say these right, however spelled (Marcos 10/20: shin, fol; he kept pol hol dol bol)
   function nearMisses(st, chunks) {
     const out = [];
     if (st.contrast === 'drop') {
