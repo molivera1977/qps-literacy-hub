@@ -65,7 +65,7 @@ const PRACTICE_STOPS = [
       lines: ['A blend is two letters side by side. You hear BOTH sounds, said fast.', 'In frog you hear /f/ and /r/ together: /f/ /r/ /o/ /g/.', 'Do not skip a sound!'],
       examples: ['f|r|o|g', 's|t|o|p', 'c|r|a|b', 'j|u|m|p', 'm|i|l|k']
     },
-    real: ['s|t|o|p','f|l|a|g','c|r|a|b','p|l|u|m','s|w|i|m','f|r|o|g','d|r|u|m','g|r|i|n','s|l|i|p','t|r|i|p','b|e|s|t','h|a|n|d','j|u|m|p','m|i|l|k','t|e|n|t','f|a|s|t'],
+    real: ['s|t|o|p','c|l|a|p','c|r|a|b','p|l|u|m','s|w|i|m','f|r|o|g','d|r|u|m','g|r|i|n','s|l|i|p','t|r|i|p','b|e|s|t','h|a|n|d','j|u|m|p','m|i|l|k','t|e|n|t','f|a|s|t'],
     chains: [['l|a|p','c|l|a|p'],['t|o|p','s|t|o|p'],['r|i|p','t|r|i|p'],['l|i|p','f|l|i|p'],['n|a|p','s|n|a|p'],['w|i|n','t|w|i|n'],['t|e|n','t|e|n|t'],['b|a|n','b|a|n|d']],
     made: ['b|l|i|m','c|r|a|d','f|l|e|p','s|n|o|p','t|r|a|b','p|l|i|n','s|p|e|t','g|r|o|t','d|r|i|b','s|w|u|b','f|r|e|m','s|t|i|d','l|u|s|k','m|e|s|t','d|r|i|n','d|r|e|p',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
@@ -107,7 +107,7 @@ const PRACTICE_STOPS = [
     made: ['t|ar|k','b|er|p','d|ir|b','l|or|p','m|ur|f','s|ar|n','g|er|d','k|ir|b','v|or|n','n|ur|t','j|ar|p','p|er|n','z|ir|t','h|or|t','l|ur|b','g|ar|f',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'm|ar|d','v|ir|k','h|ar|z','h|ur|k','h|er|f','b|or|k','k|ar|f','r|ir|f','b|er|b','p|ur|g','p|ar|g','p|ur|f','k|er|d','k|or|s','r|ar|p','d|ur|d'],
-    contrast: { ar: ['a','or'], or: ['o','ar'], er: ['e','ar'], ir: ['i','or'], ur: ['u','ar'] },
+    contrast: { ar: ['a','or','er'], or: ['o','ar','er'], er: ['e','ar'], ir: ['i','or','o'], ur: ['u','ar'] },   // 3rd = fills in for a blocked choice
     sentences: ['The bird sat on the fork.','Mark has a dark red car.','The girl will turn the corn.','Her shirt got torn in the storm.','Burt hurt his arm.','We can play in the park.']
   },
   {
@@ -140,7 +140,7 @@ const PRACTICE_STOPS = [
     made: ['z|ai|t','v|ay','d|ea|p','l|oa|b','z|oo|t','m|ou|t','d|oi|l','z|oy','f|au|l','z|aw','b|oe','t|r|ew','m|igh','sh|oa|m','g|ea|t','n|ol|t',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'd|ai|k','v|ai|t','g|ea|f','z|ea|k','k|oi|t','l|ol|t','k|oi|p','z|ay','p|oi|p','h|ai|p','j|oo|f','h|oi|g','g|oa|b','v|ol|z','h|ai|d','p|ea|b'],
-    contrast: { ai: ['a','oa'], ay: ['oy','aw'], ea: ['e','oa'], oa: ['o','ea'], oo: ['o','ou'], ou: ['o','oo'], oi: ['o','ai'], oy: ['ay','aw'], au: ['a','ou'], aw: ['ay','ew'], oe: ['ew','oy'], ew: ['e','aw'], igh: ['ay','aw'], ol: ['o','oo'] },
+    contrast: { ai: ['a','oa'], ay: ['oy','aw'], ea: ['e','oa','ai'], oa: ['o','ea'], oo: ['o','ou'], ou: ['o','oo'], oi: ['o','ai'], oy: ['ay','aw'], au: ['a','ou'], aw: ['ay','ew'], oe: ['ew','oy'], ew: ['e','aw'], igh: ['ay','aw'], ol: ['o','oo'] },
     sentences: ['The boat sails in the rain.','Roy has a toy coin.','Dad saw the moon at night.','Pay for the soap and the food.','Paul saw a hawk in the light.','We can eat at noon.']
   },
   {

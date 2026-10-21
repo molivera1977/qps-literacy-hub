@@ -105,6 +105,14 @@
   function sayText(text) { return guarded(() => speakComputer(text)); }
 
   /* ---------- near-miss choices (must SOUND different from the word) ---------- */
+  // Choices a child must never see or hear (10/20, Marcos: "fag … this might not be appropriate"): slurs,
+  // swears, crude and drug words, by spelling AND by what the voice is handed (shirt → "shit", deap → "dope").
+  // A blocked choice is skipped and the stop's next contrast fills in.
+  const NEVER = new Set(('fag fagg jap japp shit shitt fok fock fuk fuck fuc fuq suk sux cum kum cok cock dik dick nig nigg ' +
+    'kike spic spik chink gook wop dyke homo slut hoe ho pimp thug rape porn sex nude boob tit tits titt puss butt ass ' +
+    'poop pee piss pis shat crap damn hell bitch jiz jizz cuck kuck turd fart wang dong prick prik twat wank bum gay ' +
+    'dope doap weed coke koke kok vape vayp meth gun kill die nazi yid goy paki coon kune spaz gyp').split(' '));
+  const allowed = (v) => !NEVER.has(join(v).toLowerCase()) && !(window.Respell && NEVER.has(window.Respell.respell(v)));
   function nearMisses(st, chunks) {
     const out = [];
     if (st.contrast === 'drop') {
@@ -119,7 +127,7 @@
       const i = chunks.findIndex(c => st.contrast[c]);
       if (i >= 0) st.contrast[chunks[i]].forEach(alt => out.push([...chunks.slice(0, i), ...split(alt), ...chunks.slice(i + 1)]));
     }
-    return out.filter(v => join(v) !== join(chunks)).slice(0, 2);
+    return out.filter(v => join(v) !== join(chunks) && allowed(v)).slice(0, 2);
   }
   // The chunk that carries the stop's pattern (highlighted after a miss).
   function patternIndex(chunks) {
