@@ -184,11 +184,12 @@
     top.append(btn('home-btn', '⬅️ My plan', backToPlan, 'Back to my plan'), el('h1', 'practice-title', title));
     area.append(top);
   }
+  // The reading level in words only (Marcos 10/21: kids saw "Level 4 ●●●●" — every dot filled — and thought
+  // they were done). No filled dots that can look like "finished".
   function levelDots(level) {
     const d = el('div', 'c-level');
-    d.setAttribute('aria-label', `Level ${level} of ${MAX_LEVEL}`);
-    d.append(el('span', 'c-level-label', `Level ${level}`));
-    for (let i = 1; i <= MAX_LEVEL; i++) d.append(el('span', 'c-level-dot' + (i <= level ? ' on' : '')));
+    d.setAttribute('aria-label', `Reading level ${level} of ${MAX_LEVEL}`);
+    d.append(el('span', 'c-level-label', `📚 Reading level ${level}`));
     return d;
   }
 
@@ -255,9 +256,12 @@
       if (i >= n) return finish();
       const top = el('div', 'c-row');
       const dots = el('div', 'p-dots');
-      dots.setAttribute('aria-label', `${i} of ${n}`);
+      dots.setAttribute('aria-hidden', 'true');
       for (let k = 0; k < n; k++) dots.append(el('span', k < i ? 'on' : ''));
-      top.append(dots, levelDots(sk.level));
+      // how far they are, in words: "Passage 1 of 5" (the dots alone looked like "done")
+      const where = el('div', 'c-where');
+      where.append(el('span', 'c-where-label', `Passage ${i + 1} of ${n}`), dots);
+      top.append(where, levelDots(sk.level));
       area.append(top);
       if (graded && i === 0) area.append(block('p', 'c-lead', 'This is the Check. Do your best. You will see how you did at the end.'));
 
