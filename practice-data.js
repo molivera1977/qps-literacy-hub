@@ -89,7 +89,7 @@ const PRACTICE_STOPS = [
     made: ['z|ade','t|ade','h|ane','j|ine','z|ile','b|ice','f|ole','l|oze','z|ote','b|une','p|l|ote','g|r|ine','c|l|ade','ch|ice','sh|ile','th|une',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'f|r|ice','b|r|ate','b|r|ade','h|ote','h|ile','f|r|ade','p|une','b|l|ane','p|l|ine','b|l|ice','f|l|ate','k|ade','b|l|ote','b|r|ile','k|oze','g|r|ote'],
-    contrast: { ate: ['a|t','ote'], ade: ['a|d','ine'], ane: ['a|n','ine'], ine: ['i|n','ane','ile'], ile: ['i|l','ine'], ice: ['i|c','ine'], ole: ['o|l','ile','ale'], oze: ['o|z','ote'], ote: ['o|t','ate'], une: ['u|n','ine'] },
+    contrast: { ate: ['a|t','ote'], ade: ['a|d','ine'], ane: ['a|n','ine'], ine: ['i|n','ane','ile'], ile: ['i|l','ine'], ice: ['i|c','ine'], ole: ['o|l','ile','ate'], oze: ['o|z','ote'], ote: ['o|t','ate'], une: ['u|n','ine'] },
     sentences: ['The cat ate a bite of cake.','Five mice hid in a hole.','Dave made a kite with a pole.','Nine kids rode their bikes home.','Kate will use tape on the note.','The dog ran to the gate at the end of the lane.','Can Rose hide the cube in the box?','Mike has a plane and a white kite.']
   },
   {
