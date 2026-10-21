@@ -307,10 +307,14 @@
     card.type = 'button'; card.className = 'plan-card';
     card.setAttribute('aria-label', `Start ${sk.name}. Level ${lv} of 4.`);
     card.onclick = () => Comp.open(sk.id);
-    card.innerHTML = '<span class="plan-example"></span><span class="plan-name"></span><span class="plan-level"></span><span class="plan-go">Start ▶</span>';
+    card.innerHTML = '<span class="plan-example"></span><span class="plan-name"></span><span class="plan-level"></span><span class="plan-pass"></span><span class="plan-go">Start ▶</span>';
     card.querySelector('.plan-example').textContent = sk.icon;
     card.querySelector('.plan-name').textContent = sk.name;
-    card.querySelector('.plan-level').textContent = `Level ${lv} of 4`;
+    card.querySelector('.plan-level').textContent = `📚 Reading level ${lv}`;
+    // where they are in the course (10/21): the passes at this level, or finished
+    const pr = Comp.progressOf ? Comp.progressOf(student, sk.id) : null;
+    card.querySelector('.plan-pass').textContent = !pr ? '' : pr.finished ? '🎉 Finished — Mr. O will check you'
+      : pr.passes ? `✅⬜ ${pr.passes} of 2 passes — pass 1 more time` : '';
     return card;
   }
 
@@ -360,7 +364,7 @@
     const skills = Comp.skills();
     const dir = document.createElement('div');
     dir.className = 'p-direction';
-    const line = 'You passed every QPS stop! Your plan is reading for meaning. The site will match the passages to you.';
+    const line = 'You passed every QPS stop! Your plan is reading for meaning. Tap Start, and the site will take you through it, one step at a time.';
     const sayBtn = document.createElement('button');
     sayBtn.type = 'button'; sayBtn.className = 'p-say'; sayBtn.textContent = '🔊';
     sayBtn.setAttribute('aria-label', 'Hear your plan');

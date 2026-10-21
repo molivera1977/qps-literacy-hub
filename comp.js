@@ -3,16 +3,14 @@
    For students who passed every QPS level. Each skill has Learn,
    Practice (8 passages) and Check (5 passages = 10 points).
 
-   It grows with the student. Every passage is at the student's level
-   (1–4) for that skill:
-     • 3 right in a row (first try)      → up one level
-     • 2 wrong out of the last 3          → down one level
-     • Check 8+ of 10 → up one · Check 4 or less → down one
-     • Going back UP to a level that was just too hard takes more:
-       8 right in a row, or 9+ on a Check.
-   (Simulated 10/15 against readers of known level: without that last
-   rule a student spent ~40% of passages above their level; with it,
-   ~18%, and a strong reader still climbs in 5–10 passages.)
+   A COURSE, walked through one step at a time (Marcos 10/21: "shouldn't the site escort the kids
+   through each one" · "This should be clearer for them and me"). At each level (1–4):
+     Learn (the first time) → Practice (8 passages) → Check (5 passages = 10 points).
+     • The level changes ONLY on the Check (he chose: no moving up or down in the middle of Practice).
+     • 8+ of 10 (80%) is a pass. 2 passes at a level → the next level (like the phonics stops).
+     • The Check opens after that round's Practice; after any Check, Practice comes first again.
+     • 2 passes at Level 4 → the skill is FINISHED: "Mr. O will check you soon" (his dashboard flags it).
+       After that they can keep practicing (review); nothing moves.
    The level is kept on the student's device AND as one row per student
    on the 'qps-levels' tab of Mr. O's sheet (the same row is updated, not
    added), so a new or wiped device picks up where they left off.
@@ -20,30 +18,22 @@
    ===================================================================== */
 (function () {
   const PRACTICE_N = 8, CHECK_N = 5, MAX_LEVEL = 4, DEFAULT_START = 2;
-  const UP_STREAK = 3, UP_BACK_STREAK = 8, DOWN_WINDOW = 3, DOWN_WRONG = 2;
-  const CHECK_UP = 8, CHECK_UP_BACK = 9, CHECK_DOWN = 4;
+  const CHECK_PASS = 8, PASSES_NEEDED = 2;          // 8 of 10 points = 80%, twice per level
   const STORE = 'qps_comp_v1:';
   const SEEN_KEEP = 24;
 
   /* ---------- the level rules (pure, so they can be tested) ---------- */
-  function freshSkill(start) { return { level: start, streak: 0, recent: [], seen: [], droppedFrom: 0 }; }
+  function freshSkill(start) { return { level: start, passes: 0, learned: false, practiced: false, finished: false, seen: [] }; }
 
-  // One first-try answer at the current level → the new skill state.
-  function afterAnswer(sk, right) {
-    const recent = [...sk.recent, right].slice(-DOWN_WINDOW);
-    const streak = right ? sk.streak + 1 : 0;
-    const need = sk.level + 1 === sk.droppedFrom ? UP_BACK_STREAK : UP_STREAK;
-    if (streak >= need && sk.level < MAX_LEVEL) return { ...sk, level: sk.level + 1, streak: 0, recent: [], moved: 'up' };
-    if (recent.filter(r => !r).length >= DOWN_WRONG && sk.level > 1) return { ...sk, level: sk.level - 1, droppedFrom: sk.level, streak: 0, recent: [], moved: 'down' };
-    return { ...sk, streak, recent, moved: null };
-  }
-
-  // A finished Check (points out of 10) → the new skill state.
+  // A finished Check (points out of 10) → the new skill state. Practice comes first again after any Check.
+  // moved: 'pass' (1 of 2), 'up' (2 of 2 → next level), 'finished' (2 of 2 at the top level), or null
   function afterCheck(sk, points) {
-    const need = sk.level + 1 === sk.droppedFrom ? CHECK_UP_BACK : CHECK_UP;
-    if (points >= need && sk.level < MAX_LEVEL) return { ...sk, level: sk.level + 1, streak: 0, recent: [], moved: 'up' };
-    if (points <= CHECK_DOWN && sk.level > 1) return { ...sk, level: sk.level - 1, droppedFrom: sk.level, streak: 0, recent: [], moved: 'down' };
-    return { ...sk, moved: null };
+    const base = { ...sk, practiced: false };
+    if (sk.finished || points < CHECK_PASS) return { ...base, moved: null };
+    const passes = (sk.passes || 0) + 1;
+    if (passes < PASSES_NEEDED) return { ...base, passes, moved: 'pass' };
+    if (sk.level < MAX_LEVEL) return { ...base, level: sk.level + 1, passes: 0, moved: 'up' };
+    return { ...base, passes: PASSES_NEEDED, finished: true, moved: 'finished' };
   }
 
   /* ---------- per-student state ---------- */
@@ -54,7 +44,7 @@
   }
   function save(name, st) { try { localStorage.setItem(STORE + name, JSON.stringify(st)); } catch (e) { /* private window */ } }
   function stateFor(name) { return load(name) || { skills: {}, t: 0 }; }
-  function skillState(name, id) { return stateFor(name).skills[id] || freshSkill(startLevel(name)); }
+  function skillState(name, id) { const sk = stateFor(name).skills[id]; return sk ? { ...freshSkill(sk.level), ...sk } : freshSkill(startLevel(name)); }
   function putSkill(name, id, sk) {
     const st = stateFor(name);
     const { moved, ...keep } = sk;
@@ -66,7 +56,12 @@
   function backupLevels(name) {
     if (!window.QPSLogin) return;
     const st = stateFor(name);
-    const form = Object.entries(st.skills).map(([k, v]) => `${k}=${v.level}`).join(';') + `|t=${st.t || Date.now()}`;
+    // "context=3|t=…|p=context:1|f=|l=context" — level, then passes / finished / learned (older readers stop at |t=)
+    const ent = Object.entries(st.skills);
+    const form = ent.map(([k, v]) => `${k}=${v.level}`).join(';') + `|t=${st.t || Date.now()}` +
+      `|p=${ent.map(([k, v]) => `${k}:${v.passes || 0}`).join(',')}` +
+      `|f=${ent.filter(([, v]) => v.finished).map(([k]) => k).join(',')}` +
+      `|l=${ent.filter(([, v]) => v.learned).map(([k]) => k).join(',')}`;
     QPSLogin.send({
       game: 'qps-levels', sessionId: 'lvl-' + name.replace(/[^A-Za-z0-9]+/g, '-'),
       form, score: 0, correct: 0, total: 0, maxScore: 0, percent: 0, done: false,
@@ -80,15 +75,18 @@
     const rows = await QPSLogin.readTab('qps-levels');
     const row = (rows || []).find(r => r.name === name);
     if (!row || !row.form || load(name)) return false;
-    const [pairs, t] = String(row.form).split('|t=');
+    const segs = String(row.form).split('|');
+    const get = (key) => (segs.find(x => x.startsWith(key + '=')) || '').slice(key.length + 1);
+    const passes = {}; get('p').split(',').forEach(x => { const [k, n] = x.split(':'); if (k) passes[k] = Math.max(0, Math.min(PASSES_NEEDED, Number(n) || 0)); });
+    const finished = new Set(get('f').split(',').filter(Boolean)), learned = new Set(get('l').split(',').filter(Boolean));
     const skills = {};
-    pairs.split(';').forEach(p => {
+    segs[0].split(';').forEach(p => {
       const [k, v] = p.split('=');
       const lv = Number(v);
-      if (k && lv >= 1 && lv <= MAX_LEVEL) skills[k] = freshSkill(lv);
+      if (k && lv >= 1 && lv <= MAX_LEVEL) skills[k] = { ...freshSkill(lv), passes: passes[k] || 0, finished: finished.has(k), learned: learned.has(k) };
     });
     if (!Object.keys(skills).length) return false;
-    save(name, { skills, t: Number(t) || Date.now() });
+    save(name, { skills, t: Number(get('t')) || Date.now() });
     return true;
   }
 
@@ -204,24 +202,50 @@
     return d;
   }
 
+  // Passes as boxes (stars are the score), or "Finished"
+  function passMeter(sk) {
+    const m = el('div', 'p-pass-meter c-pass');
+    if (sk.finished) { m.append(el('span', 'p-pass-label', '🎉 Finished')); return m; }
+    for (let k = 0; k < PASSES_NEEDED; k++) m.append(el('span', 'p-pass-dot' + (k < sk.passes ? ' on' : ''), k < sk.passes ? '✅' : '⬜'));
+    m.append(el('span', 'p-pass-label', `${sk.passes} of ${PASSES_NEEDED} passes`));
+    return m;
+  }
+  const nowOf = (sk) => (!sk.learned ? 'learn' : sk.finished ? 'done' : !sk.practiced ? 'practice' : 'check');
+
+  // The course screen — no menu to pick from: where they are, the three steps with the one to do lit,
+  // what to do (read aloud), and ONE button for it.
   function open(id) {
     skill = skillById(id);
     if (!skill) return;
     stopSpeaking();
+    const name = who();
+    const sk = skillState(name, skill.id);
     const area = $('compView');
     area.innerHTML = '';
     document.title = `QPS Literacy Hub | ${skill.name}`;
     header(area, `${skill.icon} ${skill.name}`);
-    const lv = levelOf(who(), skill.id);
-    area.append(levelDots(lv));
-    area.append(block('p', 'c-lead', 'Pick what to do. Start with Learn the first time.'));
-    const menu = el('div', 'c-menu');
-    menu.append(
-      btn('c-menu-btn learn', '📘 Learn', () => learn()),
-      btn('c-menu-btn practice', `✏️ Practice · ${PRACTICE_N} passages`, () => run('practice')),
-      btn('c-menu-btn check', `⭐ Check · ${CHECK_N} passages`, () => run('check'))
-    );
-    area.append(menu);
+    const top = el('div', 'c-row');
+    top.append(levelDots(sk.level), passMeter(sk));
+    area.append(top);
+    const now = nowOf(sk);
+    const steps = el('ol', 'c-steps');
+    [['learn', '1. Learn'], ['practice', `2. Practice · ${PRACTICE_N} passages`], ['check', `3. Check · ${CHECK_N} passages`]].forEach(([k, t]) => {
+      const done = (k === 'learn' && sk.learned) || (k === 'practice' && (sk.practiced || sk.finished)) || (k === 'check' && sk.finished);
+      steps.append(el('li', 'c-step' + (k === now ? ' now' : '') + (done ? ' done' : ''), (done ? '✅ ' : k === now ? '👉 ' : '') + t));
+    });
+    area.append(steps);
+    const say = now === 'learn' ? `First, learn how ${skill.name} works. Tap Learn.`
+      : now === 'done' ? `You finished ${skill.name}! Mr. O will check you soon. You can keep practicing.`
+      : now === 'practice' ? (sk.passes ? `Pass 2. Practice ${PRACTICE_N} passages again at Level ${sk.level}. Then take the Check again.`
+                                        : `Practice ${PRACTICE_N} passages at Level ${sk.level}. Then take the Check.`)
+      : `You finished the practice. Now take the Check: ${CHECK_N} passages. You need 80% to pass.`;
+    area.append(block('p', 'c-lead c-next-say', say, { label: 'Hear what to do' }));
+    const foot = el('div', 'p-end-buttons');
+    foot.append(now === 'learn' ? btn('p-btn p-next-big', '▶ Learn', () => learn())
+      : now === 'check' ? btn('p-btn p-next-big', `▶ Take the Check · ${CHECK_N} passages`, () => run('check'))
+      : btn('p-btn p-next-big', now === 'done' ? '▶ Keep practicing' : sk.passes ? '▶ Start pass 2: Practice' : `▶ Practice · ${PRACTICE_N} passages`, () => run('practice')));
+    if (sk.learned) foot.append(btn('p-btn p-again', '📘 See the lesson again', () => learn()));
+    area.append(foot);
     show();
   }
 
@@ -234,7 +258,7 @@
     skill.learn.forEach(t => box.append(block('p', 'c-learn', t)));
     area.append(box);
     const foot = el('div', 'practice-foot');
-    foot.append(btn('p-btn p-next', 'Next ➡️', () => open(skill.id)));
+    foot.append(btn('p-btn p-next', 'Next ➡️', () => { const n = who(); putSkill(n, skill.id, { ...skillState(n, skill.id), learned: true }); backupLevels(n); open(skill.id); }));
     area.append(foot);
     show();
   }
@@ -258,7 +282,7 @@
     const used = new Set();
     const missed = [];
     const started = new Date();
-    let i = 0, points = 0, firstTryRight = 0, peak = startLv;
+    let i = 0, points = 0, firstTryRight = 0;
 
     const area = $('compView');
     const step = () => {
@@ -332,17 +356,9 @@
       // Part 2: which words showed it (the evidence)
       const partTwo = () => {
         const right1 = firstRight === true;
-        if (!graded) {
-          if (right1) firstTryRight++;
-          const before = sk.level;
-          sk = afterAnswer({ ...sk, seen: [...sk.seen.filter(x => x !== item.id), item.id].slice(-SEEN_KEEP) }, right1);
-          peak = Math.max(peak, sk.level);
-          putSkill(name, skill.id, sk);
-          if (sk.level !== before) backupLevels(name);
-        } else {
-          sk = { ...sk, seen: [...sk.seen.filter(x => x !== item.id), item.id].slice(-SEEN_KEEP) };
-          putSkill(name, skill.id, sk);
-        }
+        if (!graded && right1) firstTryRight++;
+        sk = { ...sk, seen: [...sk.seen.filter(x => x !== item.id), item.id].slice(-SEEN_KEEP) };   // the level stays put
+        putSkill(name, skill.id, sk);
         const q2 = el('div', 'c-q');
         q2.append(askBox(`Which words in the passage helped you know what *${word}* means?`), pickLabel());
         const opts2 = el('div', 'c-choices');
@@ -361,8 +377,6 @@
               if (!right) [...opts2.children].forEach(c => { if (c.querySelector('.c-words').dataset.say === item.clues[0]) c.classList.add('right'); });
               fb2.textContent = right ? '✅ Those are the clue words!' : `The best clue is "${item.clues[0]}."`;
               markClue(passage, item.clues[0]);
-              if (sk.moved === 'up') fb2.textContent += ' ⭐ Level up! The next passages will be harder.';
-              if (sk.moved === 'down') fb2.textContent += ' Next, a passage at a new level.';
             }
             const foot = el('div', 'practice-foot');
             foot.append(btn('p-btn p-next', i + 1 >= n ? 'Finish ➡️' : 'Next ➡️', () => { i++; step(); }));
@@ -379,40 +393,46 @@
 
     const finish = () => {
       const finished = new Date();
-      const before = sk.level;
+      const before = sk.level, wasFinished = sk.finished;
       let total, score;
-      if (graded) {
-        total = CHECK_N * 2; score = points;
-        sk = afterCheck(sk, points);
-        putSkill(name, skill.id, sk);
-      } else {
-        total = n; score = firstTryRight;
-      }
+      if (graded) { total = CHECK_N * 2; score = points; sk = afterCheck(sk, points); }
+      else { total = n; score = firstTryRight; sk = { ...sk, practiced: true }; }
+      const moved = sk.moved;
+      putSkill(name, skill.id, sk);
       backupLevels(name);
       const pct = Math.round((score / total) * 100);
       if (window.QPSLogin) QPSLogin.send({
         game: 'qps-c-' + skill.id,
         sessionId: `qps-c-${skill.id}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-        form: graded ? `Check · Level ${before}${sk.level !== before ? ' → ' + sk.level : ''}`
-                     : `Practice · Level ${startLv}${sk.level !== startLv ? ' → ' + sk.level : ''}${peak > Math.max(startLv, sk.level) ? ` (tried ${peak})` : ''}`,
+        form: graded ? `Check · Level ${before}` + (moved === 'up' ? ` → ${sk.level}` : moved === 'finished' ? ' · finished' : moved === 'pass' ? ` · pass ${sk.passes} of ${PASSES_NEEDED}` : '')
+                     : `Practice · Level ${startLv}`,
         score, correct: score, total, maxScore: total, percent: pct, done: true,
         elapsed: Math.round((finished - started) / 1000), tabSwitches: 0,
         wrongQuestions: missed.join(' | '),
         startedAt: started.toISOString(), finishedAt: finished.toISOString()
       });
 
+      // the end, like the phonics Check: a percent, the passes, what it means (read aloud), one next button
       const box = el('div', 'p-round');
-      box.append(el('div', 'p-score', graded ? `${score} of ${total}` : `${score} of ${total} right on the first try`));
+      box.append(el('div', 'p-score', `${pct}%`));
       if (graded) {
         const stars = pct >= 90 ? 3 : pct >= 70 ? 2 : 1;
-        box.append(el('div', 'p-stars', '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars)));
+        box.append(el('div', 'p-stars', '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars)), passMeter(sk));
       }
-      const moved = sk.level > (graded ? before : startLv) ? `⭐ You moved up to Level ${sk.level}!`
-                  : sk.level < (graded ? before : startLv) ? `Next time you will practice at Level ${sk.level}.`
-                  : `You are at Level ${sk.level}.`;
-      box.append(block('p', 'p-well', moved));
-      const foot = el('div', 'practice-foot');
-      foot.append(btn('p-btn p-next', 'Back ➡️', () => open(skill.id)));
+      const got = `You got ${pct}%.`;
+      const msg = !graded ? (wasFinished ? `${got} right on the first try. Nice review!` : `You finished the practice! You got ${pct}% right on the first try. Now take the Check.`)
+        : wasFinished ? `${got} Nice review! You already finished ${skill.name}.`
+        : moved === 'up' ? `${got} You passed again! That is 2 of 2 passes. You move up to Level ${sk.level}!`
+        : moved === 'finished' ? `${got} You passed again! That is 2 of 2 passes. You finished ${skill.name}! Mr. O will check you soon.`
+        : moved === 'pass' ? `${got} You passed! That is 1 of 2 passes. Practice ${PRACTICE_N} passages again and pass the Check again ${before < MAX_LEVEL ? `to move up to Level ${before + 1}` : `to finish ${skill.name}`}.`
+        : `${got} You need 80% to pass. Not this time. Practice again, then take the Check again.`;
+      box.append(block('p', 'p-well' + (graded && !moved && !wasFinished ? ' not-yet' : ''), msg, { label: 'Hear how you did' }));
+      const foot = el('div', 'p-end-buttons');
+      const next = !graded ? (wasFinished ? btn('p-btn p-next-big', '▶ Keep practicing', () => run('practice')) : btn('p-btn p-next-big', `▶ Take the Check · ${CHECK_N} passages`, () => run('check')))
+        : wasFinished || moved === 'finished' ? btn('p-btn p-next-big', '🏠 Back to my plan', backToPlan)
+        : moved === 'up' ? btn('p-btn p-next-big', `▶ Start Level ${sk.level}`, () => open(skill.id))
+        : btn('p-btn p-next-big', moved === 'pass' ? '▶ Start pass 2' : '▶ Practice again', () => run('practice'));
+      foot.append(next, btn('p-btn p-again', `${skill.icon} Back to ${skill.name}`, () => open(skill.id)));
       area.append(box, foot);
     };
     step();
@@ -438,9 +458,11 @@
   function openAt(id, level) {
     const name = who();
     const lv = Math.max(1, Math.min(MAX_LEVEL, Number(level) || DEFAULT_START));
-    putSkill(name, id, { ...freshSkill(lv), seen: skillState(name, id).seen || [] });
+    putSkill(name, id, { ...freshSkill(lv), learned: true, seen: skillState(name, id).seen || [] });
     open(id);
   }
 
-  window.Comp = { open, openAt, levelOf, restore, maxLevel: MAX_LEVEL, skills: () => COMP_SKILLS, _rules: { afterAnswer, afterCheck, freshSkill } };
+  // For the plan card: level, passes, finished
+  function progressOf(name, id) { const sk = skillState(name, id); return { level: sk.level, passes: sk.passes || 0, finished: !!sk.finished }; }
+  window.Comp = { open, openAt, levelOf, progressOf, restore, maxLevel: MAX_LEVEL, skills: () => COMP_SKILLS, _rules: { afterCheck, freshSkill } };
 })();

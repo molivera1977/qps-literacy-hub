@@ -461,6 +461,14 @@
         .c-level-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--line-strong); }
         .c-level-dot.on { background: var(--test); }
         .c-where { display: inline-flex; align-items: center; gap: 10px; }
+        /* the reading course screen (10/21): the three steps, the one to do lit */
+        .c-row .c-pass { margin: 0; font-size: 1.3rem; }
+        .c-steps { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; padding: 0; margin: 14px 0 6px; }
+        .c-step { font-size: 1.1rem; font-weight: 700; padding: 4px 8px; color: var(--ink-soft); }   /* plain text: not a button */
+        .c-step:not(:last-child)::after { content: '→'; margin-left: 12px; color: var(--ink-soft); }
+        .c-step.now { color: var(--ink); background: #e6f6ec; border-radius: 8px; text-decoration: underline; text-decoration-color: var(--success, #1f9d55); text-underline-offset: 5px; }
+        .c-step.done { color: var(--success-dark, #157a40); }
+        .c-next-say { font-size: 1.3rem; color: var(--ink); }
         .c-where-label { font-weight: 800; font-size: 1.15rem; color: var(--ink); }
         .c-menu { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
         .c-menu-btn {
@@ -1775,7 +1783,7 @@
 <script src="practice-data.js?v=p11"></script>
 <script src="practice.js?v=p14"></script>
 <script src="comp-data.js?v=c3"></script>
-<script src="comp.js?v=c6"></script>
-<script src="login.js?v=15"></script>
+<script src="comp.js?v=c7"></script>
+<script src="login.js?v=16"></script>
 </body>
 </html>
