@@ -264,8 +264,11 @@
   }
 
   // Pick the next passage at this level, oldest-seen first.
-  function nextItem(sk, used) {
-    const pool = skill.levels[sk.level] || [];
+  // Practice and the Check each have their own passages (use: 'check'), so a Check never repeats a Practice passage.
+  function nextItem(sk, used, graded) {
+    const all = skill.levels[sk.level] || [];
+    const mine = all.filter(it => (it.use === 'check') === !!graded);
+    const pool = mine.length ? mine : all;
     const fresh = pool.filter(it => !sk.seen.includes(it.id) && !used.has(it.id));
     const pick = fresh.length ? shuffle(fresh)[0]
       : [...pool].filter(it => !used.has(it.id)).sort((a, b) => sk.seen.indexOf(a.id) - sk.seen.indexOf(b.id))[0] || pool[0];
@@ -300,7 +303,7 @@
       area.append(top);
       if (graded && i === 0) area.append(block('p', 'c-lead', 'This is the Check. Do your best. You will see how you did at the end.'));
 
-      const item = nextItem(sk, used);
+      const item = nextItem(sk, used, graded);
       used.add(item.id);
       const word = targetWord(item);
       const card = el('div', 'c-card');
