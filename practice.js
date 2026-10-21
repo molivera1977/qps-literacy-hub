@@ -822,15 +822,18 @@
     const passes = Math.min(PASSES_NEEDED, (rec.passes || 0) + (passed ? 1 : 0));
     saveStopRecord(stop.id, { stars: Math.max(rec.stars || 0, stars), passes, lastScore: pct });
     box.append(el('div', 'p-score', `${right} of ${items.length}`), el('div', 'p-stars', '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars)));
-    box.append(el('p', 'p-well', passed && passes >= PASSES_NEEDED ? `🎉 ${PASSES_NEEDED} passes! You are ready for Mr. O's check!`
-      : passed ? `⭐ Pass ${passes} of ${PASSES_NEEDED}! Do the practice once more and pass the Check again. Then you are ready for Mr. O's check.`
-      : `Good work. You need ${PASS}% to pass. Do the practice again, then try the Check. Passes: ${passes} of ${PASSES_NEEDED}.`));
     const missed = items.filter((_, k) => !results[k]);
-    // Send the Check to Mr. O's results sheet (login.js knows who is signed in).
-    if (window.QPSLogin) QPSLogin.saveCheck({
-      stop, right, total: items.length, percent: pct, passes, started: checkStarted, finished: new Date(),
+    const movesOn = !!(window.QPSLogin && QPSLogin.movesOn && QPSLogin.movesOn(stop.id));
+    // Send the Check to Mr. O's results sheet (login.js knows who is signed in). Two passes on the student's
+    // own stop move them on (Marcos 10/21): login.js hands back the stop they moved to.
+    const moved = window.QPSLogin ? QPSLogin.saveCheck({
+      stop, right, total: items.length, percent: pct, passed, passes, started: checkStarted, finished: new Date(),
       missed: missed.map(it => `${join(it.chunks)} (${STEP_NAMES[it.kind] || it.kind})`)
-    });
+    }) : null;
+    box.append(el('p', 'p-well', moved ? `🎉 ${PASSES_NEEDED} passes! You move on to stop ${moved.num}, ${moved.name}! Mr. O will check stop ${stop.num} with you soon.`
+      : passed && passes >= PASSES_NEEDED ? `🎉 ${PASSES_NEEDED} passes! You are ready for Mr. O's check!`
+      : passed ? `⭐ Pass ${passes} of ${PASSES_NEEDED}! Do the practice once more and pass the Check again. Then you ${movesOn ? 'move on to the next stop' : 'are ready for Mr. O\'s check'}.`
+      : `Good work. You need ${PASS}% to pass. Do the practice again, then try the Check. Passes: ${passes} of ${PASSES_NEEDED}.`));
     if (missed.length) {
       box.append(el('p', 'p-small', 'Words to practice — tap to hear:'));
       const list = el('div', 'p-examples');

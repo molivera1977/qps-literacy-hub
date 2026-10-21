@@ -75,6 +75,48 @@
     "Pettway, Lanaura":               "comp", // passed every section → comprehension track
   };
 
+  // Moving on (Marcos 10/21: "Let's allow them to move without me but flag me to remind to test them"):
+  // two passed Checks on their stop move a student to the next stop at once, and Mr. O's dashboard lists
+  // the stop he still has to test. TRACKS is where a student STARTS. Their progress is ONE row per student
+  // on the 'qps-progress' tab of the sheet (updated in place, like qps-levels), so it follows them to any
+  // device:  form "stop=6;passes=1;test=5|t=<ms>"  — the stop now, passed Checks on it, stops waiting for
+  // Mr. O's test. The dashboard's "✓ Tested" / "↩ Back to stop 5" buttons rewrite the same row.
+  // If Mr. O moves a student by hand here, set TRACK_SINCE[name] = Date.now() of that change: an older
+  // progress row is then ignored.
+  const TRACK_SINCE = {};
+  const PROGRESS_TAB = 'qps-progress';
+  const PROGRESS_KEY = 'qps_progress_v1:';
+  const NEEDED = 2;                                   // = practice.js PASSES_NEEDED
+
+  function parseProgress(form) {
+    const [pairs, t] = String(form || '').split('|t=');
+    const p = { stop: '', passes: 0, test: [], t: Number(t) || 0 };
+    pairs.split(';').forEach(kv => {
+      const [k, v] = kv.split('=');
+      if (k === 'stop') p.stop = v || '';
+      if (k === 'passes') p.passes = Math.max(0, Math.min(NEEDED, Number(v) || 0));
+      if (k === 'test') p.test = String(v || '').split(',').filter(Boolean);
+    });
+    return p;
+  }
+  const formOf = (p) => `stop=${p.stop};passes=${p.passes};test=${p.test.join(',')}|t=${p.t}`;
+  const stopIds = () => (typeof PRACTICE_STOPS !== 'undefined' ? PRACTICE_STOPS.map(st => st.id) : []);
+  // The stop a student works on now: their progress row if it is newer than a hand move, else TRACKS.
+  // Only for students on a phonics stop (not 'comp', not "any stop").
+  function effectiveStop(official, prog, since) {
+    if (!official || official === 'comp' || !stopIds().includes(official)) return official;
+    if (prog && prog.stop && stopIds().includes(prog.stop) && prog.t > (since || 0)) return prog.stop;
+    return official;
+  }
+  // After a passed Check on the student's stop: passes so far → the new progress (and the next stop, if any)
+  function afterPass(prog, stopId, passes) {
+    const ids = stopIds(), next = ids[ids.indexOf(stopId) + 1];
+    if (passes < NEEDED) return { ...prog, stop: stopId, passes, t: Date.now() };
+    const test = [...prog.test.filter(x => x !== stopId), stopId];
+    return next ? { stop: next, passes: 0, test, t: Date.now() } : { stop: stopId, passes: NEEDED, test, t: Date.now() };
+  }
+  let progress = null;                                // the signed-in student's progress
+
   const SHARE = !!window.SHARE_MODE;
   const TEACHER = 'Mr. O (Teacher)';               // share.js: the code lives there, the same on every site
   const $ = (id) => document.getElementById(id);
@@ -84,7 +126,7 @@
   let student = '';
 
   function trackFor(name) {
-    const id = TRACKS[name];
+    const id = name === student ? effectiveStop(TRACKS[name], progress, TRACK_SINCE[name]) : TRACKS[name];
     return id && typeof PRACTICE_STOPS !== 'undefined' ? PRACTICE_STOPS.find(s => s.id === id) || null : null;
   }
 
@@ -150,8 +192,11 @@
     if (!SHARE) { try { sessionStorage.setItem(LOGIN_KEY, name); } catch (e) {} }
     $('loginView').style.display = 'none';
     $('welcomeView').style.display = 'block';
+    progress = onStopTrack(name) ? loadLocalProgress(name) : null;
+    if (progress) seedPasses(name, progress);
     if (window.Practice) Practice.renderStops();      // stars for THIS student, then the plan
     renderPlan();
+    if (onStopTrack(name)) restoreProgress(name).then(got => { if (got && student === name && $('welcomeView').style.display !== 'none') renderPlan(); });
     // Comprehension students on a new or wiped device get their level back from the sheet.
     if (TRACKS[name] === 'comp' && window.Comp) Comp.restore(name).then(got => { if (got && student === name) renderPlan(); });
     window.scrollTo(0, 0);
@@ -159,6 +204,7 @@
 
   function signOut() {
     if (SHARE) return;
+    progress = null;
     if (window.speechSynthesis) speechSynthesis.cancel();
     student = '';
     window.QPS_STUDENT = '';
@@ -328,6 +374,35 @@
     skills.forEach(sk => box.append(compCard(sk)));
   }
 
+  /* ---------- moving on: the student's progress, on this device and on the sheet ---------- */
+  function loadLocalProgress(name) {
+    try { const p = JSON.parse(localStorage.getItem(PROGRESS_KEY + name)); return p && p.stop ? p : null; } catch (e) { return null; }
+  }
+  function keepProgress(name, p) { try { localStorage.setItem(PROGRESS_KEY + name, JSON.stringify(p)); } catch (e) { /* private window */ } }
+  // "Pass 1 of 2" earned on another device counts on this one too (practice.js keeps passes per stop)
+  function seedPasses(name, p) {
+    try {
+      const key = 'qps_practice_v1:' + name, store = JSON.parse(localStorage.getItem(key)) || {};
+      const rec = store[p.stop] || { reached: 0, stars: 0 };
+      if ((rec.passes || 0) !== p.passes) { store[p.stop] = { ...rec, passes: p.passes }; localStorage.setItem(key, JSON.stringify(store)); }
+    } catch (e) { /* private window */ }
+  }
+  function sendProgress(name, p) {
+    send({ game: PROGRESS_TAB, sessionId: 'prog-' + name.replace(/[^A-Za-z0-9]+/g, '-'), form: formOf(p),
+      score: 0, correct: 0, total: 0, maxScore: 0, percent: 0, done: false, elapsed: 0, tabSwitches: 0, wrongQuestions: '' });
+  }
+  const onStopTrack = (name) => stopIds().includes(TRACKS[name]);
+  // A new or wiped device — or a change Mr. O made on his dashboard — comes back from the sheet.
+  async function restoreProgress(name) {
+    const rows = await readTab(PROGRESS_TAB);
+    const row = (rows || []).find(r => r.name === name);
+    if (!row || student !== name) return false;
+    const p = parseProgress(row.form);
+    if (!p.stop || (progress && progress.t >= p.t)) return false;
+    progress = p; keepProgress(name, p); seedPasses(name, p);
+    return true;
+  }
+
   /* ---------- results to Mr. O's sheet (same as his other sites) ---------- */
   const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzv8CWv1yyi8NeH04now9UxVL4IZm5yMqqsEGMcgGdrcAOWVB-aSp5siTvSSJXIUpzFMA/exec';
 
@@ -356,7 +431,7 @@
 
   // One row per finished Practice Check, on the stop's own tab (qps-5 = Silent e).
   function saveCheck(r) {
-    if (SHARE || !student || !r || !r.stop) return;          // a guest's work is never sent
+    if (SHARE || !student || !r || !r.stop) return null;     // a guest's work is never sent
     const started = r.started || r.finished;
     const elapsed = Math.max(0, Math.round((r.finished - started) / 1000));
     send({
@@ -373,6 +448,13 @@
       startedAt: started.toISOString(),
       finishedAt: r.finished.toISOString()
     });
+    // Moving on: a passed Check on the student's own stop. Returns the stop they moved to (or null).
+    if (!r.passed || !onStopTrack(student) || r.stop.id !== trackFor(student).id) return null;
+    const fresh = progress && progress.t > (TRACK_SINCE[student] || 0) ? progress : { stop: r.stop.id, passes: 0, test: [], t: 0 };
+    progress = afterPass(fresh, r.stop.id, r.passes || 0);
+    keepProgress(student, progress);
+    sendProgress(student, progress);
+    return progress.stop !== r.stop.id ? trackFor(student) : null;
   }
 
   /* ---------- start ---------- */
@@ -382,7 +464,10 @@
   $('qpsSignIn').addEventListener('click', trySignIn);
   $('qpsTeacher').addEventListener('click', teacherAccess);
 
-  window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, _tracks: TRACKS };
+  // Does a pass on this stop move the signed-in student on? (their own stop, on a phonics track; never a guest)
+  const movesOn = (stopId) => !SHARE && !!student && onStopTrack(student) && !!trackFor(student) && trackFor(student).id === stopId;
+  window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, movesOn, _tracks: TRACKS,
+    _rules: { parseProgress, formOf, effectiveStop, afterPass } };
 
   if (SHARE) { signIn('Guest'); return; }
   let saved = '';
