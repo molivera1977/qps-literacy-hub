@@ -442,6 +442,15 @@
             border: 2px solid var(--line-strong); border-radius: 16px; padding: 10px 14px; box-shadow: 0 4px 0 var(--line-strong);
         }
         .c-choice:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+        /* question vs answers (10/21): the question in its own tinted box with a label; answers lettered */
+        .c-tag { display: inline-block; font-size: 1rem; font-weight: 800; letter-spacing: .02em; border-radius: 999px; padding: 3px 12px; margin: 0 0 6px; }
+        .c-tag-read { background: #fff3d6; color: #7a5200; align-self: flex-start; }
+        .c-tag-q { background: var(--test, #2f6fde); color: #fff; }
+        .c-tag-pick { display: block; text-align: left; background: transparent; color: var(--ink-soft); padding-left: 2px; margin-top: 8px; }
+        .c-ask-box { text-align: left; background: #eaf1ff; border-left: 6px solid var(--test, #2f6fde); border-radius: 12px; padding: 10px 14px 4px; margin: 6px 0 4px; }
+        .c-ask-box .c-ask { margin: 0 0 6px; font-size: 1.35rem; font-weight: 700; }
+        .c-letter { flex: none; width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+                    background: var(--ink, #1f2a44); color: #fff; font-weight: 800; font-size: 1.05rem; }
         .c-choice.picked { border-color: var(--test); box-shadow: 0 0 0 4px var(--test-tint), 0 4px 0 var(--test-dark); }
         .c-choice.right { background: #e6f6ec; border-color: var(--success); }
         .c-choice.wrong { background: #fde4e4; border-color: var(--danger); }
@@ -1766,7 +1775,7 @@
 <script src="practice-data.js?v=p11"></script>
 <script src="practice.js?v=p14"></script>
 <script src="comp-data.js?v=c3"></script>
-<script src="comp.js?v=c5"></script>
+<script src="comp.js?v=c6"></script>
 <script src="login.js?v=15"></script>
 </body>
 </html>

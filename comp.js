@@ -153,16 +153,27 @@
     return row;
   }
   // An answer button: speaker + words; tapping the words answers.
-  function choice(text, onPick) {
+  // Marcos 10/21: "The question looks just like the answer choices." Each answer carries a letter (A B C D),
+  // the question sits in its own labeled box, and "Pick one answer" stands between them.
+  function choice(text, onPick, k) {
     const b = el('button', 'c-choice');
     b.type = 'button';
     const words = el('span', 'c-words');
     words.dataset.say = text;
     wordsInto(words, text, false);
+    if (k != null) b.append(el('span', 'c-letter', 'ABCDEF'[k]));
     b.append(speaker(words, 'Hear this answer'), words);
     b.onclick = () => onPick(b);
     return b;
   }
+
+  // The question: its own box with a label, so it never looks like an answer button
+  function askBox(text) {
+    const box = el('div', 'c-ask-box');
+    box.append(el('div', 'c-tag c-tag-q', '❓ Question'), block('p', 'c-ask', text, { mark: true, label: 'Hear the question' }));
+    return box;
+  }
+  const pickLabel = () => el('div', 'c-tag c-tag-pick', '👆 Pick one answer');
 
   /* ---------- screens ---------- */
   let skill = null;
@@ -270,7 +281,7 @@
       const word = targetWord(item);
       const card = el('div', 'c-card');
       const passage = block('p', 'c-passage', item.passage, { mark: true, label: 'Hear the passage' });
-      card.append(passage);
+      card.append(el('div', 'c-tag c-tag-read', '📖 Read'), passage);
       area.append(card);
 
       const q = el('div', 'c-q');
@@ -279,12 +290,12 @@
       fb.setAttribute('aria-live', 'polite');
 
       // Part 1: what the word means
-      q.append(block('p', 'c-ask', `What does *${word}* mean in this passage?`, { mark: true, label: 'Hear the question' }));
+      q.append(askBox(`What does *${word}* mean in this passage?`), pickLabel());
       const opts = el('div', 'c-choices');
       // Practice lists every passage not right on the first try (Marcos 10/18: "list those too"),
       // with both picks: "(picked: hungry, then right)" or "(picked: hungry, then lazy)".
       let tries = 0, firstRight = null, firstPick = '';
-      shuffle(item.choices).forEach(text => {
+      shuffle(item.choices).forEach((text, k) => {
         opts.append(choice(text, (b) => {
           if (b.disabled) return;
           const right = text === item.choices[0];
@@ -314,7 +325,7 @@
             missed.push(`[${item.id}] ${word} (picked: ${firstPick}, then ${text})`);
             partTwo();
           }
-        }));
+        }, k));
       });
       q.append(opts, fb);
 
@@ -333,11 +344,11 @@
           putSkill(name, skill.id, sk);
         }
         const q2 = el('div', 'c-q');
-        q2.append(block('p', 'c-ask', `Which words in the passage helped you know what *${word}* means?`, { mark: true, label: 'Hear the question' }));
+        q2.append(askBox(`Which words in the passage helped you know what *${word}* means?`), pickLabel());
         const opts2 = el('div', 'c-choices');
         const fb2 = el('div', 'p-feedback');
         fb2.setAttribute('aria-live', 'polite');
-        shuffle(item.clues).forEach(text => {
+        shuffle(item.clues).forEach((text, k) => {
           opts2.append(choice(text, (b) => {
             if (b.disabled) return;
             const right = text === item.clues[0];
@@ -357,7 +368,7 @@
             foot.append(btn('p-btn p-next', i + 1 >= n ? 'Finish ➡️' : 'Next ➡️', () => { i++; step(); }));
             area.append(foot);
             foot.querySelector('button').focus();
-          }));
+          }, k));
         });
         q2.append(opts2, fb2);
         area.append(q2);
