@@ -332,7 +332,7 @@
     h.className = 'plan-hi'; h.textContent = 'Reading for meaning';
     const p = document.createElement('p');
     p.className = 'plan-line';
-    p.textContent = 'The comprehension track, for students who passed every QPS stop. A student gets passages at their own level, and the site moves them up and down. Here you can open any level.';
+    p.textContent = 'The comprehension track, for students who passed every QPS stop. A student goes through each course one level at a time: 2 passed Checks move them up a level. Here you can open any level.';
     sec.append(h, p);
     Comp.skills().forEach(sk => {
       const name = document.createElement('h3');
@@ -364,7 +364,10 @@
     const skills = Comp.skills();
     const dir = document.createElement('div');
     dir.className = 'p-direction';
-    const line = 'You passed every QPS stop! Your plan is reading for meaning. Tap Start, and the site will take you through it, one step at a time.';
+    // Maze first, Words in context after (Marcos 10/21); both stay open
+    const line = skills.length > 1
+      ? `You passed every QPS stop! Your plan is reading for meaning. Start with ${skills[0].name}. Then do ${skills.slice(1).map(s => s.name).join(' and ')}. The site will take you through each one, one step at a time.`
+      : 'You passed every QPS stop! Your plan is reading for meaning. Tap Start, and the site will take you through it, one step at a time.';
     const sayBtn = document.createElement('button');
     sayBtn.type = 'button'; sayBtn.className = 'p-say'; sayBtn.textContent = '🔊';
     sayBtn.setAttribute('aria-label', 'Hear your plan');

@@ -30,11 +30,12 @@
   /* ---------- the level rules (pure, so they can be tested) ---------- */
   function freshSkill(start) { return { level: start, passes: 0, learned: false, practiced: false, finished: false, seen: [] }; }
 
-  // A finished Check (points out of 10) → the new skill state. Practice comes first again after any Check.
+  // A finished Check (points; `need` to pass: 8 of 10, or the Maze goal for the level) → the new skill state.
+  // Practice comes first again after any Check.
   // moved: 'pass' (1 of 2), 'up' (2 of 2 → next level), 'finished' (2 of 2 at the top level), or null
-  function afterCheck(sk, points) {
+  function afterCheck(sk, points, need = CHECK_PASS) {
     const base = { ...sk, practiced: false };
-    if (sk.finished || points < CHECK_PASS) return { ...base, moved: null };
+    if (sk.finished || points < need) return { ...base, moved: null };
     const passes = (sk.passes || 0) + 1;
     if (passes < PASSES_NEEDED) return { ...base, passes, moved: 'pass' };
     if (sk.level < MAX_LEVEL) return { ...base, level: sk.level + 1, passes: 0, moved: 'up' };
@@ -234,22 +235,26 @@
     top.append(levelDots(sk.level), passMeter(sk));
     area.append(top);
     const now = nowOf(sk);
+    const maze = skill.kind === 'maze';
+    // what one round is: Words in context = 8 passages / a 5-passage Check; Maze = 1 story / a 3-minute Check
+    const pWhat = maze ? '1 story' : `${PRACTICE_N} passages`, cWhat = maze ? `1 story, ${window.Maze.MINUTES} minutes` : `${CHECK_N} passages`;
     const steps = el('ol', 'c-steps');
-    [['learn', '1. Learn'], ['practice', `2. Practice · ${PRACTICE_N} passages`], ['check', `3. Check · ${CHECK_N} passages`]].forEach(([k, t]) => {
+    [['learn', '1. Learn'], ['practice', `2. Practice · ${pWhat}`], ['check', `3. Check · ${cWhat}`]].forEach(([k, t]) => {
       const done = (k === 'learn' && sk.learned) || (k === 'practice' && (sk.practiced || sk.finished)) || (k === 'check' && sk.finished);
       steps.append(el('li', 'c-step' + (k === now ? ' now' : '') + (done ? ' done' : ''), (done ? '✅ ' : k === now ? '👉 ' : '') + t));
     });
     area.append(steps);
     const say = now === 'learn' ? `First, learn how ${skill.name} works. Tap Learn.`
       : now === 'done' ? `You finished ${skill.name}! Mr. O will check you soon. You can keep practicing.`
-      : now === 'practice' ? (sk.passes ? `Pass 2. Practice ${PRACTICE_N} passages again at Level ${sk.level}. Then take the Check again.`
-                                        : `Practice ${PRACTICE_N} passages at Level ${sk.level}. Then take the Check.`)
+      : now === 'practice' ? (sk.passes ? `Pass 2. Practice ${pWhat} again at Level ${sk.level}. Then take the Check again.`
+                                        : `Practice ${pWhat} at Level ${sk.level}. Then take the Check.`)
+      : maze ? `You finished the practice. Now take the Check: ${window.Maze.checkSay(sk.level, skill)}`
       : `You finished the practice. Now take the Check: ${CHECK_N} passages. You need 80% to pass.`;
     area.append(block('p', 'c-lead c-next-say', say, { label: 'Hear what to do' }));
     const foot = el('div', 'p-end-buttons');
     foot.append(now === 'learn' ? btn('p-btn p-next-big', '▶ Learn', () => learn())
-      : now === 'check' ? btn('p-btn p-next-big', `▶ Take the Check · ${CHECK_N} passages`, () => run('check'))
-      : btn('p-btn p-next-big', now === 'done' ? '▶ Keep practicing' : sk.passes ? '▶ Start pass 2: Practice' : `▶ Practice · ${PRACTICE_N} passages`, () => run('practice')));
+      : now === 'check' ? btn('p-btn p-next-big', `▶ Take the Check · ${cWhat}`, () => run('check'))
+      : btn('p-btn p-next-big', now === 'done' ? '▶ Keep practicing' : sk.passes ? '▶ Start pass 2: Practice' : `▶ Practice · ${pWhat}`, () => run('practice')));
     if (sk.learned) foot.append(btn('p-btn p-again', '📘 See the lesson again', () => learn()));
     area.append(foot);
     show();
@@ -282,6 +287,7 @@
   }
 
   function run(mode) {
+    if (skill.kind === 'maze') return window.Maze.run(skill, mode);
     stopSpeaking();
     const name = who();
     const graded = mode === 'check';
@@ -473,5 +479,9 @@
 
   // For the plan card: level, passes, finished
   function progressOf(name, id) { const sk = skillState(name, id); return { level: sk.level, passes: sk.passes || 0, finished: !!sk.finished }; }
-  window.Comp = { open, openAt, levelOf, progressOf, restore, maxLevel: MAX_LEVEL, skills: () => COMP_SKILLS, _rules: { afterCheck, freshSkill } };
+  window.Comp = { open, openAt, levelOf, progressOf, restore, maxLevel: MAX_LEVEL, skills: () => COMP_SKILLS, _rules: { afterCheck, freshSkill },
+    // for maze.js: the same course (state, the sheet, the screens) with its own story screen
+    _kit: { who, skillState, putSkill, backupLevels, afterCheck, nextItem: (sk, used, graded) => nextItem(sk, used, graded),
+            setSkill: (s) => { skill = s; }, el, btn, block, speaker, header, levelDots, passMeter, show, stopSpeaking, backToPlan,
+            PASSES_NEEDED, MAX_LEVEL, SEEN_KEEP } };
 })();
