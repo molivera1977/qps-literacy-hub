@@ -360,25 +360,42 @@
   }
 
   // Plan for the comprehension track: each skill with the student's level.
-  function renderCompPlan(box, first) {
+  // The reading path, one course at a time (Marcos 10/21: "I want the kids guided through the path. Options offer
+  // problems." · Maze first; when Maze is done, Words in context). The course they are on is the ONE card; a
+  // finished course and the next one are plain lines on the path (not buttons), so there is nothing to pick.
+  function readingPath() {
     const skills = Comp.skills();
+    const done = sk => !!(Comp.progressOf && Comp.progressOf(student, sk.id).finished);
+    const at = skills.findIndex(sk => !done(sk));
+    return { skills, now: at < 0 ? skills[skills.length - 1] : skills[at], allDone: at < 0, done };
+  }
+  function renderCompPlan(box, first) {
+    const { skills, now, allDone, done } = readingPath();
+    const next = skills[skills.indexOf(now) + 1];
+    const line = allDone
+      ? `You finished every reading course! Mr. O will check you. You can keep practicing ${now.name}.`
+      : `You passed every QPS stop! Your plan is reading for meaning. Right now you are working on ${now.name}.` +
+        (next ? ` When you finish ${now.name}, ${next.name} opens.` : '') + ' Tap Start, and the site will take you through it, one step at a time.';
     const dir = document.createElement('div');
     dir.className = 'p-direction';
-    // Maze first, Words in context after (Marcos 10/21); both stay open
-    const line = skills.length > 1
-      ? `You passed every QPS stop! Your plan is reading for meaning. Start with ${skills[0].name}. Then do ${skills.slice(1).map(s => s.name).join(' and ')}. The site will take you through each one, one step at a time.`
-      : 'You passed every QPS stop! Your plan is reading for meaning. Tap Start, and the site will take you through it, one step at a time.';
     const sayBtn = document.createElement('button');
     sayBtn.type = 'button'; sayBtn.className = 'p-say'; sayBtn.textContent = '🔊';
     sayBtn.setAttribute('aria-label', 'Hear your plan');
-    sayBtn.onclick = () => say(`Hi ${first}. ${line} Tap Start.`);
+    sayBtn.onclick = () => say(`Hi ${first}. ${line}`);
     const p = document.createElement('p');
     p.className = 'plan-line';
     p.textContent = line;
     if (window.QPSRead) { QPSRead.wrap(p, line); sayBtn.onclick = () => QPSRead.say(p); }
     dir.append(sayBtn, p);
     box.append(dir);
-    skills.forEach(sk => box.append(compCard(sk)));
+    // the path: ✅ finished · the one card · 🔒 what comes after (plain text, read aloud with the plan line)
+    skills.forEach(sk => {
+      if (sk === now) { box.append(compCard(sk)); return; }
+      const row = document.createElement('p');
+      row.className = 'plan-path-step' + (done(sk) ? ' done' : ' later');
+      row.textContent = done(sk) ? `✅ ${sk.icon} ${sk.name} — finished` : `🔒 ${sk.icon} ${sk.name} — opens when you finish ${skills[skills.indexOf(sk) - 1].name}`;
+      box.append(row);
+    });
   }
 
   /* ---------- moving on: the student's progress, on this device and on the sheet ---------- */
