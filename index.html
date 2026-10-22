@@ -859,7 +859,8 @@
         <button id="startTest" class="btn-test no-print" onclick="startTest()" aria-label="Start assessment">START ASSESSMENT</button>
         <div class="sheet-buttons no-print">
             <button type="button" class="btn-sheet" onclick="printStudentSheet([document.getElementById('levelPicker').value])">🖨️ Student sheet (this Task)</button>
-            <button type="button" class="btn-sheet" onclick="printStudentSheet(Object.keys(wordBank))">🖨️ All student sheets</button>
+            <button type="button" class="btn-sheet" onclick="printStudentSheet(taskOrder())">🖨️ All student sheets</button>
+            <button type="button" class="btn-sheet" onclick="printStudentSheet(taskOrder(), true)">🖨️ Every Task on one two-sided sheet</button>
         </div>
 
         <div id="scoreControls" class="score-controls no-print" style="display:none;" aria-label="Score controls">
@@ -1629,6 +1630,57 @@
 
     /* ---------- The student's reading sheet (10/21) ----------
        One page per Task: the items in the Assessment's order, numbered, large, nothing that marks a made-up word. */
+    // The Tasks in the Assessment's own order (the picker). Not Object.keys(wordBank): it puts "8" and "10" first.
+    const taskOrder = () => [...document.getElementById('levelPicker').options].map(o => o.value).filter(v => wordBank[v]);
+    // Every Task on one sheet, front and back (Marcos 10/21: "also do a two sided one that has them all"):
+    // Each Task's items in the Assessment's order; short words sit 10 to a row, longer words fewer; the Tasks are split
+    // between the two sides so each side is about as full as the other.
+    function compactSheetHtml(tasks) {
+        const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        // a column as wide as the Task's widest word plus its number; as many columns as fit across the page
+        // letter widths in bold Andika (em): m and w are wide, i l j t f r narrow
+        const wordEm = (w) => [...w].reduce((a, ch) => a + (/[mw]/.test(ch) ? 0.86 : /[ijlftr]/.test(ch) ? 0.36 : /[A-Z]/.test(ch) ? 0.7 : 0.57), 0);
+        const colEm = (items) => Math.max(2.4, Math.max(...items.map(it => wordEm(it.w))) + 1.05);
+        const block = (t) => {
+            const items = wordBank[t], sentences = !!items[0].isSentence;
+            const list = items.map((it, i) => `<li><span class="n">${i + 1}</span><span class="w">${esc(it.w)}</span></li>`).join('');
+            const style = sentences ? '' : ` style="grid-template-columns: repeat(auto-fill, minmax(${colEm(items).toFixed(2)}em, 1fr));"`;
+            return `<div class="task" data-num="${esc(String(t).replace(/[a-c]$/, ''))}"><h2>${esc(levelNames[t] || t)}</h2><ol class="${sentences ? 'sent' : 'words'}"${style}>${list}</ol></div>`;
+        };
+        // The back side starts at the Task where the two sides come out most even, measured once the font is in
+        // (5(a) and 5(b) stay on the same side).
+        const split = SHEET_SPLIT_JS;
+        return compactSheetDoc(tasks, block, split);
+    }
+    // The page break for the two-sided sheet. It runs inside the sheet (on its own) and is run again by printStudentSheet
+    // right after the sheet is written and just before printing: a script in the sheet waits for the font stylesheet.
+    const SHEET_SPLIT_JS = `(function () {
+  function split() {
+    var b = [].slice.call(document.querySelectorAll('.task'));
+    var h = b.map(function (x) { return x.offsetHeight + parseFloat(getComputedStyle(x).marginBottom); });
+    var total = h.reduce(function (a, c) { return a + c; }, 0), run = 0, best = 1e9, at = -1;
+    for (var i = 0; i < b.length - 1; i++) { run += h[i]; if (b[i].dataset.num === b[i + 1].dataset.num) continue; var m = Math.max(run, total - run); if (m < best) { best = m; at = i + 1; } }
+    b.forEach(function (x, i) { x.classList.toggle('back', i === at); });
+  }
+  split();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(split);
+})();`;
+    function compactSheetDoc(tasks, block, split) {
+        return `<!doctype html><html><head><meta charset="utf-8"><title>QPS student sheet — every Task</title>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: letter; margin: 0.45in; }
+  body { font-family: Andika, 'Century Gothic', Arial, sans-serif; color: #111; margin: 0; }
+  .task { break-inside: avoid; margin: 0 0 0.08in; padding: 0 0 0.06in; border-bottom: 1px solid #ccc; }
+  .task.back { break-before: page; page-break-before: always; }
+  h2 { font-size: 10pt; font-weight: 700; color: #555; margin: 0; }
+  ol { list-style: none; margin: 0; padding: 0; }
+  ol.words { display: grid; column-gap: 0.06in; font-size: 14pt; }
+  ol.words li { font-weight: 700; white-space: nowrap; line-height: 1.35; }
+  ol.sent li { font-size: 14pt; font-weight: 700; line-height: 1.35; }
+  .n { font-size: 8pt; font-weight: 400; color: #888; margin-right: 0.05in; vertical-align: middle; }
+</style></head><body>${tasks.filter(t => wordBank[t]).map(block).join('')}<script>${split}<\/script></body></html>`;
+    }
     function studentSheetHtml(tasks) {
         const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const pages = tasks.filter(t => wordBank[t]).map(t => {
@@ -1656,16 +1708,18 @@
   .n { flex: none; width: 2.6em; margin-right: 0.5em; text-align: right; font-size: 0.45em; font-weight: 400; color: #777; }
 </style></head><body>${pages}</body></html>`;
     }
-    function printStudentSheet(tasks) {
-        const html = studentSheetHtml(tasks);
+    function printStudentSheet(tasks, oneSheet) {
+        const html = oneSheet ? compactSheetHtml(tasks) : studentSheetHtml(tasks);
         window.__lastStudentSheet = html;                     // for testing
         const w = window.open('', '_blank');
         if (!w) { alert('Your browser blocked the sheet. Allow pop-ups for this page, then try again.'); return; }
         w.document.open(); w.document.write(html); w.document.close();
-        // print once the reading font (Andika) has loaded, or after 3 s without it
+        const fix = () => { if (oneSheet) { try { w.eval(SHEET_SPLIT_JS); } catch (e) { /* the sheet's own script still runs */ } } };
+        fix();
+        // print once the reading font (Andika) has loaded and the sheet has laid itself out, or after 3 s
         let printed = false;
-        const go = () => { if (!printed) { printed = true; w.print(); } };
-        w.onload = () => { (w.document.fonts ? w.document.fonts.ready : Promise.resolve()).then(go); setTimeout(go, 3000); };
+        const go = () => { if (!printed) { printed = true; fix(); w.print(); } };
+        w.onload = () => { (w.document.fonts ? w.document.fonts.ready : Promise.resolve()).then(() => setTimeout(go, 100)); setTimeout(go, 3000); };
     }
 
     /* ---------- Mr. O's result to the dashboard (10/21) ----------
