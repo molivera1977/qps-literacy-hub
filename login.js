@@ -412,7 +412,7 @@
     } catch (e) { /* private window */ }
   }
   function sendProgress(name, p) {
-    send({ game: PROGRESS_TAB, sessionId: 'prog-' + name.replace(/[^A-Za-z0-9]+/g, '-'), form: formOf(p),
+    send({ name, game: PROGRESS_TAB, sessionId: 'prog-' + name.replace(/[^A-Za-z0-9]+/g, '-'), form: formOf(p),
       score: 0, correct: 0, total: 0, maxScore: 0, percent: 0, done: false, elapsed: 0, tabSwitches: 0, wrongQuestions: '' });
   }
   const onStopTrack = (name) => stopIds().includes(TRACKS[name]);
@@ -490,7 +490,43 @@
 
   // Does a pass on this stop move the signed-in student on? (their own stop, on a phonics track; never a guest)
   const movesOn = (stopId) => !SHARE && !!student && onStopTrack(student) && !!trackFor(student) && trackFor(student).id === stopId;
-  window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, movesOn, _tracks: TRACKS,
+  /* ---------- Mr. O's Assessment: who needs a test, and his result to the sheet ---------- */
+  // Marcos 10/21: "I want my testing spot to have their names already in there and i can pick. Anyone who needs a
+  // test should have my results loaded to the dashboard and have it marked as tested and recorded. Let's have my pin
+  // be needed to confirm result." Only the teacher sign-in records (the page asks the PIN before it calls this).
+  const TESTS_TAB = 'qps-tests';
+  const rosterNames = () => ROSTER.map(s => s.name);
+  const progressOfRow = (rows, name) => {
+    const row = (rows || []).find(r => r.name === name);
+    const p = row ? parseProgress(row.form) : null;
+    return p && p.stop && p.t > (TRACK_SINCE[name] || 0) ? p : null;     // the same rule as the dashboard
+  };
+  // Students with stops on their "test them" list: [{ name, test: ['5'] }]
+  async function testsDue() {
+    if (SHARE || student !== TEACHER) return [];
+    const rows = await readTab(PROGRESS_TAB);
+    return ROSTER.map(s => ({ name: s.name, test: (progressOfRow(rows, s.name) || { test: [] }).test })).filter(x => x.test.length);
+  }
+  // One row on 'qps-tests' per test, and the stop comes off the student's "test them" list.
+  async function recordTest(r) {
+    if (SHARE || student !== TEACHER || !r || !ROSTER.some(s => s.name === r.name)) return null;
+    const finished = r.finished || new Date(), started = r.started || finished;
+    send({
+      name: r.name, game: TESTS_TAB,
+      sessionId: 'qps-test-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      form: `${r.taskName} · stop ${r.stop} · mastery ${r.mastery}% · ${r.passed ? '✅ mastery' : '⚠️ needs practice'}`,
+      score: r.score, correct: r.score, total: r.total, maxScore: r.total, percent: r.percent, done: true,
+      elapsed: Math.max(0, Math.round((finished - started) / 1000)), tabSwitches: 0,
+      wrongQuestions: (r.missed || []).join(' | '),
+      startedAt: started.toISOString(), finishedAt: finished.toISOString()
+    });
+    const p = progressOfRow(await readTab(PROGRESS_TAB), r.name);
+    const tookOff = !!(p && p.test.includes(r.stop));
+    if (tookOff) sendProgress(r.name, { ...p, test: p.test.filter(x => x !== r.stop), t: Date.now() });
+    return { tookOff };
+  }
+
+  window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, movesOn, rosterNames, testsDue, recordTest, _tracks: TRACKS,
     _rules: { parseProgress, formOf, effectiveStop, afterPass } };
 
   if (SHARE) { signIn('Guest'); return; }

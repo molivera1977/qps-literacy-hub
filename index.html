@@ -263,10 +263,22 @@
         }
         .student-bar:focus-within, .mastery-bar:focus-within { border-color: var(--test); }
         .student-bar label, .mastery-bar label { font-weight: 600; color: var(--ink-soft); font-size: 1rem; white-space: nowrap; }
-        .student-bar input {
+        .student-bar input, .student-bar select {
             flex: 1; min-width: 0; border: none; background: transparent; font: inherit; font-size: 1.05rem;
             font-weight: 600; color: var(--ink); outline: none;
         }
+        .sheet-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 10px 0 4px; }
+        .btn-sheet { padding: 8px 16px; border-radius: 10px; border: 2px solid var(--line-strong); background: #fff; color: var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
+        .save-result { margin: 14px 0; padding: 12px 16px; border: 2px solid var(--test); border-radius: var(--radius-sm); background: #eef3ff; text-align: left; }
+        .save-what { font-weight: 700; color: var(--ink); margin: 0 0 8px; }
+        .save-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .save-row label { font-weight: 600; color: var(--ink-soft); }
+        .save-row input { width: 110px; padding: 6px 8px; border-radius: 8px; border: 2px solid var(--line); font: inherit; }
+        .btn-save { padding: 8px 16px; border-radius: 10px; border: none; background: var(--test); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+        .btn-save:disabled { opacity: .5; cursor: default; }
+        .save-msg { margin: 8px 0 0; font-weight: 700; }
+        .save-msg.bad { color: var(--danger, #c92a2a); }
+        .save-msg.good { color: var(--success-dark, #157a40); }
         .student-bar input::placeholder { color: var(--ink-faint); font-weight: 400; }
         .mastery-bar input[type=number] {
             width: 70px; padding: 4px 6px; border-radius: 8px; font: inherit;
@@ -827,7 +839,7 @@
         <div class="teacher-controls no-print">
             <div class="student-bar">
                 <label for="studentName">👤 Student</label>
-                <input type="text" id="studentName" placeholder="Enter student name..." maxlength="60" aria-label="Student name" autocomplete="off" />
+                <select id="studentName" aria-label="Student"><option value="">— Pick a student —</option></select>
             </div>
             <div class="mastery-bar">
                 <label for="masteryInput">🎯 Mastery</label>
@@ -845,6 +857,10 @@
         </div>
 
         <button id="startTest" class="btn-test no-print" onclick="startTest()" aria-label="Start assessment">START ASSESSMENT</button>
+        <div class="sheet-buttons no-print">
+            <button type="button" class="btn-sheet" onclick="printStudentSheet([document.getElementById('levelPicker').value])">🖨️ Student sheet (this Task)</button>
+            <button type="button" class="btn-sheet" onclick="printStudentSheet(Object.keys(wordBank))">🖨️ All student sheets</button>
+        </div>
 
         <div id="scoreControls" class="score-controls no-print" style="display:none;" aria-label="Score controls">
             <button class="btn-score btn-wrong" onclick="markScore(false)" aria-label="Mark incorrect"><span class="mark" aria-hidden="true">✗</span> Missed</button>
@@ -869,6 +885,16 @@
                     </thead>
                     <tbody id="resultsTableBody"></tbody>
                 </table>
+            </div>
+            <!-- Save to the dashboard, with the Teacher PIN (10/21) -->
+            <div id="saveResult" class="save-result no-print">
+                <p id="saveWhat" class="save-what"></p>
+                <div class="save-row">
+                    <label for="savePin">🔑 Your PIN</label>
+                    <input id="savePin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" />
+                    <button id="saveBtn" type="button" class="btn-save" onclick="saveTestResult()">💾 Save to dashboard</button>
+                </div>
+                <p id="saveMsg" class="save-msg" aria-live="polite"></p>
             </div>
             <button class="btn-print no-print" onclick="window.print()" aria-label="Print results">🖨️ Print Results</button>
         </div>
@@ -1140,6 +1166,7 @@
             }
         }
 
+        if (mode === 'test') fillStudentPicker();
         // FIX: Update title based on mode
         document.title = `QPS Literacy Hub 2.0 | ${mode === 'test' ? 'Assessment' : mode === 'learn' ? 'Learning Lab' : 'Game Zone'}`;
         switchTab(mode);
@@ -1237,6 +1264,7 @@
             const t = getMasteryThreshold();
             document.getElementById('testType').innerText = `Assessment Mode · Mastery = ${t}%`;
         });
+        document.getElementById('studentName').addEventListener('change', onStudentPicked);
     });
 
     // ============================================================
@@ -1498,11 +1526,12 @@
     // ============================================================
     function startTest() {
         const lv = document.getElementById('levelPicker').value;
-        activeTestWords = wordBank[lv][0].isSentence
-            ? [...wordBank[lv]]
-            : [...wordBank[lv]].sort(() => Math.random() - 0.5);
+        // the same order every time, so the student reads from a printed sheet in the order Mr. O scores
+        // (Marcos 10/21: "a testing sheet for the kids to read from in the same order as my assessment")
+        activeTestWords = [...wordBank[lv]];
 
         testIndex = 0; currentScore = 0; testResultLog = [];
+        testStarted = new Date(); lastResult = null;
 
         document.getElementById('startTest').style.display = 'none';
         document.getElementById('scoreControls').style.display = 'flex';
@@ -1590,6 +1619,120 @@
         });
 
         document.getElementById('resultsLogContainer').style.display = 'block';
+        lastResult = { task: lv, taskName: levelNames[lv] || lv, stop: stopOfTask(lv), score: currentScore, total, percent,
+                       mastery: threshold, passed: percent >= threshold, missed: testResultLog.filter(e => !e.correct).map(e => e.word),
+                       started: testStarted, finished: new Date(), saved: false };
+        document.getElementById('savePin').value = '';
+        const msg = document.getElementById('saveMsg'); msg.textContent = ''; msg.className = 'save-msg';
+        updateSavePanel();
+    }
+
+    /* ---------- The student's reading sheet (10/21) ----------
+       One page per Task: the items in the Assessment's order, numbered, large, nothing that marks a made-up word. */
+    function studentSheetHtml(tasks) {
+        const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const pages = tasks.filter(t => wordBank[t]).map(t => {
+            const items = wordBank[t], sentences = !!items[0].isSentence;
+            const list = items.map((it, i) => `<li><span class="n">${i + 1}.</span> <span class="w">${esc(it.w)}</span></li>`).join('');
+            // words fill the page: 2 columns up to 10 items, else 3; the size shrinks for more rows or longer words
+            const cols = items.length <= 10 ? 2 : 3, rows = Math.ceil(items.length / cols);
+            const longest = Math.max(...items.map(it => it.w.length));
+            const pt = sentences ? 30 : Math.min(rows <= 5 ? 46 : rows <= 6 ? 40 : 28, Math.floor((cols === 2 ? 400 : 260) / Math.max(longest, 4)));
+            const style = sentences ? '' : ` style="grid-template-columns: repeat(${cols}, 1fr); grid-template-rows: repeat(${rows}, 1fr); font-size: ${pt}pt;"`;
+            return `<section class="page"><h1>${esc(levelNames[t] || t)}</h1><ol class="${sentences ? 'sent' : 'words'}"${style}>${list}</ol></section>`;
+        }).join('');
+        return `<!doctype html><html><head><meta charset="utf-8"><title>QPS student sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: letter; margin: 0.6in; }
+  body { font-family: Andika, 'Century Gothic', Arial, sans-serif; color: #111; margin: 0; }
+  .page { page-break-after: always; break-after: page; min-height: 9.6in; display: flex; flex-direction: column; }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  h1 { font-size: 16pt; font-weight: 400; color: #555; margin: 0 0 0.3in; }
+  ol { list-style: none; margin: 0; padding: 0; flex: 1; }
+  ol.words { display: grid; grid-auto-flow: column; column-gap: 0.4in; }
+  ol.words li { display: flex; align-items: center; font-weight: 700; }
+  ol.sent li { display: flex; align-items: baseline; font-size: 30pt; font-weight: 700; line-height: 1.35; margin: 0 0 0.4in; }
+  .n { flex: none; width: 2.6em; margin-right: 0.5em; text-align: right; font-size: 0.45em; font-weight: 400; color: #777; }
+</style></head><body>${pages}</body></html>`;
+    }
+    function printStudentSheet(tasks) {
+        const html = studentSheetHtml(tasks);
+        window.__lastStudentSheet = html;                     // for testing
+        const w = window.open('', '_blank');
+        if (!w) { alert('Your browser blocked the sheet. Allow pop-ups for this page, then try again.'); return; }
+        w.document.open(); w.document.write(html); w.document.close();
+        // print once the reading font (Andika) has loaded, or after 3 s without it
+        let printed = false;
+        const go = () => { if (!printed) { printed = true; w.print(); } };
+        w.onload = () => { (w.document.fonts ? w.document.fonts.ready : Promise.resolve()).then(go); setTimeout(go, 3000); };
+    }
+
+    /* ---------- Mr. O's result to the dashboard (10/21) ----------
+       Marcos: "I want my testing spot to have their names already in there and i can pick. Anyone who needs a test
+       should have my results loaded to the dashboard and have it marked as tested and recorded. Let's have my pin be
+       needed to confirm result." The student list: kids waiting for a test first, then everyone. Saving asks the PIN. */
+    let lastResult = null, testStarted = null, testsDue = [];
+    const stopIdsAll = () => (typeof PRACTICE_STOPS !== 'undefined' ? PRACTICE_STOPS.map(st => st.id) : []);
+    // Task 5(a) → stop 5; Task 9(a) → stop 9a; Task 8 → stop 8
+    const stopOfTask = (task) => stopIdsAll().includes(task) ? task : String(task).replace(/[ab]$/, '');
+    async function fillStudentPicker() {
+        const sel = document.getElementById('studentName');
+        if (!window.QPSLogin || !QPSLogin.rosterNames) return;
+        const keep = sel.value;
+        testsDue = await QPSLogin.testsDue();
+        sel.innerHTML = '';
+        sel.append(new Option('— Pick a student —', ''));
+        if (testsDue.length) {
+            const due = document.createElement('optgroup');
+            due.label = '🔔 Needs your test';
+            testsDue.forEach(d => due.append(new Option(`${d.name} — test stop ${d.test.join(', ')}`, d.name)));
+            sel.append(due);
+        }
+        const all = document.createElement('optgroup');
+        all.label = 'Everyone';
+        QPSLogin.rosterNames().forEach(n => all.append(new Option(n, n)));
+        sel.append(all);
+        sel.value = keep;
+        updateSavePanel();
+    }
+    // Picking a student who is waiting for a test sets the Task to that stop's first part (Mr. O can change it)
+    function onStudentPicked() {
+        const d = testsDue.find(x => x.name === document.getElementById('studentName').value);
+        if (d && !lastResult) {
+            const task = [...document.getElementById('levelPicker').options].map(o => o.value).find(v => stopOfTask(v) === d.test[0]);
+            if (task) { const lp = document.getElementById('levelPicker'); lp.value = task; lp.dispatchEvent(new Event('change')); }
+        }
+        updateSavePanel();
+    }
+    const firstLast = (n) => n.includes(',') ? `${n.split(',')[1].trim()} ${n.split(',')[0].trim()}` : n;
+    function updateSavePanel() {
+        const box = document.getElementById('saveResult');
+        if (!box) return;
+        const name = document.getElementById('studentName').value;
+        const what = document.getElementById('saveWhat'), btn = document.getElementById('saveBtn');
+        if (!lastResult) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        if (!name) { what.textContent = 'Pick the student above, then save this result.'; btn.disabled = true; return; }
+        const due = testsDue.find(x => x.name === name);
+        what.textContent = `Save for ${firstLast(name)}: ${lastResult.taskName} · ${lastResult.percent}% ${lastResult.passed ? '✅ Mastery' : '⚠️ Needs practice'}` +
+            (due && due.test.includes(lastResult.stop) ? ` — this takes stop ${lastResult.stop} off their test list.` : '');
+        btn.disabled = lastResult.saved;
+        document.getElementById('logStudentName').textContent = name;
+    }
+    async function saveTestResult() {
+        const msg = document.getElementById('saveMsg'), pin = document.getElementById('savePin');
+        const name = document.getElementById('studentName').value;
+        if (!lastResult || lastResult.saved || !name) return;
+        if (pin.value.trim() !== TEACHER_PIN) { msg.textContent = 'That PIN is not right. Nothing was saved.'; msg.className = 'save-msg bad'; pin.value = ''; pin.focus(); return; }
+        pin.value = '';
+        lastResult.saved = true;
+        document.getElementById('saveBtn').disabled = true;
+        const res = await QPSLogin.recordTest({ ...lastResult, name });
+        if (!res) { lastResult.saved = false; document.getElementById('saveBtn').disabled = false; msg.textContent = 'Could not save: sign in as Mr. O first.'; msg.className = 'save-msg bad'; return; }
+        msg.textContent = `✅ Saved to your dashboard.` + (res.tookOff ? ` Stop ${lastResult.stop} is off ${firstLast(name)}'s test list.` : '');
+        msg.className = 'save-msg good';
+        fillStudentPicker();
     }
 
     // ============================================================
@@ -1811,6 +1954,6 @@
 <script src="maze-data.js?v=m2"></script>
 <script src="comp.js?v=c11"></script>
 <script src="maze.js?v=m3"></script>
-<script src="login.js?v=18"></script>
+<script src="login.js?v=19"></script>
 </body>
 </html>
