@@ -32,9 +32,7 @@ window.QPSRead = (function () {
   // Only real words are lit: a comma or "·" on its own (after a marked word, or between a stop's
   // number and name) is not said, so lighting it put the highlight one word behind the voice.
   const isWord = (s) => /[A-Za-z0-9]/.test(s);
-  // A host can name its own word spans (data-words): a Maze sentence holds its answer buttons inside it,
-  // and only the sentence's words are read and lit.
-  function wordsOf(host) { return [...host.querySelectorAll(host.dataset.words || '.rw, .c-w')].filter(w => isWord(w.textContent)); }
+  function wordsOf(host) { return [...host.querySelectorAll('.rw, .c-w')].filter(w => isWord(w.textContent)); }
   function light(words, i) { words.forEach((w, k) => w.classList.toggle('lit', k === i)); }
   function clear() {
     if (timer) { clearInterval(timer); timer = null; }

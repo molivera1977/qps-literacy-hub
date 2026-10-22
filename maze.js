@@ -4,9 +4,12 @@
 
    Like the DIBELS 8 Maze (Marcos 10/21: "Check like DIBELS — silent, timed 3 min"):
      • A story with a box about every 7th word; each box has 3 words, one makes sense.
-     • Practice: no timer. Each sentence and each box has a 🔊. A wrong pick → try once more,
-       then the right word is shown. Score = right on the first try (a percent).
-     • Check: read silently (no 🔊 on the story), 3 minutes, the picks can be changed until the
+     • The story and its boxes are never read aloud, in Practice or the Check (Marcos 10/21: "silent practice
+       i think is the way to go. The real test won't have read aloud"). The directions, the lesson, the
+       feedback and the result still have their 🔊.
+     • Practice: no timer. A wrong pick → try once more, then the right word is shown.
+       Score = right on the first try (a percent).
+     • Check: 3 minutes, the picks can be changed until the
        time is up or they tap "I'm finished". Score = right − ½ wrong. A box skipped before the
        last box they answered counts as wrong, so skipping can't raise the score.
      • Pass = the goal for the level (comp-data.js MAZE_GOALS). Level 4 = mCLASS grade 4
@@ -72,7 +75,7 @@
 
     // the story
     const card = k.el('div', 'c-card m-card');
-    card.append(k.el('div', 'c-tag c-tag-read', graded ? '📖 Read silently' : '📖 Read'));
+    card.append(k.el('div', 'c-tag c-tag-read', '📖 Read silently'));
     const story = k.el('div', 'm-story');
     story.setAttribute('lang', 'en');
     const fb = k.el('div', 'p-feedback m-feedback');
@@ -80,8 +83,6 @@
 
     sentences.forEach(toks => {
       const sent = k.el('span', 'm-sent');
-      sent.dataset.words = '.m-sw';            // readaloud.js reads and lights only the sentence's words
-      if (!graded) story.append(k.speaker(sent, 'Hear this sentence'));
       toks.forEach((t, i) => {
         if (i) sent.append(document.createTextNode(' '));
         if (t.word) { sent.append(k.el('span', 'm-sw', t.word)); return; }
@@ -94,18 +95,15 @@
     card.append(story);
     area.append(card, fb);
 
-    // One box: the 3 words as buttons, and a hidden "blank" that the voice says until it is answered
+    // One box: the 3 words as buttons, and a slot that shows the right word once Practice settles it
     function makeBox(t) {
       const right = t.box[0];
       const b = { n: t.n, right, pick: null, tries: 0, firstRight: null, settled: false, first: '' };
       const wrap = k.el('span', 'm-box');
       wrap.dataset.n = t.n;
-      const slot = k.el('span', 'm-sw m-slot', 'blank');
+      const slot = k.el('span', 'm-sw m-slot');
       const opts = k.el('span', 'm-opts');
-      opts.dataset.words = '.m-ow';
-      opts.dataset.say = shuffle(t.box).join(', ');
-      const order = opts.dataset.say.split(', ');
-      order.forEach(w => {
+      shuffle(t.box).forEach(w => {
         const o = k.el('button', 'm-opt');
         o.type = 'button';
         o.append(k.el('span', 'm-ow', w));
@@ -113,7 +111,6 @@
         opts.append(o);
       });
       wrap.append(slot);
-      if (!graded) wrap.append(k.speaker(opts, 'Hear the 3 words'));
       wrap.append(opts);
       b.el = wrap; b.slot = slot; b.opts = opts;
       boxes.push(b);
@@ -190,7 +187,7 @@
       intro.append(go);
       area.insertBefore(intro, card);
     } else {
-      area.insertBefore(k.block('p', 'c-lead', 'Read the story. At each box, pick the word that makes sense. Tap 🔊 to hear a sentence or the 3 words.', { label: 'Hear what to do' }), card);
+      area.insertBefore(k.block('p', 'c-lead', 'Read the story silently. At each box, pick the word that makes sense.', { label: 'Hear what to do' }), card);
     }
     k.show();
 

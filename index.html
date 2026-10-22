@@ -457,8 +457,6 @@
         .c-choice:disabled { cursor: default; color: var(--ink); }
         /* Maze (maze.js): a story with boxes of 3 words, inline */
         .m-story { font-family: var(--font-read); font-size: 1.45rem; line-height: 2.3; color: var(--ink); text-align: left; }
-        .m-story .c-say { display: inline-flex; vertical-align: middle; transform: scale(.8); margin: 0 2px 0 6px; }
-        .m-sw.lit { background: #FFD44D; color: #1f2a44; border-radius: 4px; box-shadow: 0 0 0 2px #FFD44D; }
         .m-box { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; vertical-align: middle;
                  border: 2px dashed var(--test, #2f6fde); border-radius: 12px; padding: 2px 4px; margin: 2px 2px; background: #f4f8ff; }
         .m-slot { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -468,9 +466,8 @@
         .m-opt.picked { background: var(--test, #2f6fde); border-color: var(--test-dark, #1d4fb0); color: #fff; }
         .m-box.answered .m-opt:not(.picked) { opacity: .55; }
         .m-opt.wrong { background: #fde4e4; border-color: var(--danger); text-decoration: line-through; opacity: .7; }
-        .m-ow.lit { background: #FFD44D; border-radius: 4px; }
         .m-box.settled { border-style: solid; }
-        .m-box.settled .m-opts, .m-box.settled .c-say { display: none; }
+        .m-box.settled .m-opts { display: none; }
         .m-box.settled .m-slot { position: static; width: auto; height: auto; clip: auto; overflow: visible; font-weight: 800; padding: 0 6px; }
         .m-box.right { border-color: var(--success); background: #e6f6ec; }
         .m-box.shown { border-color: #7a5200; background: #fff3d6; }
@@ -1804,13 +1801,13 @@
         }
     }
 </script>
-<script src="readaloud.js?v=r5"></script>
+<script src="readaloud.js?v=r6"></script>
 <script src="practice-data.js?v=p11"></script>
 <script src="practice.js?v=p14"></script>
 <script src="comp-data.js?v=c6"></script>
 <script src="maze-data.js?v=m1"></script>
 <script src="comp.js?v=c10"></script>
-<script src="maze.js?v=m2"></script>
+<script src="maze.js?v=m3"></script>
 <script src="login.js?v=17"></script>
 </body>
 </html>
