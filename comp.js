@@ -67,7 +67,9 @@
     const form = ent.map(([k, v]) => `${k}=${v.level}`).join(';') + `|t=${st.t || Date.now()}` +
       `|p=${ent.map(([k, v]) => `${k}:${v.passes || 0}`).join(',')}` +
       `|f=${ent.filter(([, v]) => v.finished).map(([k]) => k).join(',')}` +
-      `|l=${ent.filter(([, v]) => v.learned).map(([k]) => k).join(',')}|v=${COURSE_V}`;
+      `|l=${ent.filter(([, v]) => v.learned).map(([k]) => k).join(',')}|v=${COURSE_V}` +
+      // the passages already seen, so another device doesn't repeat them first (Marcos 10/21)
+      `|s=${ent.map(([k, v]) => `${k}:${(v.seen || []).join('.')}`).join(',')}`;
     QPSLogin.send({
       game: 'qps-levels', sessionId: 'lvl-' + name.replace(/[^A-Za-z0-9]+/g, '-'),
       form, score: 0, correct: 0, total: 0, maxScore: 0, percent: 0, done: false,
@@ -75,25 +77,49 @@
     });
   }
 
-  // A device with nothing saved reads the backup row back from the sheet.
-  async function restore(name) {
-    if (!name || load(name) || !window.QPSLogin || !QPSLogin.readTab) return false;
-    const rows = await QPSLogin.readTab('qps-levels');
-    const row = (rows || []).find(r => r.name === name);
-    if (!row || !row.form || load(name)) return false;
-    const segs = String(row.form).split('|');
+  // Every sign-in reads the backup row back from the sheet (10/21: a kid can switch Chromebooks).
+  // A device with nothing saved takes the row; a device with its own progress keeps whichever is further along
+  // for each skill (the course only moves forward: finished, then level, then passes, then learned — no clocks
+  // to trust), and the passages seen on either device are both kept, so neither repeats them first.
+  const rank = (sk) => (sk.finished ? 1e6 : 0) + sk.level * 100 + (sk.passes || 0) * 10 + (sk.learned ? 1 : 0);
+  function fromRow(form) {
+    const segs = String(form).split('|');
     const get = (key) => (segs.find(x => x.startsWith(key + '=')) || '').slice(key.length + 1);
+    if (Number(get('v')) !== COURSE_V) return null;    // a row from before the restart
     const passes = {}; get('p').split(',').forEach(x => { const [k, n] = x.split(':'); if (k) passes[k] = Math.max(0, Math.min(PASSES_NEEDED, Number(n) || 0)); });
+    const seen = {}; get('s').split(',').forEach(x => { const [k, ids] = x.split(':'); if (k) seen[k] = (ids || '').split('.').filter(id => /^[A-Z]\d-\d\d$/.test(id)).slice(-SEEN_KEEP); });
     const finished = new Set(get('f').split(',').filter(Boolean)), learned = new Set(get('l').split(',').filter(Boolean));
     const skills = {};
     segs[0].split(';').forEach(p => {
       const [k, v] = p.split('=');
       const lv = Number(v);
-      if (k && lv >= 1 && lv <= MAX_LEVEL) skills[k] = { ...freshSkill(lv), passes: passes[k] || 0, finished: finished.has(k), learned: learned.has(k) };
+      if (k && lv >= 1 && lv <= MAX_LEVEL) skills[k] = { ...freshSkill(lv), passes: passes[k] || 0, finished: finished.has(k), learned: learned.has(k), seen: seen[k] || [] };
     });
-    if (!Object.keys(skills).length) return false;
-    if (Number(get('v')) !== COURSE_V) return false;   // a row from before the restart
-    save(name, { skills, t: Number(get('t')) || Date.now(), v: COURSE_V });
+    return Object.keys(skills).length ? { skills, t: Number(get('t')) || Date.now(), v: COURSE_V } : null;
+  }
+  function merge(mine, theirs) {
+    const skills = { ...mine.skills };
+    let changed = false;
+    Object.entries(theirs.skills).forEach(([k, sk]) => {
+      const here = skills[k] ? { ...freshSkill(skills[k].level), ...skills[k] } : null;
+      const keep = !here || rank(sk) > rank(here) ? sk : here;
+      const other = keep === sk ? (here ? here.seen : []) : sk.seen;
+      const seen = [...other.filter(id => !keep.seen.includes(id)), ...keep.seen].slice(-SEEN_KEEP);
+      const next = { ...keep, seen };
+      if (JSON.stringify(next) !== JSON.stringify(here)) { skills[k] = next; changed = true; }
+    });
+    return changed ? { ...mine, skills, t: Date.now(), v: COURSE_V } : null;
+  }
+  async function restore(name) {
+    if (!name || !window.QPSLogin || !QPSLogin.readTab) return false;
+    const rows = await QPSLogin.readTab('qps-levels');
+    const row = (rows || []).find(r => r.name === name);
+    const theirs = row && row.form ? fromRow(row.form) : null;
+    if (!theirs) return false;
+    const mine = load(name);
+    const next = mine ? merge(mine, theirs) : theirs;
+    if (!next) return false;
+    save(name, next);
     return true;
   }
 
@@ -135,7 +161,9 @@
     if (window.QPSRead) { QPSRead.say(host); return; }
     if (!window.speechSynthesis) return;
     speechSynthesis.cancel();
-    speechSynthesis.speak(new SpeechSynthesisUtterance(host.dataset.say));
+    const u = new SpeechSynthesisUtterance(host.dataset.say);
+    u.lang = 'en-US';
+    speechSynthesis.speak(u);
   }
   // A speaker icon is a span (it can sit inside an answer button); its tap never answers.
   function speaker(host, label) {

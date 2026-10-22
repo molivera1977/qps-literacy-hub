@@ -43,6 +43,7 @@
   <textarea id="wrongList" readonly placeholder="Nothing marked yet."></textarea>
   <div class="bar"><button type="button" id="copy">Copy the list</button><span id="copied"></span></div>
 </main>
+<script src="readaloud.js?v=r7"></script>
 <script src="respell.js?v=s5"></script>
 <script src="practice-data.js?v=p11"></script>
 <script src="practice.js?v=p14"></script>
@@ -59,7 +60,7 @@
 
   function speak(text) {
     return new Promise(resolve => {
-      const u = new SpeechSynthesisUtterance(text);
+      const u = QPSRead.english(new SpeechSynthesisUtterance(text));   // the English voice the hub uses
       u.rate = 1.0; u.onend = resolve; u.onerror = resolve;   // same as the site's speakComputer
       speechSynthesis.speak(u);
     });
@@ -81,9 +82,9 @@
   const say = (w) => { heard.add(w.key); w.row.classList.add('heard'); keep(); showCount(); return WHOLE.has(w.word) ? playRec(w.word) : (w.choice ? speak(w.said) : recOrVoice(w)); };   // a choice never plays a recording (as in the hub)
 
   function showVoice() {
-    const v = speechSynthesis.getVoices();
-    const d = v.find(x => x.default) || v.find(x => /^en/i.test(x.lang));
-    document.getElementById('voiceName').textContent = d ? `${d.name} (${d.lang})` : 'no voice found';
+    // the voice the hub reads with: the device's own if it is English, else an English one (readaloud.js)
+    const d = QPSRead.english(new SpeechSynthesisUtterance('')).voice;
+    document.getElementById('voiceName').textContent = d ? `${d.name} (${d.lang})` : 'no English voice found';
   }
   speechSynthesis.onvoiceschanged = showVoice;
   showVoice();

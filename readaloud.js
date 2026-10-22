@@ -29,6 +29,25 @@ window.QPSRead = (function () {
     return host;
   }
 
+  // Every reading is in English, on an English voice (10/21: one child heard garbled sounds on stop 6 that no one
+  // else heard — a Chromebook whose own voice is another language reads English words with that language's
+  // sounds). The device's own voice is kept when it is English, so nothing changes on the devices that were fine.
+  const isEnglish = (v) => /^en([-_]|$)/i.test((v && v.lang) || '');
+  let enVoice = null;
+  function englishVoice() {
+    if (enVoice) return enVoice;
+    const all = (window.speechSynthesis && speechSynthesis.getVoices && speechSynthesis.getVoices()) || [];
+    const us = (v) => /^en[-_]US$/i.test(v.lang || '');
+    enVoice = all.find(v => v.default && isEnglish(v)) || all.find(v => us(v) && v.localService) || all.find(us) || all.find(isEnglish) || null;
+    return enVoice;                        // null until the device lists its voices (Chrome lists them late): asked again next time
+  }
+  function english(u) {
+    u.lang = 'en-US';
+    const v = englishVoice();
+    if (v) { try { u.voice = v; } catch (e) { /* a voice the browser won't take: en-US still asks for English */ } }
+    return u;
+  }
+
   // Only real words are lit: a comma or "·" on its own (after a marked word, or between a stop's
   // number and name) is not said, so lighting it put the highlight one word behind the voice.
   const isWord = (s) => /[A-Za-z0-9]/.test(s);
@@ -62,7 +81,7 @@ window.QPSRead = (function () {
       const text = host.dataset.say || words.map(w => w.textContent).join(' ') || host.textContent;
       if (!text) { resolve('end'); return; }
       if (!window.speechSynthesis) { resolve('novoice'); return; }
-      const u = new SpeechSynthesisUtterance(text);
+      const u = english(new SpeechSynthesisUtterance(text));
       held = u;                                            // held, so Chrome can't let it go mid-reading
       u.rate = RATE;
       current = host;
@@ -132,5 +151,5 @@ window.QPSRead = (function () {
     }
   }
 
-  return { wrap, say, sayAll, stop, upgradeStatic };
+  return { wrap, say, sayAll, stop, upgradeStatic, english };
 })();
