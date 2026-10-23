@@ -17,7 +17,7 @@ const bank = html.slice(html.indexOf('const wordBank'), html.indexOf('// Level d
 const testWords = new Set([...bank.matchAll(/w:"([a-z]+)"/g)].map(m => m[1]));
 
 const ctx = vm.createContext({
-  window: {}, location: { search: '' }, localStorage: { getItem: () => null, setItem() {} },
+  window: { addEventListener() {} }, location: { search: '' }, localStorage: { getItem: () => null, setItem() {} },
   document: { readyState: 'loading', addEventListener() {}, getElementById: () => null }
 });
 vm.runInContext(fs.readFileSync(path.join(site, 'practice-data.js'), 'utf8'), ctx);

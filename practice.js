@@ -198,8 +198,20 @@
     window.scrollTo(0, 0);
   }
 
+  // Leaving a screen ends everything it was reading (Marcos 10/23: "if I leave I still hear the read
+  // aloud"): the lesson or example stops for good, not just the line it was on.
+  function hush() {
+    lessonRun++; exampleRun++;
+    if (window.stopSounds) stopSounds();
+    if (window.QPSRead) QPSRead.stop(); else if (window.speechSynthesis) speechSynthesis.cancel();
+  }
+  // Leaving the site (another tab, another site, closing it) ends it too, and Back doesn't bring it back.
+  // (QPSRead.stop() here also ends a Reading-for-meaning passage: this file is on every page of the hub.)
+  window.addEventListener('pagehide', hush);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) hush(); });
+
   function backToStops() {
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    hush();
     $('practiceView').style.display = 'none';
     $('welcomeView').style.display = 'block';
     document.title = 'QPS Literacy Hub';
@@ -221,6 +233,7 @@
   }
 
   function showStep() {
+    hush();
     renderChips();
     const area = $('practiceArea');
     area.innerHTML = '';
