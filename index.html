@@ -126,6 +126,9 @@
         .tab-lock { font-size: 0.85em; margin-left: 4px; opacity: 0.85; }
         /* The Assessment is Mr. O's between-screenings check: only the teacher link (?teacher) shows it. */
         body:not(.teacher-mode) .teacher-only { display: none !important; }
+        .behind-link { text-align: center; margin: 22px 0 6px; font-size: 0.95rem; }
+        .behind-link[hidden] { display: none; }
+        .behind-link a { color: var(--ink-soft); font-weight: 600; }
 
         .view-section { display: none; }
         .view-section.active { display: block; animation: rise 0.35s var(--ease); }
@@ -756,6 +759,9 @@
             <h3>Assessment</h3>
         </button>
     </div>
+    <!-- Behind the QPS (Marcos 10/23): the explainer for adults. Mr. O and his share-link guests (other teachers,
+         admin) see this link; a signed-in student never does (setTeacherMode). -->
+    <p id="behindQps" class="behind-link" hidden><a href="https://mroteacher.com/behind-the-qps/" target="behind-the-qps" rel="noopener">📗 Behind the QPS — how this hub works and how each child's plan is set</a></p>
 </main>
 
 <!-- ========== PRACTICE STOP (practice.js) ========== -->
@@ -1110,6 +1116,8 @@
     function setTeacherMode(on) {
         TEACHER_MODE = !!on || TEACHER_LINK;
         document.body.classList.toggle('teacher-mode', TEACHER_MODE);
+        const behind = document.getElementById('behindQps');
+        if (behind) behind.hidden = !(TEACHER_MODE || window.SHARE_MODE);
     }
     setTeacherMode(false);
     let afterPin = null;
