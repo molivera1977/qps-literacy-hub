@@ -583,6 +583,9 @@
         .p-tile.slot { min-height: 64px; min-width: 70px; background: rgba(255,255,255,0.6); border-style: dashed; box-shadow: none; }
         .p-tile.wrong-slot { border-color: var(--danger); box-shadow: 0 0 0 4px #fde4e4; }
         .p-tiles.blended .p-tile { background: #e6f6ec; border-color: #a7e0bd; }
+        /* Being said right now (10/25): the sound's tile, or every tile while the whole word is said.
+           Dark orange: white on it is 4.4:1 (white on the light orange was 2.5:1). */
+        .p-tiles .p-tile.lit { background: var(--learning-dark); border-color: var(--learning-dark); color: #fff; }
         .p-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; min-height: 70px; }
 
         .p-big-word { font-family: var(--font-read); font-weight: 700; font-size: clamp(3rem, 1.5rem + 5vw, 4.6rem); color: var(--nonsense); line-height: 1.1; }
@@ -620,6 +623,7 @@
         .p-gap::after { content: ""; position: absolute; left: 50%; top: 10%; bottom: 10%; width: 2px; background: var(--line); transform: translateX(-50%); }
         .p-gap:hover::after { background: var(--ink-faint); }
         .p-gap.cut::after { width: 6px; background: var(--games); border-radius: 3px; }
+        .p-letter.lit, .p-gap.lit { background: var(--learning-dark); color: #fff; }   /* the part being said (10/25) */
 
         .p-learn { background: var(--learning-tint); border: 2px solid #fbdcb8; border-radius: 20px; padding: 20px; text-align: left; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
         .p-learn-title { margin: 0; font-size: 1.5rem; }
@@ -2011,7 +2015,7 @@
 </script>
 <script src="readaloud.js?v=r7"></script>
 <script src="practice-data.js?v=p11"></script>
-<script src="practice.js?v=p15"></script>
+<script src="practice.js?v=p16"></script>
 <script src="comp-data.js?v=c6"></script>
 <script src="maze-data.js?v=m2"></script>
 <script src="maze2-data.js?v=r1"></script>

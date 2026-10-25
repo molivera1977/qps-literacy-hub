@@ -106,6 +106,15 @@
     });
   }
   function sayText(text) { return guarded(() => speakComputer(text)); }
+  // Parts light up while they are said (Marcos 10/25: "shouldn't these highlight when the sound is said"):
+  // one tile for a sound, every tile for the whole word. play() is called at once, so inSequence still applies.
+  // A newer run may light the same tile before this one ends; then it is that run's to turn off.
+  let litRun = 0;
+  async function lightWhile(els, play) {
+    const mine = ++litRun;
+    els.forEach(e => { e.classList.add('lit'); e.litBy = mine; });
+    try { return await play(); } finally { els.forEach(e => { if (e.litBy === mine) e.classList.remove('lit'); }); }
+  }
 
   /* ---------- near-miss choices (must SOUND different from the word) ---------- */
   // Choices a child must never see or hear (10/20, Marcos: "fag … this might not be appropriate"): slurs,
@@ -432,7 +441,9 @@
       // "a>b" shows a before-and-after pair, like mat → mate.
       stop.learn.examples.forEach(w => {
         const words = w.split('>').map(split);
-        // m · a · t … mat → m · ate … mate, with a beat between sounds, before the word, and between words
+        const rows = words.map(chunks => tiles(chunks));
+        // m · a · t … mat → m · ate … mate, with a beat between sounds, before the word, and between words;
+        // each tile lights while its sound is said, the whole word while the word is said
         const b = button('p-example', '', async () => {
           if (window.stopSounds) stopSounds();
           if (window.QPSRead) QPSRead.stop();
@@ -440,16 +451,17 @@
           const mine = ++exampleRun;                       // another tap ends this example
           const still = () => mine === exampleRun;
           for (const [k, chunks] of words.entries()) {
+            const parts = [...rows[k].children];
             if (k) await wait(900);
             if (chunks.length > 1) {
-              for (const c of chunks) { if (!still()) return; await inSequence(() => sayChunk(c)); await wait(350); }
+              for (const [i, c] of chunks.entries()) { if (!still()) return; await lightWhile([parts[i]], () => inSequence(() => sayChunk(c))); await wait(350); }
               await wait(150);
             }
             if (!still()) return;
-            await inSequence(() => sayWord(chunks));
+            await lightWhile(parts, () => inSequence(() => sayWord(chunks)));
           }
         }, `Hear ${words.map(join).join(' and ')}`);
-        words.forEach((chunks, k) => { if (k) b.append(el('span', 'p-arrow', '→')); b.append(tiles(chunks)); });
+        rows.forEach((row, k) => { if (k) b.append(el('span', 'p-arrow', '→')); b.append(row); });
         ex.append(b);
       });
       card.append(ex);
@@ -761,9 +773,10 @@
     let pos = 0;
     const answer = new Set(chunks.slice(0, -1).map(c => (pos += c.length)));
     const row = el('div', 'p-chop');
-    const gaps = [];
+    const gaps = [], letters = [];
     [...word].forEach((ch, i) => {
-      row.append(el('span', 'p-letter', ch));
+      letters.push(el('span', 'p-letter', ch));
+      row.append(letters[i]);
       if (i < word.length - 1) {
         const g = button('p-gap', '', () => { if (cuts.has(i + 1)) { cuts.delete(i + 1); g.classList.remove('cut'); } else { cuts.add(i + 1); g.classList.add('cut'); } }, `Cut after letter ${i + 1}`);
         gaps.push(g);
@@ -777,8 +790,13 @@
       check.disabled = true;
       gaps.forEach((g, i) => { g.classList.toggle('cut', answer.has(i + 1)); g.disabled = true; });
       fb.textContent = ok ? `✅ Yes! ${chunks.join(' · ')}` : `Here are the parts: ${chunks.join(' · ')}. Listen to each part.`;
-      for (const c of chunks) { await sayChunk(c); }
-      await sayWord(chunks);
+      // each part lights while it is said (its letters and the gaps between them), then the whole word
+      let at = 0;
+      for (const c of chunks) {
+        const n = at; at += c.length;
+        await lightWhile([...letters.slice(n, at), ...gaps.slice(n, at - 1)], () => sayChunk(c));
+      }
+      await lightWhile([...letters, ...gaps], () => sayWord(chunks));
       finish();
     });
     box.append(check, fb);
@@ -870,7 +888,11 @@
     if (missed.length) {
       box.append(el('p', 'p-small', 'Words to practice — tap to hear:'));
       const list = el('div', 'p-examples');
-      missed.forEach(it => { const b = button('p-example', '', () => (stop.letters ? sayChunk(it.chunks[0]) : sayWord(it.chunks)), `Hear ${join(it.chunks)}`); b.append(tiles(it.chunks)); list.append(b); });
+      missed.forEach(it => {
+        const row = tiles(it.chunks);
+        const b = button('p-example', '', () => lightWhile([...row.children], () => (stop.letters ? sayChunk(it.chunks[0]) : sayWord(it.chunks))), `Hear ${join(it.chunks)}`);
+        b.append(row); list.append(b);
+      });
       box.append(list);
     }
     const again = el('div', 'p-end-buttons');
