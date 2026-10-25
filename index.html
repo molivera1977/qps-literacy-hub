@@ -586,6 +586,10 @@
         /* Being said right now (10/25): the sound's tile, or every tile while the whole word is said.
            Dark orange: white on it is 4.4:1 (white on the light orange was 2.5:1). */
         .p-tiles .p-tile.lit { background: var(--learning-dark); border-color: var(--learning-dark); color: #fff; }
+        /* A 🔊 whose word is not on screen (10/25): it stays pressed down and darker while it talks. */
+        .p-btn.p-hear.lit { background: var(--learning-dark); box-shadow: 0 2px 0 #7a4209; transform: translateY(3px); }
+        .p-option.lit { background: var(--learning-dark); border-color: var(--learning-dark); color: #fff; }
+        .p-hidden-word.lit { background: var(--learning-dark); color: #fff; border-radius: 12px; box-shadow: 0 0 0 8px var(--learning-dark); }
         .p-pool { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; min-height: 70px; }
 
         .p-big-word { font-family: var(--font-read); font-weight: 700; font-size: clamp(3rem, 1.5rem + 5vw, 4.6rem); color: var(--nonsense); line-height: 1.1; }
@@ -635,7 +639,7 @@
             box-shadow: 0 2px 0 var(--learning-dark); vertical-align: baseline;
         }
         .p-sound::before { content: "🔊 "; font-size: 0.75em; }
-        .p-sound.lit { background: var(--learning); color: #fff; }
+        .p-sound.lit { background: var(--learning-dark); border-color: var(--learning-dark); color: #fff; }   /* 10/25: was light orange, 2.5:1 */
         /* Directions first (10/19): the step's work is dimmed and can't be tapped until the 🔊 directions are heard */
         .p-locked { opacity: 0.45; filter: grayscale(0.4); }
         .p-direction.p-must-hear .p-say { box-shadow: 0 0 0 4px #FFD44D; animation: hearPulse 1.2s ease-in-out infinite; }
@@ -2015,7 +2019,7 @@
 </script>
 <script src="readaloud.js?v=r7"></script>
 <script src="practice-data.js?v=p11"></script>
-<script src="practice.js?v=p16"></script>
+<script src="practice.js?v=p17"></script>
 <script src="comp-data.js?v=c6"></script>
 <script src="maze-data.js?v=m2"></script>
 <script src="maze2-data.js?v=r1"></script>

@@ -115,6 +115,9 @@
     els.forEach(e => { e.classList.add('lit'); e.litBy = mine; });
     try { return await play(); } finally { els.forEach(e => { if (e.litBy === mine) e.classList.remove('lit'); }); }
   }
+  // Marcos 10/25: "should all sounds light up when they speak after tapping" — yes, one rule: what is being said
+  // lights up. Letters on screen light themselves; a 🔊 button lights when the word it says is not on screen.
+  function speaker(cls, text, play, label) { const b = button(cls, text, () => lightWhile([b], play), label); return b; }
 
   /* ---------- near-miss choices (must SOUND different from the word) ---------- */
   // Choices a child must never see or hear (10/20, Marcos: "fag … this might not be appropriate"): slurs,
@@ -278,7 +281,7 @@
       if (!tok) return;
       const sound = tok.match(/^\/([a-z]+)\/$/);
       if (sound) {
-        const chip = button('p-sound', sound[1], () => sayChunk(sound[1]), `Hear the sound ${sound[1]}`);
+        const chip = speaker('p-sound', sound[1], () => sayChunk(sound[1]), `Hear the sound ${sound[1]}`);
         p.append(chip);
         segs.push({ kind: 'sound', chunk: sound[1], el: chip });
         flushText();
@@ -315,9 +318,7 @@
       for (const [k, sg] of line.segs.entries()) {
         if (mine !== lessonRun) return false;
         if (sg.kind === 'sound') {
-          sg.el.classList.add('lit');
-          await inSequence(() => sayChunk(sg.chunk));
-          sg.el.classList.remove('lit');
+          await lightWhile([sg.el], () => inSequence(() => sayChunk(sg.chunk)));
         } else if (/[a-z0-9]/i.test(sg.el.dataset.say)) {
           if (window.QPSRead) await QPSRead.say(sg.el); else await speakComputer(sg.el.dataset.say);
         }
@@ -474,7 +475,7 @@
         let next = 0;
         const row = el('div', 'p-tiles big');
         const blendBtn = button('p-btn p-hear', '🔊 Blend it', async () => {
-          await sayWord(chunks);
+          await lightWhile([...row.children], () => sayWord(chunks));
           row.classList.add('blended');
           blendBtn.disabled = true;
           finish();
@@ -483,12 +484,12 @@
         chunks.forEach((c, i) => {
           const t = button('p-tile tap' + (i === 0 ? ' glow' : ''), c, async () => {
             if (i > next) return;                           // not yet: the sounds go in order
-            if (i < next) return sayChunk(c);              // a sound already heard: hear it again (Marcos 10/19)
+            if (i < next) return lightWhile([t], () => sayChunk(c));   // a sound already heard: hear it again (Marcos 10/19)
             // the tap moves on at once, so a quick next tap is taken (and cuts this sound off)
             t.classList.remove('glow'); t.classList.add('heard');
             next++;
             if (next < chunks.length) row.children[next].classList.add('glow');
-            await sayChunk(c);
+            await lightWhile([t], () => sayChunk(c));
             if (next >= chunks.length) blendBtn.disabled = false;
           }, `Sound ${i + 1}: ${c}`);
           row.append(t);
@@ -504,7 +505,10 @@
         mark(box, key);
         const word = el('div', 'p-hidden-word', s.seeWord ? join(chunks) : '?');
         const fb = feedback(box);
-        box.append(button('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks)), word);
+        // a word on screen lights itself; a hidden one lights its 🔊
+        const hear = s.seeWord ? button('p-btn p-hear', '🔊 Hear the word', () => lightWhile([word], () => sayWord(chunks)))
+          : speaker('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks));
+        box.append(hear, word);
         const bins = el('div', 'p-bins');
         s.bins.forEach(b => {
           const bin = button('p-bin', b.label, async () => {
@@ -517,7 +521,7 @@
               bin.classList.add('wrong');
               [...bins.children].find(x => x.textContent === right.label).classList.add('right');
               fb.textContent = `Not quite. ${join(chunks)} goes with ${right.label}. Listen again.`;
-              await sayWord(chunks);
+              await lightWhile([word], () => sayWord(chunks));   // the word is on screen now
             }
             finish();
           });
@@ -536,10 +540,12 @@
         const d = diff(A, B);
         const fb = feedback(box);
         box.append(el('p', 'p-small', 'This word says:'));
-        const aBtn = button('p-word-btn', '', () => sayWord(A), `Hear ${join(A)}`);
-        aBtn.append(tiles(A));
+        const aTiles = tiles(A);
+        const aBtn = button('p-word-btn', '', () => lightWhile([...aTiles.children], () => sayWord(A)), `Hear ${join(A)}`);
+        aBtn.append(aTiles);
         box.append(aBtn);
-        box.append(button('p-btn p-hear', '🔊 Now make this word', () => sayWord(B)));
+        const makeBtn = speaker('p-btn p-hear', '🔊 Now make this word', () => sayWord(B));
+        box.append(makeBtn);
         const target = el('div', 'p-tiles big');
         const shown = [...B.slice(0, d.start), '___', ...B.slice(d.start + d.newLen)];
         shown.forEach(c => target.append(el('span', 'p-tile' + (c === '___' ? ' blank' : ''), c)));
@@ -556,12 +562,12 @@
               target.innerHTML = '';
               target.append(...tiles(B, { big: true }).children);
               fb.textContent = `✅ Yes! ${join(A)} turned into ${join(B)}.`;
-              await sayWord(B);
+              await lightWhile([...target.children], () => sayWord(B));
               finish();
             } else {
               o.classList.add('wrong'); o.disabled = true;
               fb.textContent = 'Not that one. Listen to the new word again.';
-              await sayWord(B);
+              await lightWhile([makeBtn], () => sayWord(B));   // the new word is not on screen yet
             }
           });
           opts.append(o);
@@ -588,7 +594,7 @@
         const line = el('p', 'p-sentence');
         sentence.split(' ').forEach((word, i) => {
           if (i) line.append(' ');
-          line.append(button('p-sword rw', word, () => sayText(word.replace(/[.,?!]/g, '')), `Hear ${word}`));
+          line.append(speaker('p-sword rw', word, () => sayText(word.replace(/[.,?!]/g, '')), `Hear ${word}`));
         });
         line.dataset.say = sentence;
         box.append(line, button('p-btn p-hear', '🔊 Hear the sentence', async () => {
@@ -616,13 +622,14 @@
     letterHear(area, done) {
       rounds(area, pick(stop.letters, 8), (box, letter, finish) => {
         const fb = feedback(box);
-        box.append(button('p-btn p-hear', '🔊 Hear the sound', () => sayChunk(letter)));
+        const hear = speaker('p-btn p-hear', '🔊 Hear the sound', () => sayChunk(letter));
+        box.append(hear);
         const opts = el('div', 'p-options');
         shuffle([letter, ...pick(stop.letters.filter(l => l !== letter), 2)]).forEach(l => {
           const o = button('p-option big', l, async () => {
             if (opts.dataset.done) return;
             if (l === letter) { opts.dataset.done = '1'; o.classList.add('right'); fb.textContent = '✅ Yes!'; finish(); }
-            else { o.classList.add('wrong'); o.disabled = true; fb.textContent = `Not that one. That letter says a different sound. Listen again.`; await sayChunk(letter); }
+            else { o.classList.add('wrong'); o.disabled = true; fb.textContent = `Not that one. That letter says a different sound. Listen again.`; await lightWhile([hear], () => sayChunk(letter)); }
           });
           opts.append(o);
         });
@@ -667,7 +674,7 @@
   function buildRound(box, chunks, finish, graded) {
     mark(box, chunks.join('|'));
     const fb = feedback(box);
-    box.append(button('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks)));
+    box.append(speaker('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks)));
     const slots = el('div', 'p-tiles big');
     const pool = el('div', 'p-pool');
     const filled = chunks.map(() => null);
@@ -687,7 +694,7 @@
         filled[at] = { c: card.c, btn: b };
         slotEls[at].textContent = card.c; slotEls[at].classList.remove('slot');
         b.style.visibility = 'hidden';
-        if (!graded) sayChunk(card.c);
+        if (!graded) lightWhile([slotEls[at]], () => sayChunk(card.c));   // the box the part went into
       });
       pool.append(b);
     });
@@ -695,12 +702,12 @@
       if (filled.includes(null)) { fb.textContent = 'Fill every box first.'; return; }
       const wrongAt = filled.findIndex((f, i) => f.c !== chunks[i]);
       if (graded) { check.disabled = true; return finish(wrongAt < 0); }
-      if (wrongAt < 0) { check.disabled = true; slots.classList.add('blended'); fb.textContent = `✅ You built ${join(chunks)}!`; await sayWord(chunks); return finish(); }
+      if (wrongAt < 0) { check.disabled = true; slots.classList.add('blended'); fb.textContent = `✅ You built ${join(chunks)}!`; await lightWhile(slotEls, () => sayWord(chunks)); return finish(); }
       fb.textContent = `Look at box ${wrongAt + 1}. Listen to that part again and try again.`;
       slotEls[wrongAt].classList.add('wrong-slot');
       setTimeout(() => slotEls[wrongAt].classList.remove('wrong-slot'), 1500);
       for (let i = wrongAt; i < filled.length; i++) { if (filled[i]) { filled[i].btn.style.visibility = 'visible'; filled[i] = null; slotEls[i].textContent = ''; slotEls[i].classList.add('slot'); } }
-      await sayChunk(chunks[wrongAt]);
+      await lightWhile([slotEls[wrongAt]], () => sayChunk(chunks[wrongAt]));   // that box's part
     });
     box.append(el('p', 'p-small', 'Your word:'), slots, el('p', 'p-small', 'Parts:'), pool, check, fb);
   }
@@ -727,7 +734,7 @@
       const b = button('p-option listen', `🔊 ${n + 1}`, async () => {
         [...opts.children].forEach(x => x.classList.remove('picked'));
         b.classList.add('picked'); chosen = o;
-        await sayWord(o);
+        await lightWhile([b], () => sayWord(o));
       }, `Choice ${n + 1}`);
       if (QA) b.dataset.say = join(o);
       opts.append(b);
@@ -747,7 +754,8 @@
   function spellRound(box, chunks, finish, graded) {
     mark(box, chunks.join('|'));
     const fb = feedback(box);
-    box.append(button('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks)));
+    const hear = speaker('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks));
+    box.append(hear);
     const opts = el('div', 'p-options');
     shuffle([chunks, ...nearMisses(stop, chunks)]).forEach(o => {
       const b = button('p-option', join(o), async () => {
@@ -758,7 +766,7 @@
         b.classList.add('wrong'); b.disabled = true;
         const mark = patternIndex(chunks);
         fb.textContent = mark >= 0 ? `Not that one. Listen for the ${chunks[mark]} sound.` : 'Not that one. Listen again.';
-        await sayWord(chunks);
+        await lightWhile([hear], () => sayWord(chunks));
       });
       opts.append(b);
     });
@@ -783,7 +791,7 @@
         row.append(g);
       }
     });
-    box.append(button('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks)), row);
+    box.append(button('p-btn p-hear', '🔊 Hear the word', () => lightWhile([...letters, ...gaps], () => sayWord(chunks))), row);   // the word is on screen
     const check = button('p-btn p-check', 'Check ✅', async () => {
       const ok = cuts.size === answer.size && [...answer].every(a => cuts.has(a));
       if (graded) { check.disabled = true; return finish(ok); }
@@ -813,7 +821,7 @@
       const b = button('p-option listen', `🔊 ${n + 1}`, async () => {
         [...opts.children].forEach(x => x.classList.remove('picked'));
         b.classList.add('picked'); chosen = c;
-        await sayChunk(c);
+        await lightWhile([b], () => sayChunk(c));
       }, `Sound ${n + 1}`);
       if (QA) b.dataset.say = c;
       opts.append(b);
@@ -830,7 +838,7 @@
 
   function letterHearCheck(box, letter, finish) {
     mark(box, letter);
-    box.append(button('p-btn p-hear', '🔊 Hear the sound', () => sayChunk(letter)));
+    box.append(speaker('p-btn p-hear', '🔊 Hear the sound', () => sayChunk(letter)));
     const opts = el('div', 'p-options');
     shuffle([letter, ...pick(stop.letters.filter(l => l !== letter), 2)]).forEach(l => {
       opts.append(button('p-option big', l, () => { if (!opts.dataset.done) { opts.dataset.done = '1'; finish(l === letter); } }));
