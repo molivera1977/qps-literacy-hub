@@ -1675,8 +1675,11 @@
     // Marcos 10/25: "can we make the QPS two-sided sheet fill more of each page" — the words are made as big as they
     // can be with each side still on one page (was a fixed 14pt: the back was full, the front 88%). The sheet is laid
     // out at the paper's width (7.6in inside the margins), so what is measured here is what prints.
+    // A blank band at the top of every printed page, both sheets (Marcos 10/25: "can we give each version a bigger header
+    // so when i staple papers the top words dont get bent"): the staple and its bent corner sit above the words.
+    const STAPLE_BAND_IN = 1;
     const SHEET_SPLIT_JS = `(function () {
-  var PAGE = (11 - 2 * 0.45) * 96 * 0.97;   // a Letter page inside the sheet's 0.45in margins, less a little for the printer
+  var PAGE = (11 - ${STAPLE_BAND_IN} - 0.45) * 96 * 0.97;   // a Letter page inside the sheet's margins (the staple band on top), less a little for the printer
   function tasks() { return [].slice.call(document.querySelectorAll('.task')); }
   // the most even break at the size now set: [the taller side, the back's first Task]
   function split() {
@@ -1709,7 +1712,7 @@
         return `<!doctype html><html><head><meta charset="utf-8"><title>QPS student sheet — every Task</title>
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  @page { size: letter; margin: 0.45in; }   /* SHEET_SPLIT_JS uses the same 0.45in */
+  @page { size: letter; margin: ${STAPLE_BAND_IN}in 0.45in 0.45in; }   /* SHEET_SPLIT_JS uses the same margins */
   /* the paper's width inside the margins, on screen too; --fs (the words' size) is set by SHEET_SPLIT_JS */
   body { font-family: Andika, 'Century Gothic', Arial, sans-serif; color: #111; margin: 0 auto; width: 7.6in; --fs: 14pt; }
   /* the Task's name in a narrow column on the left, so the words get the page's height */
@@ -1742,9 +1745,9 @@
         return `<!doctype html><html><head><meta charset="utf-8"><title>QPS student sheet</title>
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  @page { size: letter; margin: 0.6in; }
+  @page { size: letter; margin: ${STAPLE_BAND_IN}in 0.6in 0.6in; }
   body { font-family: Andika, 'Century Gothic', Arial, sans-serif; color: #111; margin: 0; }
-  .page { page-break-after: always; break-after: page; min-height: 9.6in; display: flex; flex-direction: column; }
+  .page { page-break-after: always; break-after: page; min-height: ${(11 - STAPLE_BAND_IN - 0.6 - 0.2).toFixed(2)}in; display: flex; flex-direction: column; }
   .page:last-child { page-break-after: auto; break-after: auto; }
   h1 { font-size: 16pt; font-weight: 400; color: #555; margin: 0 0 0.3in; }
   ol { list-style: none; margin: 0; padding: 0; flex: 1; }
