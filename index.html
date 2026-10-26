@@ -650,7 +650,7 @@
         /* A device set to "reduce motion" (some Chromebooks) got no pulse at all (Marcos 10/21: "I don't see the
            pulsing on everyone's device"): there the ring GLOWS brighter and dimmer instead — nothing moves or grows. */
         @keyframes hearGlow { 50% { box-shadow: 0 0 0 7px #FFB800, 0 0 22px 8px rgba(255, 184, 0, .8); } }
-        @media (prefers-reduced-motion: reduce) { .p-direction.p-must-hear .p-say, .p-hear.p-pulse, .p-example.p-pulse { animation: hearGlow 1.2s ease-in-out infinite !important; } }   /* beats the page-wide animation: none below */
+        @media (prefers-reduced-motion: reduce) { .p-direction.p-must-hear .p-say, .p-hear.p-pulse, .p-example.p-pulse, .p-option.p-pulse, .p-say.p-pulse { animation: hearGlow 1.2s ease-in-out infinite !important; } }   /* beats the page-wide animation: none below */
         .p-hear-note { font-size: 21px; font-weight: 600; color: #8a4b00; margin: 6px 0 10px; }
         .p-read-it { margin-left: 8px; }
         .plan-pass, .stop-pass { font-weight: 700; color: var(--success, #1f8f55); font-size: 0.95rem; }
@@ -664,7 +664,15 @@
            a heard one gets a check */
         .p-example.p-pulse { border-color: #FFB800; box-shadow: 0 0 0 4px #FFD44D; animation: hearGlow 1.2s ease-in-out infinite; }
         .p-example.heard { border-color: var(--success-dark); position: relative; }
-        .p-example.heard::after {   /* a corner badge, so the box keeps its size and nothing on the row moves */
+        /* 10/26 (Marcos: "do all three"): a 🔊 choice still to hear glows, a heard one gets the same corner ✓;
+           a correction is read aloud with its own 🔊, which glows if it was cut off; the end-of-Check buttons wait */
+        .p-option.listen.p-pulse { box-shadow: 0 0 0 4px #FFD44D; animation: hearGlow 1.2s ease-in-out infinite; }
+        .p-option.listen.heard { position: relative; }
+        .p-say.p-pulse { box-shadow: 0 0 0 4px #FFD44D; animation: hearPulse 1.2s ease-in-out infinite; }
+        .p-feedback.p-told { display: flex; align-items: center; justify-content: center; gap: 10px; text-align: left; }
+        .p-feedback .p-told-line { font-size: 1.25rem; }
+        .p-end-buttons[hidden] { display: none; }
+        .p-example.heard::after, .p-option.listen.heard::after {   /* a corner badge, so the box keeps its size and nothing on the row moves */
             content: "✓"; position: absolute; top: -11px; right: -11px; width: 26px; height: 26px; border-radius: 50%;
             background: var(--success-dark); color: #fff; font-size: 16px; font-weight: 800; line-height: 26px; text-align: center;
         }
@@ -2060,7 +2068,7 @@
 </script>
 <script src="readaloud.js?v=r7"></script>
 <script src="practice-data.js?v=p11"></script>
-<script src="practice.js?v=p18"></script>
+<script src="practice.js?v=p19"></script>
 <script src="comp-data.js?v=c6"></script>
 <script src="maze-data.js?v=m2"></script>
 <script src="maze2-data.js?v=r1"></script>

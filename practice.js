@@ -119,6 +119,73 @@
   // lights up. Letters on screen light themselves; a 🔊 button lights when the word it says is not on screen.
   function speaker(cls, text, play, label) { const b = button(cls, text, () => lightWhile([b], play), label); return b; }
 
+  /* ---------- heard to the end (Marcos 10/26: "do all three") ----------
+     A sound counts as heard only if nothing cut it off: no newer tap (playRun), no leaving the screen and
+     no 🔊 reading over it (cutRun). play() must make ONE sayWord / sayChunk call. */
+  let cutRun = 0;
+  async function playedThrough(play) {
+    const run = playRun, cut = cutRun;
+    await play();
+    return playRun === run + 1 && cutRun === cut;
+  }
+  // A 🔊 that reads something over a sound: the sound stops for good and does not count as heard.
+  function takeOver() { cutRun++; lessonRun++; exampleRun++; if (window.stopSounds) stopSounds(); }
+  const lockEl = (e) => { e.inert = true; e.classList.add('p-locked'); };
+  const openEl = (e) => { e.inert = false; e.classList.remove('p-locked'); };
+
+  // 1. A word that is not on screen is heard before any answer (the 🔊 glows, the answers are dimmed until then).
+  //    hear.locks(...els) names what waits. Hearing it again later is always open.
+  function mustHear(cls, text, play, label) {
+    let heard = false, locked = [];
+    const b = button(cls + ' p-pulse', text, async () => {
+      if (!(await lightWhile([b], () => playedThrough(play))) || heard) return;
+      heard = true;
+      b.classList.remove('p-pulse');
+      locked.forEach(openEl);
+    }, label);
+    b.locks = (...els) => { locked = els; if (!heard) els.forEach(lockEl); return b; };
+    return b;
+  }
+
+  // 2. Every 🔊 choice is heard to the end before "This one ✅" works; the next one to hear glows, a heard one
+  //    gets a ✓. reset() after a wrong pick: "Listen to each one again" means all of them.
+  function hearEach(opts, check) {
+    const heard = new Set();
+    const show = () => {
+      const btns = [...opts.children];
+      const left = btns.find(b => !heard.has(b));
+      btns.forEach(b => { b.classList.toggle('heard', heard.has(b)); b.classList.toggle('p-pulse', b === left); });
+      if (!check.dataset.answered) check.disabled = !!left;
+    };
+    return { heard: (b) => { heard.add(b); show(); }, reset: () => { heard.clear(); show(); }, show };
+  }
+
+  // 3. A correction is read aloud — its sounds in Mr. O's recordings, its words by the voice (lesson-line marks:
+  //    /ar/ a sound, {ar} letter names, [c|ar] a word) — then `then` plays (the word or part again, one sound).
+  //    What it locks opens only once both were heard to the end; cut off, its 🔊 glows to hear it again.
+  //    Resolves when heard.
+  function tell(fb, text, lock = [], then = null) {
+    return new Promise(resolve => {
+      const line = lessonLine(text);
+      line.el.classList.add('p-told-line');
+      lock.forEach(lockEl);
+      const run = async () => {
+        again.classList.remove('p-pulse');
+        const ok = (await readLesson([line])) && (!then || await playedThrough(then));
+        if (!ok) { again.classList.add('p-pulse'); return; }
+        lock.forEach(openEl);
+        resolve();
+      };
+      const again = button('p-say', '🔊', run, 'Hear that again');
+      fb.textContent = '';
+      fb.classList.add('p-told');
+      fb.append(again, line.el);
+      run();
+    });
+  }
+  // Plain feedback ("✅ Yes!") replaces a correction
+  function plain(fb, text) { fb.classList.remove('p-told'); fb.textContent = text; }
+
   /* ---------- near-miss choices (must SOUND different from the word) ---------- */
   // Choices a child must never see or hear (10/20, Marcos: "fag … this might not be appropriate"): slurs,
   // swears, crude and drug words, by spelling AND by what the voice is handed (shirt → "shit", deap → "dope").
@@ -213,6 +280,7 @@
   // Leaving a screen ends everything it was reading (Marcos 10/23: "if I leave I still hear the read
   // aloud"): the lesson or example stops for good, not just the line it was on.
   function hush() {
+    cutRun++;
     lessonRun++; exampleRun++;
     if (window.stopSounds) stopSounds();
     if (window.QPSRead) QPSRead.stop(); else if (window.speechSynthesis) speechSynthesis.cancel();
@@ -277,8 +345,18 @@
     const segs = [];
     let text = null;                                  // the current run of spoken words
     const flushText = () => { text = null; };
-    line.split(/(\/[a-z]+\/|\{[a-z]+\})/).forEach(tok => {
+    line.split(/(\/[a-z]+\/|\{[a-z]+\}|\[[a-z|]+\])/).forEach(tok => {
       if (!tok) return;
+      // [c|a|t] (corrections, 10/26): a whole word, said like every word on the stop (made-up ones respelled)
+      const word = tok.match(/^\[([a-z|]+)\]$/);
+      if (word) {
+        const chunks = split(word[1]);
+        const chip = speaker('p-sound p-word-chip', join(chunks), () => sayWord(chunks), `Hear ${join(chunks)}`);
+        p.append(chip);
+        segs.push({ kind: 'word', chunks, el: chip });
+        flushText();
+        return;
+      }
       const sound = tok.match(/^\/([a-z]+)\/$/);
       if (sound) {
         const chip = speaker('p-sound', sound[1], () => sayChunk(sound[1]), `Hear the sound ${sound[1]}`);
@@ -319,11 +397,13 @@
         if (mine !== lessonRun) return false;
         if (sg.kind === 'sound') {
           await lightWhile([sg.el], () => inSequence(() => sayChunk(sg.chunk)));
+        } else if (sg.kind === 'word') {
+          await lightWhile([sg.el], () => inSequence(() => sayWord(sg.chunks)));
         } else if (/[a-z0-9]/i.test(sg.el.dataset.say)) {
           if (window.QPSRead) await QPSRead.say(sg.el); else await speakComputer(sg.el.dataset.say);
         }
         const next = line.segs[k + 1];
-        await wait(!next ? PAUSE.line : sg.kind === 'sound' || next.kind === 'sound' ? PAUSE.sound : PAUSE.word);
+        await wait(!next ? PAUSE.line : sg.kind !== 'text' || next.kind !== 'text' ? PAUSE.sound : PAUSE.word);
       }
     }
     return mine === lessonRun;
@@ -334,7 +414,7 @@
     const row = el('div', 'p-direction');
     const p = window.QPSRead ? QPSRead.wrap(el('p', ''), text) : el('p', '', text);
     // A speaker always answers: it stops whatever is being read and reads this line.
-    const btn = button('p-say', '🔊', () => (window.QPSRead ? QPSRead.say(p) : sayText(text)), 'Hear the directions');
+    const btn = button('p-say', '🔊', () => { takeOver(); return window.QPSRead ? QPSRead.say(p) : sayText(text); }, 'Hear the directions');
     row.append(btn, p);
     area.append(row);
     return { row, btn, p, text };
@@ -362,6 +442,7 @@
     dir.btn.onclick = async () => {
       if (reading) return;                                // a second tap must not cut the reading off
       reading = true;
+      takeOver();
       const how = window.QPSRead ? await QPSRead.say(dir.p) : (await sayText(dir.text), 'end');
       reading = false;
       if (open) return;
@@ -516,6 +597,8 @@
 
     sort(area, done) {
       const s = stop.sort;
+      // a box as the correction says it: a sound box by Mr. O's recording (/a/, /sh/, /ar/), the others by name
+      const boxName = (b) => { const n = b.label.split(' — ')[0]; return n === b.key || n.startsWith(b.key + ' ') ? `/${b.key}/` : n; };
       rounds(area, pick(s.words, COUNTS.sort), (box, [w, key], finish) => {
         const chunks = split(w);
         mark(box, key);
@@ -523,9 +606,10 @@
         const fb = feedback(box);
         // a word on screen lights itself; a hidden one lights its 🔊
         const hear = s.seeWord ? button('p-btn p-hear', '🔊 Hear the word', () => lightWhile([word], () => sayWord(chunks)))
-          : speaker('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks));
+          : mustHear('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks));
         box.append(hear, word);
         const bins = el('div', 'p-bins');
+        if (!s.seeWord) hear.locks(bins);                   // the word is hidden: no box before it was heard
         s.bins.forEach(b => {
           const bin = button('p-bin', b.label, async () => {
             if (bins.dataset.done) return;
@@ -536,8 +620,7 @@
             else {
               bin.classList.add('wrong');
               [...bins.children].find(x => x.textContent === right.label).classList.add('right');
-              fb.textContent = `Not quite. ${join(chunks)} goes with ${right.label}. Listen again.`;
-              await lightWhile([word], () => sayWord(chunks));   // the word is on screen now
+              await tell(fb, `Not quite. [${chunks.join('|')}] goes in the ${boxName(right)} box.`);
             }
             finish();
           });
@@ -560,7 +643,7 @@
         const aBtn = button('p-word-btn', '', () => lightWhile([...aTiles.children], () => sayWord(A)), `Hear ${join(A)}`);
         aBtn.append(aTiles);
         box.append(aBtn);
-        const makeBtn = speaker('p-btn p-hear', '🔊 Now make this word', () => sayWord(B));
+        const makeBtn = mustHear('p-btn p-hear', '🔊 Now make this word', () => sayWord(B));
         box.append(makeBtn);
         const target = el('div', 'p-tiles big');
         const shown = [...B.slice(0, d.start), '___', ...B.slice(d.start + d.newLen)];
@@ -569,6 +652,7 @@
         const correct = d.newPart;
         const choices = shuffle([correct, ...pick([...new Set(middles)].filter(m => m !== correct && m.replace(/\|/g, '') !== correct.replace(/\|/g, '')), 2)]);
         const opts = el('div', 'p-options');
+        makeBtn.locks(opts);                                // the new word is not on screen: no part before it was heard
         choices.forEach(c => {
           const o = button('p-option', c.replace(/\|/g, ''), async () => {
             if (opts.dataset.done) return;
@@ -577,13 +661,12 @@
               o.classList.add('right');
               target.innerHTML = '';
               target.append(...tiles(B, { big: true }).children);
-              fb.textContent = `✅ Yes! ${join(A)} turned into ${join(B)}.`;
+              plain(fb, `✅ Yes! ${join(A)} turned into ${join(B)}.`);
               await lightWhile([...target.children], () => sayWord(B));
               finish();
             } else {
               o.classList.add('wrong'); o.disabled = true;
-              fb.textContent = 'Not that one. Listen to the new word again.';
-              await lightWhile([makeBtn], () => sayWord(B));   // the new word is not on screen yet
+              await tell(fb, 'Not that one. Listen to the new word again.', [opts], () => lightWhile([makeBtn], () => sayWord(B)));   // the new word is not on screen yet
             }
           });
           opts.append(o);
@@ -638,14 +721,15 @@
     letterHear(area, done) {
       rounds(area, pick(stop.letters, 8), (box, letter, finish) => {
         const fb = feedback(box);
-        const hear = speaker('p-btn p-hear', '🔊 Hear the sound', () => sayChunk(letter));
+        const hear = mustHear('p-btn p-hear', '🔊 Hear the sound', () => sayChunk(letter));
         box.append(hear);
         const opts = el('div', 'p-options');
+        hear.locks(opts);
         shuffle([letter, ...pick(stop.letters.filter(l => l !== letter), 2)]).forEach(l => {
           const o = button('p-option big', l, async () => {
             if (opts.dataset.done) return;
-            if (l === letter) { opts.dataset.done = '1'; o.classList.add('right'); fb.textContent = '✅ Yes!'; finish(); }
-            else { o.classList.add('wrong'); o.disabled = true; fb.textContent = `Not that one. That letter says a different sound. Listen again.`; await lightWhile([hear], () => sayChunk(letter)); }
+            if (l === letter) { opts.dataset.done = '1'; o.classList.add('right'); plain(fb, '✅ Yes!'); finish(); }
+            else { o.classList.add('wrong'); o.disabled = true; await tell(fb, 'Not that one. That letter says a different sound. Listen again.', [opts], () => lightWhile([hear], () => sayChunk(letter))); }
           });
           opts.append(o);
         });
@@ -690,7 +774,8 @@
   function buildRound(box, chunks, finish, graded) {
     mark(box, chunks.join('|'));
     const fb = feedback(box);
-    box.append(speaker('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks)));
+    const hear = mustHear('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks));
+    box.append(hear);
     const slots = el('div', 'p-tiles big');
     const pool = el('div', 'p-pool');
     const filled = chunks.map(() => null);
@@ -715,16 +800,17 @@
       pool.append(b);
     });
     const check = button('p-btn p-check', 'Check ✅', async () => {
-      if (filled.includes(null)) { fb.textContent = 'Fill every box first.'; return; }
+      if (filled.includes(null)) { plain(fb, 'Fill every box first.'); return; }
       const wrongAt = filled.findIndex((f, i) => f.c !== chunks[i]);
       if (graded) { check.disabled = true; return finish(wrongAt < 0); }
-      if (wrongAt < 0) { check.disabled = true; slots.classList.add('blended'); fb.textContent = `✅ You built ${join(chunks)}!`; await lightWhile(slotEls, () => sayWord(chunks)); return finish(); }
-      fb.textContent = `Look at box ${wrongAt + 1}. Listen to that part again and try again.`;
+      if (wrongAt < 0) { check.disabled = true; slots.classList.add('blended'); plain(fb, `✅ You built ${join(chunks)}!`); await lightWhile(slotEls, () => sayWord(chunks)); return finish(); }
       slotEls[wrongAt].classList.add('wrong-slot');
       setTimeout(() => slotEls[wrongAt].classList.remove('wrong-slot'), 1500);
       for (let i = wrongAt; i < filled.length; i++) { if (filled[i]) { filled[i].btn.style.visibility = 'visible'; filled[i] = null; slotEls[i].textContent = ''; slotEls[i].classList.add('slot'); } }
-      await lightWhile([slotEls[wrongAt]], () => sayChunk(chunks[wrongAt]));   // that box's part
+      await tell(fb, `Look at box ${wrongAt + 1}. Listen to that part again and try again.`, [slots, pool, check],
+        () => lightWhile([slotEls[wrongAt]], () => sayChunk(chunks[wrongAt])));   // that box's part
     });
+    hear.locks(slots, pool, check);                       // the word is not on screen: nothing before it was heard
     box.append(el('p', 'p-small', 'Your word:'), slots, el('p', 'p-small', 'Parts:'), pool, check, fb);
   }
 
@@ -750,39 +836,43 @@
       const b = button('p-option listen', `🔊 ${n + 1}`, async () => {
         [...opts.children].forEach(x => x.classList.remove('picked'));
         b.classList.add('picked'); chosen = o;
-        await lightWhile([b], () => sayWord(o));
+        if (await lightWhile([b], () => playedThrough(() => sayWord(o)))) each.heard(b);
       }, `Choice ${n + 1}`);
       if (QA) b.dataset.say = join(o);
       opts.append(b);
     });
     const check = button('p-btn p-check', 'This one ✅', async () => {
-      if (!chosen) { fb.textContent = 'Tap a speaker first.'; return; }
+      if (!chosen) { plain(fb, 'Tap a speaker first.'); return; }
       const ok = join(chosen) === join(chunks);
-      if (graded) { check.disabled = true; return finish(ok); }
-      if (ok) { check.disabled = true; fb.textContent = '✅ Yes! That one says the word.'; return finish(); }
+      if (graded) { check.dataset.answered = '1'; check.disabled = true; return finish(ok); }
+      if (ok) { check.dataset.answered = '1'; check.disabled = true; plain(fb, '✅ Yes! That one says the word.'); return finish(); }
       const mark = patternIndex(chunks);
-      fb.textContent = mark >= 0 ? `Not that one. Look at the ${chunks[mark]} part. Listen to each one again.` : 'Not that one. Listen to each one again and look at every letter.';
       [...opts.children].find(x => x.classList.contains('picked')).classList.add('wrong');
+      each.reset();
+      tell(fb, mark >= 0 ? `Not that one. Look at the {${chunks[mark]}} part. Listen to each one again.` : 'Not that one. Listen to each one again and look at every letter.', [opts]);
     });
+    const each = hearEach(opts, check);
+    each.show();
     box.append(opts, check, fb);
   }
 
   function spellRound(box, chunks, finish, graded) {
     mark(box, chunks.join('|'));
     const fb = feedback(box);
-    const hear = speaker('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks));
+    const hear = mustHear('p-btn p-hear', '🔊 Hear the word', () => sayWord(chunks));
     box.append(hear);
     const opts = el('div', 'p-options');
+    hear.locks(opts);                                     // a made-up word never shown: no spelling before it was heard
     shuffle([chunks, ...nearMisses(stop, chunks)]).forEach(o => {
       const b = button('p-option', join(o), async () => {
         if (opts.dataset.done) return;
         const ok = join(o) === join(chunks);
         if (graded) { opts.dataset.done = '1'; return finish(ok); }
-        if (ok) { opts.dataset.done = '1'; b.classList.add('right'); fb.textContent = '✅ Yes! That is how it is spelled.'; return finish(); }
+        if (ok) { opts.dataset.done = '1'; b.classList.add('right'); plain(fb, '✅ Yes! That is how it is spelled.'); return finish(); }
         b.classList.add('wrong'); b.disabled = true;
         const mark = patternIndex(chunks);
-        fb.textContent = mark >= 0 ? `Not that one. Listen for the ${chunks[mark]} sound.` : 'Not that one. Listen again.';
-        await lightWhile([hear], () => sayWord(chunks));
+        await tell(fb, mark >= 0 ? `Not that one. Listen for the /${chunks[mark]}/ sound.` : 'Not that one. Listen again.', [opts],
+          () => lightWhile([hear], () => sayWord(chunks)));
       });
       opts.append(b);
     });
@@ -837,25 +927,30 @@
       const b = button('p-option listen', `🔊 ${n + 1}`, async () => {
         [...opts.children].forEach(x => x.classList.remove('picked'));
         b.classList.add('picked'); chosen = c;
-        await lightWhile([b], () => sayChunk(c));
+        if (await lightWhile([b], () => playedThrough(() => sayChunk(c)))) each.heard(b);
       }, `Sound ${n + 1}`);
       if (QA) b.dataset.say = c;
       opts.append(b);
     });
     const check = button('p-btn p-check', 'This one ✅', () => {
-      if (!chosen) { fb.textContent = 'Tap a speaker first.'; return; }
-      if (graded) { check.disabled = true; return finish(chosen === letter); }
-      if (chosen === letter) { check.disabled = true; fb.textContent = `✅ Yes! That is the sound of ${letter}.`; return finish(); }
-      fb.textContent = 'Not that one. Listen to each sound again.';
+      if (!chosen) { plain(fb, 'Tap a speaker first.'); return; }
+      if (graded) { check.dataset.answered = '1'; check.disabled = true; return finish(chosen === letter); }
+      if (chosen === letter) { check.dataset.answered = '1'; check.disabled = true; plain(fb, `✅ Yes! That is the sound of ${letter}.`); return finish(); }
       [...opts.children].find(x => x.classList.contains('picked')).classList.add('wrong');
+      each.reset();
+      tell(fb, 'Not that one. Listen to each sound again.', [opts]);
     });
+    const each = hearEach(opts, check);
+    each.show();
     box.append(opts, check, fb);
   }
 
   function letterHearCheck(box, letter, finish) {
     mark(box, letter);
-    box.append(speaker('p-btn p-hear', '🔊 Hear the sound', () => sayChunk(letter)));
+    const hear = mustHear('p-btn p-hear', '🔊 Hear the sound', () => sayChunk(letter));
+    box.append(hear);
     const opts = el('div', 'p-options');
+    hear.locks(opts);
     shuffle([letter, ...pick(stop.letters.filter(l => l !== letter), 2)]).forEach(l => {
       opts.append(button('p-option big', l, () => { if (!opts.dataset.done) { opts.dataset.done = '1'; finish(l === letter); } }));
     });
@@ -905,17 +1000,43 @@
     // a stop named with letters (sh ch th) is spoken by its sayName, so the voice doesn't spell S-H (as on the plan card)
     const spoken = moved && moved.sayName ? msg.replace(moved.name, moved.sayName) : msg;
     if (spoken !== msg) p.dataset.say = spoken;
-    const hear = button('p-say', '🔊', () => (window.QPSRead ? QPSRead.say(p) : sayText(spoken)), 'Hear how you did');
+    // Marcos 10/26: the result is read aloud on its own, and the buttons wait until it was heard to the end and
+    // every missed word was heard (the next one glows, a heard one gets a ✓). Cut off: its 🔊 glows.
+    let resultHeard = false;
+    const wordBtns = [], heardWords = new Set();
+    const ready = () => {
+      const left = wordBtns.find(b => !heardWords.has(b));
+      wordBtns.forEach(b => b.classList.toggle('p-pulse', resultHeard && b === left));
+      again.hidden = !resultHeard || !!left;
+    };
+    const readResult = async () => {
+      hear.classList.remove('p-pulse');
+      takeOver();
+      const how = window.QPSRead ? await QPSRead.say(p) : (await sayText(spoken), 'end');
+      if (resultHeard) return;
+      if (how === 'stopped') { hear.classList.add('p-pulse'); return; }
+      resultHeard = true;
+      ready();
+      if (wordDir && window.QPSRead) QPSRead.say(wordDir.p);   // then what to do with the words, read aloud too
+    };
+    const hear = button('p-say', '🔊', readResult, 'Hear how you did');
     const line = el('div', 'p-result');
     line.append(hear, p);
     box.append(meter, line);
+    let wordDir = null;
     if (missed.length) {
-      box.append(el('p', 'p-small', 'Words to practice — tap to hear:'));
-      const list = el('div', 'p-examples');
+      wordDir = direction(box, 'Words to practice. Tap each word to hear it.');
+      wordDir.row.classList.add('center');
+      const list = el('div', 'p-examples p-missed');
       missed.forEach(it => {
         const row = tiles(it.chunks);
-        const b = button('p-example', '', () => lightWhile([...row.children], () => (stop.letters ? sayChunk(it.chunks[0]) : sayWord(it.chunks))), `Hear ${join(it.chunks)}`);
-        b.append(row); list.append(b);
+        const b = button('p-example', '', async () => {
+          if (!(await lightWhile([...row.children], () => playedThrough(() => (stop.letters ? sayChunk(it.chunks[0]) : sayWord(it.chunks)))))) return;
+          heardWords.add(b);
+          b.classList.add('heard');
+          ready();
+        }, `Hear ${join(it.chunks)}`);
+        b.append(row); list.append(b); wordBtns.push(b);
       });
       box.append(list);
     }
@@ -926,6 +1047,8 @@
     else if (!passed && passes < PASSES_NEEDED) again.append(button('p-btn p-next-big', '▶ Practice again', restart), button('p-btn p-again', '🏠 Back to all stops', backToStops));
     else again.append(button('p-btn p-go', '🏠 Back to all stops', backToStops), button('p-btn p-again', '🔁 Do this stop again', restart));
     box.append(again);
+    ready();
+    readResult();
     done();
     // After any Check the practice steps come first again (the Check reopens after the last practice step),
     // so a second pass is a whole second run of the stop, not a retake. Set after done(), which marks the
