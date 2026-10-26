@@ -85,7 +85,7 @@ const PRACTICE_STOPS = [
       bins: [{ label: 'Short — like cap', key: 'short' }, { label: 'Long — like cape', key: 'long' }],
       words: [['m|a|t','short'],['m|ate','long'],['p|i|n','short'],['p|ine','long'],['c|a|n','short'],['c|ane','long'],['n|o|t','short'],['n|ote','long'],['h|a|t','short'],['h|ate','long'],['f|i|n','short'],['f|ine','long']]
     },
-    chains: [['m|a|t','m|ate'],['h|a|t','h|ate'],['r|a|t','r|ate'],['m|a|d','m|ade'],['c|a|n','c|ane'],['p|l|a|n','p|l|ane'],['f|i|n','f|ine'],['p|i|n','p|ine'],['s|p|i|n','s|p|ine'],['sh|i|n','sh|ine'],['t|w|i|n','t|w|ine'],['n|o|t','n|ote']],
+    chains: [['m|a|t','m|ate'],['h|a|t','h|ate'],['r|a|t','r|ate'],['m|a|d','m|ade'],['c|a|n','c|ane'],['p|l|a|n','p|l|ane'],['f|i|n','f|ine'],['p|i|n','p|ine'],['s|p|i|n','s|p|ine'],['t|w|i|n','t|w|ine'],['n|o|t','n|ote']],   // 10/26: shin→shine OFF until Mr. O records shin (his device's voice said "sheen"); put ['sh|i|n','sh|ine'] back after spin
     made: ['z|ade','t|ade','h|ane','j|ine','z|ile','b|ice','f|ole','l|oze','z|ote','b|une','p|l|ote','g|r|ine','c|l|ade','ch|ice','sh|ile','th|une',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'z|ine','b|r|ate','b|r|ade','h|ote','h|ile','f|r|ade','p|une','b|l|ane','p|l|ine','b|l|ice','f|l|ate','k|ade','b|l|ote','b|r|ile','k|oze','g|r|ote'],
