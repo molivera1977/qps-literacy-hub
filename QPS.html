@@ -281,7 +281,7 @@
     function speakComputer(text) {
         return new Promise((resolve) => {
             const msg = new SpeechSynthesisUtterance(text);
-            msg.rate = 0.85; 
+            msg.rate = 0.82;   // Marcos 10/26: every read-aloud at 0.82
             msg.onend = resolve;
             msg.onerror = resolve;
             window.speechSynthesis.speak(msg);
