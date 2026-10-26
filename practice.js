@@ -424,21 +424,32 @@
       const card = el('div', 'p-learn');
       const lines = stop.learn.lines.map(lessonLine);
       // The lesson is this step's directions: its sound tiles and examples open once it is heard.
-      const lockables = () => [ex, ...card.querySelectorAll('.p-sound')];
+      const lockables = () => [ex, tapDir.row, ...card.querySelectorAll('.p-sound')];
       const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => {
         if (!(await readLesson(lines))) return;
         lockables().forEach(e => { e.inert = false; e.classList.remove('p-locked'); });
         sayBtn.classList.remove('p-pulse');
         if (note.isConnected) note.remove();
-        done();
+        nextExample();
+        if (window.QPSRead && exBtns.some(b => !heard.has(b))) QPSRead.say(tapDir.p);   // Marcos 10/26: "tap a word to hear it should be said aloud"
       });
       const note = el('p', 'p-hear-note', '👆 Tap Hear the lesson first.');
       sayBtn.classList.add('p-pulse');                    // pulses until the lesson is heard (Marcos 10/19)
       card.append(el('h2', 'p-learn-title', `Learn: ${stop.name}`));
       lines.forEach(l => card.append(l.el));
       card.append(sayBtn, note);
-      card.append(el('p', 'p-small', 'Tap a word to hear it.'));
+      const tapDir = direction(card, 'Tap each word to hear it.');
       const ex = el('div', 'p-examples');
+      // Next waits until every example was heard to the end (Marcos 10/26: "shouldn't the student be forced to
+      // click and hear each one before hitting next"). One cut off by another tap is not heard yet.
+      // The next one to hear glows; a heard one gets a ✓.
+      const exBtns = [], heard = new Set();
+      const nextExample = () => {
+        exBtns.forEach(x => x.classList.remove('p-pulse'));
+        const left = exBtns.find(x => !heard.has(x));
+        if (left) left.classList.add('p-pulse');
+        else done();
+      };
       // "a>b" shows a before-and-after pair, like mat → mate.
       stop.learn.examples.forEach(w => {
         const words = w.split('>').map(split);
@@ -461,8 +472,13 @@
             if (!still()) return;
             await lightWhile(parts, () => inSequence(() => sayWord(chunks)));
           }
+          if (!still()) return;
+          heard.add(b);
+          b.classList.add('heard');
+          nextExample();
         }, `Hear ${words.map(join).join(' and ')}`);
         rows.forEach((row, k) => { if (k) b.append(el('span', 'p-arrow', '→')); b.append(row); });
+        exBtns.push(b);
         ex.append(b);
       });
       card.append(ex);

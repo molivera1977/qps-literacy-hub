@@ -650,7 +650,7 @@
         /* A device set to "reduce motion" (some Chromebooks) got no pulse at all (Marcos 10/21: "I don't see the
            pulsing on everyone's device"): there the ring GLOWS brighter and dimmer instead — nothing moves or grows. */
         @keyframes hearGlow { 50% { box-shadow: 0 0 0 7px #FFB800, 0 0 22px 8px rgba(255, 184, 0, .8); } }
-        @media (prefers-reduced-motion: reduce) { .p-direction.p-must-hear .p-say, .p-hear.p-pulse { animation: hearGlow 1.2s ease-in-out infinite !important; } }   /* beats the page-wide animation: none below */
+        @media (prefers-reduced-motion: reduce) { .p-direction.p-must-hear .p-say, .p-hear.p-pulse, .p-example.p-pulse { animation: hearGlow 1.2s ease-in-out infinite !important; } }   /* beats the page-wide animation: none below */
         .p-hear-note { font-size: 21px; font-weight: 600; color: #8a4b00; margin: 6px 0 10px; }
         .p-read-it { margin-left: 8px; }
         .plan-pass, .stop-pass { font-weight: 700; color: var(--success, #1f8f55); font-size: 0.95rem; }
@@ -660,6 +660,14 @@
         .p-example { display: inline-flex; align-items: center; gap: 8px; }
         .p-arrow { font-size: 1.6rem; font-weight: 700; color: var(--learning-dark); }
         .p-example .p-tile { font-size: 1.5rem; padding: 4px 10px; min-width: 40px; box-shadow: none; }
+        /* Learn (10/26): every example is heard before Next — the next one to hear glows (no grow: they sit side by side),
+           a heard one gets a check */
+        .p-example.p-pulse { border-color: #FFB800; box-shadow: 0 0 0 4px #FFD44D; animation: hearGlow 1.2s ease-in-out infinite; }
+        .p-example.heard { border-color: var(--success-dark); position: relative; }
+        .p-example.heard::after {   /* a corner badge, so the box keeps its size and nothing on the row moves */
+            content: "✓"; position: absolute; top: -11px; right: -11px; width: 26px; height: 26px; border-radius: 50%;
+            background: var(--success-dark); color: #fff; font-size: 16px; font-weight: 800; line-height: 26px; text-align: center;
+        }
         .p-score { font-size: 2.6rem; font-weight: 700; }
         /* the end of a Check (10/21): passes as stars, the result read aloud, one big next button */
         .p-pass-meter { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px 0; font-size: 1.6rem; }
@@ -2052,7 +2060,7 @@
 </script>
 <script src="readaloud.js?v=r7"></script>
 <script src="practice-data.js?v=p11"></script>
-<script src="practice.js?v=p17"></script>
+<script src="practice.js?v=p18"></script>
 <script src="comp-data.js?v=c6"></script>
 <script src="maze-data.js?v=m2"></script>
 <script src="maze2-data.js?v=r1"></script>
