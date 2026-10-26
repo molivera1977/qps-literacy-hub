@@ -1329,7 +1329,7 @@
             let done = false;
             const end = () => { if (done) return; done = true; clearTimeout(limit); resolve(); };
             const limit = setTimeout(end, 2500 + String(text).length * 150);
-            msg.rate = 1.0; msg.onend = end; msg.onerror = end;
+            msg.rate = 0.82; msg.onend = end; msg.onerror = end;   // Marcos 10/26, single words too: "0.82 sounds way better and not rushed"
             window.speechSynthesis.speak(msg);
         });
     }
