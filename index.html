@@ -1652,7 +1652,7 @@
     const taskOrder = () => [...document.getElementById('levelPicker').options].map(o => o.value).filter(v => wordBank[v]);
     // Every Task on one sheet, front and back (Marcos 10/21: "also do a two sided one that has them all"):
     // Each Task's items in the Assessment's order; short words sit 10 to a row, longer words fewer; the Tasks are split
-    // between the two sides so each side is about as full as the other.
+    // between the two sides so each side is about as full as the other, and the words are as big as fits (10/25).
     function compactSheetHtml(tasks) {
         const esc = (t) => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         // a column as wide as the Task's widest word plus its number; as many columns as fit across the page
@@ -1672,31 +1672,59 @@
     }
     // The page break for the two-sided sheet. It runs inside the sheet (on its own) and is run again by printStudentSheet
     // right after the sheet is written and just before printing: a script in the sheet waits for the font stylesheet.
+    // Marcos 10/25: "can we make the QPS two-sided sheet fill more of each page" — the words are made as big as they
+    // can be with each side still on one page (was a fixed 14pt: the back was full, the front 88%). The sheet is laid
+    // out at the paper's width (7.6in inside the margins), so what is measured here is what prints.
     const SHEET_SPLIT_JS = `(function () {
+  var PAGE = (11 - 2 * 0.45) * 96 * 0.97;   // a Letter page inside the sheet's 0.45in margins, less a little for the printer
+  function tasks() { return [].slice.call(document.querySelectorAll('.task')); }
+  // the most even break at the size now set: [the taller side, the back's first Task]
   function split() {
-    var b = [].slice.call(document.querySelectorAll('.task'));
+    var b = tasks();
     var h = b.map(function (x) { return x.offsetHeight + parseFloat(getComputedStyle(x).marginBottom); });
     var total = h.reduce(function (a, c) { return a + c; }, 0), run = 0, best = 1e9, at = -1;
     for (var i = 0; i < b.length - 1; i++) { run += h[i]; if (b[i].dataset.num === b[i + 1].dataset.num) continue; var m = Math.max(run, total - run); if (m < best) { best = m; at = i + 1; } }
-    b.forEach(function (x, i) { x.classList.toggle('back', i === at); });
+    return [best, at];
   }
-  split();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(split);
+  function fit() {
+    var lo = 12, hi = 32, s = document.body.style;
+    for (var k = 0; k < 16; k++) { var mid = (lo + hi) / 2; s.setProperty('--fs', mid + 'pt'); if (split()[0] <= PAGE) lo = mid; else hi = mid; }
+    // A row of words loses a column at some size and the Task jumps a row taller: the biggest size that fits sits
+    // right at such an edge. Step back from it, down to a quarter point, and check it still fits.
+    var fs = Math.floor(lo * 0.985 * 4) / 4;
+    s.setProperty('--fs', fs + 'pt');
+    while (fs > 12 && split()[0] > PAGE) { fs -= 0.25; s.setProperty('--fs', fs + 'pt'); }
+    var at = split()[1];
+    tasks().forEach(function (x, i) { x.classList.toggle('back', i === at); });
+  }
+  fit();
+  // again once the reading font is in: fonts.ready can come before the font's stylesheet has even loaded
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(fit);
+    if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', fit);
+    window.addEventListener('load', function () { document.fonts.ready.then(fit); });
+  }
 })();`;
     function compactSheetDoc(tasks, block, split) {
         return `<!doctype html><html><head><meta charset="utf-8"><title>QPS student sheet — every Task</title>
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  @page { size: letter; margin: 0.45in; }
-  body { font-family: Andika, 'Century Gothic', Arial, sans-serif; color: #111; margin: 0; }
-  .task { break-inside: avoid; margin: 0 0 0.08in; padding: 0 0 0.06in; border-bottom: 1px solid #ccc; }
+  @page { size: letter; margin: 0.45in; }   /* SHEET_SPLIT_JS uses the same 0.45in */
+  /* the paper's width inside the margins, on screen too; --fs (the words' size) is set by SHEET_SPLIT_JS */
+  body { font-family: Andika, 'Century Gothic', Arial, sans-serif; color: #111; margin: 0 auto; width: 7.6in; --fs: 14pt; }
+  /* the Task's name in a narrow column on the left, so the words get the page's height */
+  .task { display: grid; grid-template-columns: 0.95in 1fr; column-gap: 0.1in; align-items: start;
+          break-inside: avoid; margin: 0 0 0.05in; padding: 0 0 0.04in; border-bottom: 1px solid #ccc; }
   .task.back { break-before: page; page-break-before: always; }
-  h2 { font-size: 10pt; font-weight: 700; color: #555; margin: 0; }
+  h2 { font-size: 8pt; font-weight: 700; color: #555; margin: 0; padding-top: 0.3em; line-height: 1.15; }
   ol { list-style: none; margin: 0; padding: 0; }
-  ol.words { display: grid; column-gap: 0.06in; font-size: 14pt; }
-  ol.words li { font-weight: 700; white-space: nowrap; line-height: 1.35; }
-  ol.sent li { font-size: 14pt; font-weight: 700; line-height: 1.35; }
+  ol.words { display: grid; column-gap: 0.06in; font-size: var(--fs); }
+  ol.words li { font-weight: 700; white-space: nowrap; line-height: 1.22; }
+  ol.sent li { font-size: var(--fs); font-weight: 700; line-height: 1.22; }
   .n { font-size: 8pt; font-weight: 400; color: #888; margin-right: 0.05in; vertical-align: middle; }
+  /* on screen: where the back of the page starts (nothing here changes a height the fit measures) */
+  @media screen { body { padding: 0.3in 0; } .task.back { margin-top: 0.5in; position: relative; }
+    .task.back::before { content: "Back of the page"; position: absolute; top: -0.38in; left: 0; font-size: 9pt; color: #888; } }
 </style></head><body>${tasks.filter(t => wordBank[t]).map(block).join('')}<script>${split}<\/script></body></html>`;
     }
     function studentSheetHtml(tasks) {
