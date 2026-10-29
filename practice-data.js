@@ -123,7 +123,7 @@ const PRACTICE_STOPS = [
     // fillers that sounded like the right one or each other (kneb/meb, gnet/met, jes/jez — Marcos 10/19) → p and t;
     // dge's ch filler too (fodge/foch, lidge/lich — voted No 10/20) → t
     contrast: { tch: ['t','sh'], dge: ['g','t'], kn: ['k','p'], wr: ['w','l'], gn: ['g','p'], qu: ['k','w'], x: ['s','t'] },
-    sentences: ['The quick fox ran to the ditch.','Kate will wrap a gift for Madge.','I can knit a hat.','Six ducks sat on the bridge.','Do not let the cat catch the fish.','The fudge is on the top shelf.']
+    sentences: ['The quick fox ran to the ditch.','Kate will wrap a gift for Madge.','I can knit a hat.','Six ducks sat on the bridge.','Do not let the cat catch the fish.']   // 10/28: "The fudge is on the top shelf." off — a device voice says "fah-dge" and a sentence is read by the voice (the word fudge is Mr. O's recording)
   },
   {
     id: '8', num: '8', name: 'Vowel teams', example: 'boat',
