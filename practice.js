@@ -147,17 +147,30 @@
     return b;
   }
 
-  // 2. Every 🔊 choice is heard to the end before "This one ✅" works; the next one to hear glows, a heard one
-  //    gets a ✓. reset() after a wrong pick: "Listen to each one again" means all of them.
-  function hearEach(opts, check) {
+  // 2. Every 🔊 choice is heard to the end before any pick (Marcos 10/30: "we should emphasize to listen to each
+  //    word before picking. Maybe locking out a choice until all choices are heard"). Until then a tap only plays;
+  //    the next one to hear glows, a heard one gets a ✓. Then `pickLine` is read aloud (the choices wait for it),
+  //    and from then on a tap plays AND picks; "This one ✅" works once one is picked.
+  //    reset() after a wrong pick: "Listen to each one again" means all of them, and the pick is gone.
+  function hearEach(opts, check, fb, pickLine) {
     const heard = new Set();
+    let picking = false, picked = null;
     const show = () => {
       const btns = [...opts.children];
       const left = btns.find(b => !heard.has(b));
-      btns.forEach(b => { b.classList.toggle('heard', heard.has(b)); b.classList.toggle('p-pulse', b === left); });
-      if (!check.dataset.answered) check.disabled = !!left;
+      btns.forEach(b => { b.classList.toggle('heard', heard.has(b)); b.classList.toggle('p-pulse', b === left); b.classList.toggle('picked', b === picked); });
+      if (!check.dataset.answered) check.disabled = !picked;
     };
-    return { heard: (b) => { heard.add(b); show(); }, reset: () => { heard.clear(); show(); }, show };
+    const tap = async (b, play) => {
+      if (picking) { picked = b; show(); }
+      if (!(await lightWhile([b], () => playedThrough(play)))) return;
+      heard.add(b);
+      show();
+      if (picking || heard.size < opts.children.length) return;
+      await tell(fb, pickLine, [opts]);
+      picking = true;
+    };
+    return { tap, picked: () => picked, reset: () => { heard.clear(); picking = false; picked = null; show(); }, show };
   }
 
   // 3. A correction is read aloud — its sounds in Mr. O's recordings, its words by the voice (lesson-line marks:
@@ -749,7 +762,8 @@
       else items = shuffle(words.map((w, i) => ({ kind: i < 6 ? 'decode' : 'spell', chunks: split(w) })));
       const results = [];
       checkStarted = new Date();
-      const dir = direction(area, 'Practice Check. Do your best. This time the site does not tell you the answer until the end.');
+      // a Check with 🔊 choices says to hear them all (Marcos 10/30); a big-word Check (chop, build) has none
+      const dir = direction(area, `Practice Check. Do your best.${stop.big ? '' : ' Listen to every choice before you pick.'} This time the site does not tell you the answer until the end.`);
       const box = el('div', 'p-round');
       area.append(box);
       lockUntilHeard(dir, box);
@@ -832,28 +846,25 @@
     const fb = feedback(box);
     box.append(el('div', 'p-big-word', join(chunks)));
     const options = shuffle([chunks, ...nearMisses(stop, chunks)]);
-    let chosen = null;
     const opts = el('div', 'p-options');
     options.forEach((o, n) => {
-      const b = button('p-option listen', `🔊 ${n + 1}`, async () => {
-        [...opts.children].forEach(x => x.classList.remove('picked'));
-        b.classList.add('picked'); chosen = o;
-        if (await lightWhile([b], () => playedThrough(() => sayWord(o)))) each.heard(b);
-      }, `Choice ${n + 1}`);
+      const b = button('p-option listen', `🔊 ${n + 1}`, () => each.tap(b, () => sayWord(o)), `Choice ${n + 1}`);
+      b.choice = o;
       if (QA) b.dataset.say = join(o);
       opts.append(b);
     });
     const check = button('p-btn p-check', 'This one ✅', async () => {
-      if (!chosen) { plain(fb, 'Tap a speaker first.'); return; }
-      const ok = join(chosen) === join(chunks);
+      const picked = each.picked();
+      if (!picked) { plain(fb, 'Tap a speaker first.'); return; }
+      const ok = join(picked.choice) === join(chunks);
       if (graded) { check.dataset.answered = '1'; check.disabled = true; return finish(ok); }
       if (ok) { check.dataset.answered = '1'; check.disabled = true; plain(fb, '✅ Yes! That one says the word.'); return finish(); }
       const mark = patternIndex(chunks);
-      [...opts.children].find(x => x.classList.contains('picked')).classList.add('wrong');
+      picked.classList.add('wrong');
       each.reset();
       tell(fb, mark >= 0 ? `Not that one. Look at the {${chunks[mark]}} part. Listen to each one again.` : 'Not that one. Listen to each one again and look at every letter.', [opts]);
     });
-    const each = hearEach(opts, check);
+    const each = hearEach(opts, check, fb, 'Now tap the one that says the word.');
     each.show();
     box.append(opts, check, fb);
   }
@@ -923,26 +934,24 @@
     mark(box, letter);
     const fb = feedback(box);
     box.append(el('div', 'p-big-word', letter));
-    let chosen = null;
     const opts = el('div', 'p-options');
     choices.forEach((c, n) => {
-      const b = button('p-option listen', `🔊 ${n + 1}`, async () => {
-        [...opts.children].forEach(x => x.classList.remove('picked'));
-        b.classList.add('picked'); chosen = c;
-        if (await lightWhile([b], () => playedThrough(() => sayChunk(c)))) each.heard(b);
-      }, `Sound ${n + 1}`);
+      const b = button('p-option listen', `🔊 ${n + 1}`, () => each.tap(b, () => sayChunk(c)), `Sound ${n + 1}`);
+      b.choice = c;
       if (QA) b.dataset.say = c;
       opts.append(b);
     });
     const check = button('p-btn p-check', 'This one ✅', () => {
-      if (!chosen) { plain(fb, 'Tap a speaker first.'); return; }
-      if (graded) { check.dataset.answered = '1'; check.disabled = true; return finish(chosen === letter); }
-      if (chosen === letter) { check.dataset.answered = '1'; check.disabled = true; plain(fb, `✅ Yes! That is the sound of ${letter}.`); return finish(); }
-      [...opts.children].find(x => x.classList.contains('picked')).classList.add('wrong');
+      const picked = each.picked();
+      if (!picked) { plain(fb, 'Tap a speaker first.'); return; }
+      if (graded) { check.dataset.answered = '1'; check.disabled = true; return finish(picked.choice === letter); }
+      if (picked.choice === letter) { check.dataset.answered = '1'; check.disabled = true; plain(fb, `✅ Yes! That is the sound of ${letter}.`); return finish(); }
+      picked.classList.add('wrong');
       each.reset();
       tell(fb, 'Not that one. Listen to each sound again.', [opts]);
     });
-    const each = hearEach(opts, check);
+    // "this letter", not its name: a lone A at the end is read "uh" (Samantha, 10/30), and its sound would give it away
+    const each = hearEach(opts, check, fb, 'Now tap the one that is the sound of this letter.');
     each.show();
     box.append(opts, check, fb);
   }
