@@ -390,17 +390,22 @@
         flushText();
         return;
       }
-      if (!text) { text = { kind: 'text', el: el('span', 'p-say-run'), say: [] }; p.append(text.el); segs.push(text); }
+      const run = () => { if (!text) { text = { kind: 'text', el: el('span', 'p-say-run'), say: [] }; p.append(text.el); segs.push(text); } return text; };
       const letters = tok.match(/^\{([a-z]+)\}$/);
       if (letters) {
         const w = el('span', 'rw p-letters', letters[1]);
-        text.el.append(w);
+        run().el.append(w);
         text.say.push(letters[1].toUpperCase().split('').join('-'));   // S-H, A: capitals so the voice says letter names
       } else {
         tok.split(/(\s+)/).forEach(t => {
           if (!t) return;
-          if (/^\s+$/.test(t)) { text.el.append(document.createTextNode(t)); return; }
-          text.el.append(el('span', 'rw', t));
+          if (/^\s+$/.test(t)) { (text ? text.el : p).append(document.createTextNode(t)); return; }
+          // "+" and "=" are on screen only (10/30, reading specialist: the voice said "plus" and "equals"). Each
+          // keeps its beat: "/mo/ + /tor/ = motor" is heard "mo … tor … motor", paced as before.
+          if (t === '+' || t === '=') { flushText(); segs.push({ kind: 'gap' }); p.append(document.createTextNode(t)); return; }
+          // punctuation right after a sound (/ee/. or /ic/:) is shown only: no silent run, so no extra pause
+          if (!text && !/[a-z0-9]/i.test(t)) { p.append(document.createTextNode(t)); return; }
+          run().el.append(el('span', 'rw', t));
           text.say.push(t);
         });
       }
@@ -424,7 +429,7 @@
           await lightWhile([sg.el], () => inSequence(() => sayChunk(sg.chunk, sg.file)));
         } else if (sg.kind === 'word') {
           await lightWhile([sg.el], () => inSequence(() => sayWord(sg.chunks)));
-        } else if (/[a-z0-9]/i.test(sg.el.dataset.say)) {
+        } else if (sg.kind === 'text' && /[a-z0-9]/i.test(sg.el.dataset.say)) {   // a gap (+ or =) is a beat only
           if (window.QPSRead) await QPSRead.say(sg.el); else await speakComputer(sg.el.dataset.say);
         }
         const next = line.segs[k + 1];
@@ -452,7 +457,7 @@
      directions are heard to the end; stopped early does not count. A device with no voice gets a
      reading wait, then "I read it". Once open, the 🔊 reads them again any time. */
   const READ_MS_PER_WORD = 450, READ_MIN_MS = 3000;
-  function lockUntilHeard(dir, work) {
+  function lockUntilHeard(dir, work, onOpen) {
     let open = false, reading = false;
     work.inert = true;
     work.classList.add('p-locked');
@@ -465,6 +470,7 @@
       work.classList.remove('p-locked');
       dir.row.classList.remove('p-must-hear');
       note.remove();
+      if (onOpen) onOpen();
     };
     dir.btn.onclick = async () => {
       if (reading) return;                                // a second tap must not cut the reading off
@@ -515,7 +521,7 @@
       progress(box, i, items.length);
       round(box, items[i], () => {
         i++;
-        if (i >= items.length) { box.innerHTML = ''; progress(box, i, items.length); box.append(el('p', 'p-well', '⭐ Nice work! You finished this part.')); done(); }
+        if (i >= items.length) { box.innerHTML = ''; progress(box, i, items.length); box.append(el('p', 'p-well', `⭐ Nice work! You finished the ${STEP_NAMES[steps[stepIndex]]} step.`)); done(); }
         else {
           const go = button('p-btn p-go', 'Next one ➡️', step);
           box.append(go);
@@ -648,7 +654,7 @@
           row.append(t);
         });
         box.append(row, blendBtn);
-      }, done, 'Tap each sound in order and say it. Then tap Blend it and say the whole word.');
+      }, done, `Tap each ${stop.big ? 'part' : 'sound'} in order and say it. Then tap Blend it and say the whole word.`);
     },
 
     sort(area, done) {
@@ -733,7 +739,7 @@
 
     build(area, done) {
       const items = pick(stop.real, COUNTS.build).map(split);
-      rounds(area, items, (box, chunks, finish) => buildRound(box, chunks, finish, false), done, 'Tap Hear the word. Tap the parts in order to build it. Then tap Check.');
+      rounds(area, items, (box, chunks, finish) => buildRound(box, chunks, finish, false), done, 'Tap Hear the word. Tap the parts in order to build the word. Then tap Check.');
     },
 
     decode(area, done) {
@@ -763,8 +769,8 @@
     chop(area, done) {
       const words = pick(stop.real, stop.id === '9c' ? 5 : 6).map(split);
       rounds(area, words, (box, chunks, finish) => chopRound(box, chunks, finish, false), done,
-        stop.parts ? 'Find the prefix or the suffix. Make one chop: tap the gap right after the prefix or right before the suffix. Then tap Check.'
-                   : 'Tap Hear the word. Then tap the gaps to chop the word into parts. Each part has one vowel sound. Then tap Check.');
+        stop.parts ? 'Find the prefix or the suffix. Make one chop: tap the line right after the prefix or right before the suffix. Then tap Check.'
+                   : 'Tap Hear the word. Then tap a line between two letters to chop the word. Each part has one vowel sound. Then tap Check.');
     },
 
     letterRead(area, done) {
@@ -807,7 +813,8 @@
       const dir = direction(area, `Practice Check. Do your best.${stop.big ? '' : ' Listen to every choice before you pick.'} This time the site does not tell you the answer until the end.`);
       const box = el('div', 'p-round');
       area.append(box);
-      lockUntilHeard(dir, box);
+      let opened = false, waiting = null;
+      lockUntilHeard(dir, box, () => { opened = true; if (waiting) waiting(); waiting = null; });
       let i = 0;
       const next = () => {
         box.innerHTML = '';
@@ -817,8 +824,15 @@
         const record = (ok) => { results.push(ok); i++; next(); };
         if (it.kind === 'decode') decodeRound(box, it.chunks, record, true);
         else if (it.kind === 'spell') spellRound(box, it.chunks, record, true);
-        else if (it.kind === 'build') buildRound(box, it.chunks, record, true);
-        else if (it.kind === 'chop') chopRound(box, it.chunks, record, true);
+        else if (it.kind === 'build' || it.kind === 'chop') {
+          // big-word Check: "Chop this word." / "Build this word." read first (reading specialist 10/30)
+          const said = el('div', 'p-feedback p-item-line'), work = el('div');
+          box.append(said, work);
+          (it.kind === 'chop' ? chopRound : buildRound)(work, it.chunks, record, true);
+          if (work.dataset.answer) box.dataset.answer = work.dataset.answer;
+          const tellIt = () => tell(said, it.kind === 'chop' ? 'Chop this word.' : 'Build this word.', [work]);
+          if (opened) tellIt(); else { lockEl(work); waiting = tellIt; }
+        }
         else if (it.kind === 'letterRead') choiceRound(box, it.chunks[0], shuffle([it.chunks[0], ...pick(stop.letters.filter(l => l !== it.chunks[0]), 2)]), record, true);
         else letterHearCheck(box, it.chunks[0], record);
       };
@@ -864,7 +878,7 @@
       slotEls[wrongAt].classList.add('wrong-slot');
       setTimeout(() => slotEls[wrongAt].classList.remove('wrong-slot'), 1500);
       for (let i = wrongAt; i < filled.length; i++) { if (filled[i]) { filled[i].btn.style.visibility = 'visible'; filled[i] = null; slotEls[i].textContent = ''; slotEls[i].classList.add('slot'); } }
-      await tell(fb, `Look at box ${wrongAt + 1}. Listen to that part again and try again.`, [slots, pool, check],
+      await tell(fb, `Look at box ${wrongAt + 1}. Listen to the part that goes in box ${wrongAt + 1}. Then try again.`, [slots, pool, check],
         () => lightWhile([slotEls[wrongAt]], () => sayPart(chunks, wrongAt)));   // that box's part
     });
     hear.locks(slots, pool, check);                       // the word is not on screen: nothing before it was heard
@@ -971,7 +985,9 @@
         return finish();
       }
       gaps.forEach((g, i) => g.classList.toggle('cut', answer.has(i + 1)));
-      fb.textContent = ok ? `✅ Yes! ${chunks.join(' · ')}` : `Here are the parts: ${chunks.join(' · ')}. Listen to each part.`;
+      // a wrong chop is told, read aloud, before its parts play (10/30: it sounded just like a right one)
+      if (ok) fb.textContent = `✅ Yes! ${chunks.join(' · ')}`;
+      else await tell(fb, 'That chop is not right. Here are the parts. Listen to each part.');
       // each part lights while it is said (its letters and the gaps between them), then the whole word
       let at = 0;
       for (const [k, c] of chunks.entries()) {
