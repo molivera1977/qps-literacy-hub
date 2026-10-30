@@ -11,6 +11,8 @@
      sort      hear-it-first sorting (word hidden until the answer)
      chains    change one part to make a new word
    ===================================================================== */
+// Sound names a lesson line (/uh/, /i~uh/) or a sound note uses, and Mr. O's recording each plays.
+const SOUND_NAMES = { uh: 'o-schwa', ee: 'y-ee', air: 'ar-air', ul: 'al-ul', oh: 'o-long', yoo: 'u-yoo', ree: 're-long' };
 const PRACTICE_STOPS = [
   {
     id: '1', num: '1', name: 'Letter sounds', example: 'a b c',
@@ -154,50 +156,233 @@ const PRACTICE_STOPS = [
     sentences: ['The boat sails in the rain.','Roy has a toy coin.','Dad saw the moon at night.','Pay for the soap and the food.','Paul saw a hawk in the light.','We can eat at noon.']
   },
   {
-    id: '9a', num: '9a', name: 'Two-part words', example: 'en·joy',
-    learn: {
-      lines: ['Big words are made of parts called syllables. Each part has one vowel sound.', 'Read one part at a time. Then put the parts together.', '/con/ + /tent/ = content.'],
-      examples: ['con|tent', 'en|joy', 'mo|tor']
-    },
+    id: '9a', num: '9a', name: 'Two-part words', example: 'mas·ter',
+    // Learn, one idea per screen (Marcos 10/30, "accept all"). label is for Mr. O only: never shown or read.
+    // recap: only for a student whose starting stop (login.js TRACKS) is this one.
+    learn: { screens: [
+      { label: 'What a syllable is',
+        lines: ['Big words are made of parts. Each part is called a syllable. Each syllable has one vowel sound.', 'Say each part. Then say the real word. The real word can sound a little different from the parts: /mo/ + /tor/ = motor.'],
+        examples: ['mo|tor', 'mas|ter'] },
+      { label: 'Vowels and consonants',
+        lines: ['The vowels are {a}, {e}, {i}, {o} and {u}. The letter {y} at the end of a word is a vowel, too. All the other letters are consonants.', 'To chop a word, look at the consonants between two vowels.'],
+        examples: ['mas|ter', 'un|der'] },
+      { label: 'Two consonants',
+        lines: ['Two consonants between two vowels? Chop between the two consonants.', 'When a part ends with a consonant, the vowel in that part is short: /com/ + /ment/ = comment.'],
+        examples: ['com|ment', 'sun|set', 'un|der'] },
+      { label: 'Three consonants',
+        lines: ['Three consonants between two vowels? Find two consonants that can start a word, like {dr} in drop.', 'Chop right before the {dr}: /hun/ + /dred/ = hundred.'],
+        examples: ['hun|dred', 'chil|dren', 'sub|tract'] },
+      { label: 'One consonant: try the name first',
+        lines: ['One consonant between two vowels? First, chop right after the first vowel.', 'Then the vowel says the name of the letter: /pa/ + /per/ = paper.'],
+        examples: ['pa|per', 'to|tal', 'so|lar'] },
+      { label: 'One consonant: then try short',
+        lines: ['Do the parts make a real word? No? Then chop right after the consonant. Now the vowel is short.', '/ca/ + /bin/ is not a word. /cab/ + /in/ = cabin.'],
+        examples: ['cab|in', 'sev|en', 'riv|er'] },
+      { label: 'Consonant + le',
+        lines: ['Does the word end with a consonant and the letters {le}? Keep the consonant and the {le} together.', 'Chop right before the consonant: /lit/ + /tle/ = little.'],
+        examples: ['lit|tle', 'ca|ble', 'tur|tle'] },
+      { label: 'Teams stay together',
+        lines: ['Never chop a team. A team is two letters that make one sound, like {ck}, {sh}, {ch} and {th}. A team counts as one consonant.', 'The {ck} stays in the first part: /tick/ + /et/ = ticket.'],
+        examples: ['tick|et', 'pea|nut'] },
+      { label: 'Vowel teams',
+        lines: ['Vowel teams stay together, too. In vowel teams like {ow} and {oy}, the {w} and the {y} are part of the team.', '{ow} can say /ou/, like in cow: /cow/ + /boy/ = cowboy.'],
+        examples: ['cow|boy', 'down|town', 'en|joy'] },
+      { label: 'Bossy r stays with its vowel',
+        lines: ['A bossy {r} stays with the vowel before the {r}: /par/ + /ty/ = party.', 'The letter {y} at the end of party says /ee/.'],
+        examples: ['par|ty', 'mar|ket', 'gar|den'] },
+      { label: 'Quiet e',
+        lines: ['A quiet {e} at the end of a part makes the vowel say the name of the letter: /in/ + /side/ = inside.'],
+        examples: ['in|side', 'mis|take', 'com|plete'] }
+    ] },
     big: true,
-    real: ['con|tent','com|pare','en|joy','hon|est','mo|tor','par|ade','play|er','fear|less','dis|play','en|ter','mas|ter','sol|ar','pe|tal','com|ment','con|tain','fast|er','joy|ful','play|ful',
-           // added 10/20 for two passes and new words each Check
-           'un|der','lit|ter','tic|ket','par|ty','mo|lar','count|er']
+    real: ['com|ment','mas|ter','lit|ter','un|der','hun|dred','chil|dren','sub|tract','mo|tor','so|lar',
+           'to|tal','pu|pil','pa|per','cab|in','sev|en','riv|er','rob|in','wag|on','ca|ble',
+           'no|ble','lit|tle','ti|tle','tick|et','cow|boy','down|town','en|joy','con|tain','par|ty',
+           'mar|ket','gar|den','in|side','in|vite','mis|take','com|plete','sun|set','tur|tle','pea|nut'],
+    // a part that says something other than its letters: the tile shows the letters, this recording plays
+    sounds: {'pea|nut': {'pea': 'pe'}},
+    // Chop also takes this chop: it sounds right too (Marcos 10/30)
+    chop2: {'tick|et': 'ti|cket'}
   },
   {
-    id: '9b', num: '9b', name: 'Three-part words', example: 'com·pu·ter',
-    learn: {
-      lines: ['These big words have three parts. Each part has one vowel sound.', 'Read one part at a time. Then put the parts together.', '/com/ + /pu/ + /ter/ = computer.'],
-      examples: ['com|pu|ter', 'in|ven|tion', 'his|to|ry']
-    },
+    id: '9b', num: '9b', name: 'Three-part words', example: 'an·i·mal',
+    // Learn, one idea per screen (Marcos 10/30, "accept all"). label is for Mr. O only: never shown or read.
+    // recap: only for a student whose starting stop (login.js TRACKS) is this one.
+    learn: { screens: [
+      { label: 'vowels and consonants', recap: true,
+        lines: ['Say each part. Then say the real word. The real word can sound a little different from the parts.', 'The vowels are {a}, {e}, {i}, {o} and {u}. The letter {y} at the end of a word is a vowel, too. Consonants are the letters that are not vowels.'],
+        examples: ['mas|ter', 'par|ty'] },
+      { label: 'two and three consonants', recap: true,
+        lines: ['Two consonants between two vowels? Chop between the two consonants: /mas/ + /ter/ = master.', 'Three consonants? Find two consonants that can start a word, like {dr}. Chop right before the {dr}: /hun/ + /dred/ = hundred.'],
+        examples: ['mas|ter', 'hun|dred'] },
+      { label: 'teams and bossy r', recap: true,
+        lines: ['Never chop a team. A team is two letters that make one sound, like {ck} and {oy}.', 'A bossy {r} stays with the vowel before the {r}: /par/ + /ty/ = party.'],
+        examples: ['tick|et', 'par|ty'] },
+      { label: 'Three parts',
+        lines: ['Three-part words use the same chops. Chop. Say each part. Then say the real word: /un/ + /der/ + /stand/ = understand.'],
+        examples: ['un|der|stand', 'com|pu|ter', 'en|joy|ment'] },
+      { label: 'Three consonants in a three-part word',
+        lines: ['Find two consonants that can start a word, like {tr}. Chop right before the {tr}: /sub/ + /trac/ + /tion/ = subtraction.'],
+        examples: ['sub|trac|tion', 'hun|dred'] },
+      { label: 'One consonant: the order',
+        lines: ['One consonant between two vowels? First, chop right after the first vowel, and say the name of the letter.', 'Do the parts make a real word? No? Then say /uh/. Still no? Then chop right after the consonant.'],
+        examples: ['pa|per', 'cab|in'] },
+      { label: 'A vowel by itself says uh',
+        lines: ['Sometimes one vowel is a part by itself. That vowel often says /uh/: /an/ + /i~uh/ + /mal/ = animal.'],
+        examples: ['an|i|mal', 'cap|i|tal', 'cav|i|ty'] },
+      { label: 'A first part can say uh',
+        lines: ['A first part that ends with a vowel can say /uh/, too: /po/ + /ta/ + /to/ = potato.'],
+        examples: ['po|ta|to', 'a|part|ment', 'e|lev|en'] },
+      { label: 'tion',
+        lines: ['The letters {tion} make one part: /tion/. Never chop inside that part.', 'The letter {a} right before /tion/ says the name of the letter: /va/ + /ca/ + /tion/ = vacation.'],
+        examples: ['va|ca|tion', 'lo|ca|tion', 'con|nec|tion'] },
+      { label: 'y and cy at the end',
+        lines: ['The letter {y} at the end of a word says /ee/: /fam/ + /i~uh/ + /ly/ = family.', 'The letters {cy} at the end say /cy/: /pol/ + /i~uh/ + /cy/ = policy.'],
+        examples: ['fam|i|ly', 'pen|al|ty', 'pol|i|cy'] },
+      { label: 'ic at the end',
+        lines: ['The letters {ic} at the end say /ic/: /ter/ + /rif/ + /ic/ = terrific.'],
+        examples: ['ter|rif|ic', 'mag|net|ic'] },
+      { label: 'cal at the end',
+        lines: ['The letters {cal} at the end say /cal/: /trop/ + /i~uh/ + /cal/ = tropical.'],
+        examples: ['trop|i|cal', 'med|i|cal'] },
+      { label: 'ate at the end',
+        lines: ['The letters {ate} at the end say /ate/: /nav/ + /i~uh/ + /gate/ = navigate.'],
+        examples: ['nav|i|gate', 'sep|a|rate', 'es|ti|mate'] },
+      { label: 'When c says /s/ and g says /j/',
+        lines: ['Before the letters {e} and {i}, the letter {c} says /s/: /ex/ + /cel/ + /lent/ = excellent.', 'Before the letters {e} and {i}, the letter {g} often says /j/: /gi/ + /gan/ + /tic/ = gigantic.'],
+        examples: ['ex|cel|lent', 'cin|na|mon', 'gi|gan|tic'] },
+      { label: 'Two vowels side by side',
+        lines: ['Two vowels side by side that are not a team? Chop between the two vowels.', 'The letter {i} before another vowel often says /ee/: /ra/ + /di~de/ + /o~oh/ = radio. The letter {e} can do that, too: rodeo.'],
+        examples: ['ra|di|o', 'stu|di|o', 'ro|de|o'] },
+      { label: 'An r between two vowels',
+        lines: ['The letter {r} between two vowels is like one consonant. First, chop right after the first vowel. The vowel says the name of the letter: /pi/ + /rate/ = pirate.', 'Do the parts make a real word? No? Then keep the bossy {r} with the vowel: /for/ + /est/ = forest.'],
+        examples: ['pi|rate', 'for|est', 'pe|ri|od', 'ze|ro'] }
+    ] },
     big: true,
-    real: ['com|pu|ter','his|to|ry','gen|er|ous','en|or|mous','in|ven|tion','con|tain|er','en|joy|ment','dis|or|der','dis|hon|est','com|mu|ter','ca|vi|ty','con|ven|tion','in|ven|tor','con|tent|ment','in|ter|est',
-           // added 10/20
-           'mas|ter|ful','pre|ven|tion','mo|tion|less','joy|ful|ness','play|ful|ness','en|count|er','gen|er|al','jew|el|ry','mer|ri|ment','his|tor|ic','fear|less|ness','un|der|play']
+    real: ['com|pu|ter','en|joy|ment','an|i|mal','cap|i|tal','cav|i|ty','a|part|ment','e|lev|en','pre|ven|tion','va|ca|tion',
+           'lo|ca|tion','pen|al|ty','pol|i|cy','ter|rif|ic','nav|i|gate','es|ti|mate','cin|na|mon','gi|gan|tic','ra|di|o',
+           'stu|di|o','ro|de|o','pe|ri|od','un|der|stand','con|nec|tion','sub|trac|tion','po|ta|to','fam|i|ly','mag|net|ic',
+           'trop|i|cal','sep|a|rate','ex|cel|lent','med|i|cal'],
+    // a part that says something other than its letters: the tile shows the letters, this recording plays
+    sounds: {'an|i|mal': {'i': 'uh'}, 'a|part|ment': {'a': 'uh'}, 'cap|i|tal': {'i': 'uh'}, 'cav|i|ty': {'i': 'uh'}, 'e|lev|en': {'e': 'uh'}, 'fam|i|ly': {'i': 'uh'}, 'med|i|cal': {'i': 'uh'}, 'nav|i|gate': {'i': 'uh'}, 'pen|al|ty': {'al': 'ul'}, 'pol|i|cy': {'i': 'uh'}, 'ra|di|o': {'o': 'oh', 'di': 'de'}, 'ro|de|o': {'o': 'oh'}, 'sep|a|rate': {'a': 'uh'}, 'stu|di|o': {'o': 'oh', 'di': 'de'}, 'trop|i|cal': {'i': 'uh'}},
+    // Chop also takes this chop: it sounds right too (Marcos 10/30)
+    chop2: {'an|i|mal': 'an|im|al', 'cap|i|tal': 'cap|it|al', 'cav|i|ty': 'cav|it|y', 'fam|i|ly': 'fam|il|y', 'pol|i|cy': 'pol|ic|y', 'trop|i|cal': 'trop|ic|al', 'med|i|cal': 'med|ic|al', 'nav|i|gate': 'nav|ig|ate', 'sep|a|rate': 'sep|ar|ate', 'es|ti|mate': 'es|tim|ate', 'cin|na|mon': 'cin|nam|on', 'pe|ri|od': 'per|i|od'}
   },
   {
-    id: '9c', num: '9c', name: 'Four-part words', example: 'in·fi·ni·ty',
-    learn: {
-      lines: ['These big words have four parts. Each part has one vowel sound.', 'Go slow. Read one part at a time, then put them together.', '/in/ + /fi/ + /ni/ + /ty/ = infinity.'],
-      examples: ['in|fi|ni|ty', 'com|pe|ti|tion', 'his|to|ri|cal']
-    },
+    id: '9c', num: '9c', name: 'Four-part words', example: 'in·fin·i·ty',
+    // Learn, one idea per screen (Marcos 10/30, "accept all"). label is for Mr. O only: never shown or read.
+    // recap: only for a student whose starting stop (login.js TRACKS) is this one.
+    learn: { screens: [
+      { label: 'say the real word', recap: true,
+        lines: ['Say each part. Then say the real word. The real word can sound a little different from the parts.', 'Some parts come in many big words: /pre/, /dis/, /tion/ and /ment/. Look for those parts first.'],
+        examples: ['pre|dic|tion', 'dis|ap|point|ment'] },
+      { label: 'consonants and teams', recap: true,
+        lines: ['Consonants are the letters that are not vowels. The letter {y} at the end of a word is a vowel.', 'Two consonants between two vowels? Chop between the two consonants: /un/ + /der/ + /stand/ = understand.', 'Never chop a team. A team is two letters that make one sound, like {ck} and {oy}. A bossy {r} stays with the vowel before the {r}.'],
+        examples: ['un|der|stand', 'in|de|pen|dent'] },
+      { label: 'one consonant', recap: true,
+        lines: ['One consonant between two vowels? First, chop right after the first vowel, and say the name of the letter.', 'Do the parts make a real word? No? Then say /uh/. Still no? Then chop right after the consonant: /su/ + /per/ + /mar/ + /ket/ = supermarket.'],
+        examples: ['su|per|mar|ket', 'cal|cu|la|tor'] },
+      { label: 'or at the end', recap: true,
+        lines: ['The letters {or} at the end of a word often say /er/: /com/ + /pet/ + /i~uh/ + /tor~ter/ = competitor.'],
+        examples: ['com|pet|i|tor', 'cal|cu|la|tor'] },
+      { label: 'an r between two vowels', recap: true,
+        lines: ['The letter {r} between two vowels is like one consonant: /pe/ + /ri/ + /od/ = period.'],
+        examples: ['pe|ri|od', 'ze|ro'] },
+      { label: 'c, g and cy', recap: true,
+        lines: ['Before the letters {e} and {i}, the letter {c} says /s/, and the letter {g} often says /j/: /in/ + /tel/ + /li/ + /gent/ = intelligent.', 'The letters {cy} at the end say /cy/: /pol/ + /i~uh/ + /cy/ = policy.'],
+        examples: ['in|tel|li|gent', 'pol|i|cy'] },
+      { label: 'ity at the end',
+        lines: ['The letters {ity} at the end make two parts: /ac/ + /tiv/ + /i~uh/ + /ty/ = activity.', 'The letter {y} at the end of a word says /ee/.'],
+        examples: ['ac|tiv|i|ty', 'in|fin|i|ty', 'a|bil|i|ty'] },
+      { label: 'tion',
+        lines: ['The letters {tion} make one part: /tion/. Never chop inside that part.', 'The letter {a} right before /tion/ says the name of the letter: /in/ + /for/ + /ma/ + /tion/ = information.'],
+        examples: ['in|for|ma|tion', 'con|ver|sa|tion', 're|la|tion|ship'] },
+      { label: 'ate at the end',
+        lines: ['The letters {ate} at the end say /ate/: /in/ + /ves/ + /ti/ + /gate/ = investigate.'],
+        examples: ['in|ves|ti|gate', 'nav|i|gate'] },
+      { label: 'ic at the end',
+        lines: ['The letters {ic} at the end say /ic/: /au/ + /to/ + /mat/ + /ic/ = automatic.'],
+        examples: ['au|to|mat|ic', 'ac|ro|bat|ic'] },
+      { label: 'ior at the end',
+        lines: ['The letter {i} before another vowel often says /ee/. The letters {or} at the end often say /er/: /ju/ + /ni/ + /or~er/ = junior.'],
+        examples: ['ju|ni|or', 'se|ni|or'] },
+      { label: 'ular at the end',
+        lines: ['The letters {ular} at the end are two parts: /un/ + /pop/ + /u~yoo/ + /lar/ = unpopular.'],
+        examples: ['un|pop|u|lar', 'ir|reg|u|lar'] },
+      { label: 'ary at the end',
+        lines: ['The letters {ary} at the end are two parts: /dic/ + /tion/ + /ar~air/ + /y~ee/ = dictionary.'],
+        examples: ['dic|tion|ar|y', 'Jan|u|ar|y'] }
+    ] },
     big: true,
-    real: ['com|pe|ti|tion','his|to|ri|cal','in|fi|ni|ty','in|com|pe|tent','in|com|par|able','in|ter|ven|tion','dis|hon|or|able','dis|con|tent|ment',
-           // added 10/20
-           're|pe|ti|tion','com|pe|ti|tor','pe|ti|tion|er','mas|ter|ful|ness','mo|tion|less|ness','un|en|joy|able']
+    real: ['com|pet|i|tor','cal|cu|la|tor','in|de|pen|dent','su|per|mar|ket','dis|ap|point|ment','in|tel|li|gent','in|fin|i|ty','ac|tiv|i|ty','a|bil|i|ty',
+           'in|for|ma|tion','con|ver|sa|tion','re|la|tion|ship','in|ves|ti|gate','au|to|mat|ic','ac|ro|bat|ic','dic|tion|ar|y','Jan|u|ar|y','un|pop|u|lar',
+           'ir|reg|u|lar'],
+    // a part that says something other than its letters: the tile shows the letters, this recording plays
+    sounds: {'Jan|u|ar|y': {'u': 'yoo', 'ar': 'air', 'y': 'ee'}, 'ac|tiv|i|ty': {'i': 'uh'}, 'a|bil|i|ty': {'a': 'uh', 'i': 'uh'}, 'cal|cu|la|tor': {'tor': 'ter'}, 'com|pet|i|tor': {'i': 'uh', 'tor': 'ter'}, 'dic|tion|ar|y': {'ar': 'air', 'y': 'ee'}, 'in|fin|i|ty': {'i': 'uh'}, 'ju|ni|or': {'or': 'er'}, 'nav|i|gate': {'i': 'uh'}, 'pol|i|cy': {'i': 'uh'}, 're|la|tion|ship': {'re': 'ree'}, 'se|ni|or': {'or': 'er'}, 'un|pop|u|lar': {'u': 'yoo'}},
+    // Chop also takes this chop: it sounds right too (Marcos 10/30)
+    chop2: {'ac|tiv|i|ty': 'act|iv|i|ty', 'in|tel|li|gent': 'in|tell|i|gent', 'ac|ro|bat|ic': 'a|cro|bat|ic', 'in|for|ma|tion': 'in|form|a|tion', 'com|pet|i|tor': 'com|pet|it|or', 'in|fin|i|ty': 'in|fin|it|y', 'a|bil|i|ty': 'a|bil|it|y', 'in|ves|ti|gate': 'in|ves|tig|ate', 'cal|cu|la|tor': 'cal|cul|a|tor', 'un|pop|u|lar': 'un|pop|ul|ar', 'ir|reg|u|lar': 'ir|reg|ul|ar'}
   },
   {
     id: '10', num: '10', name: 'Word parts', example: 'un·lock',
-    learn: {
-      lines: ['A prefix is a part at the START of a word. /un/ means not. /re/ means again. /pre/ means before. /dis/ and /non/ mean not.', 'A suffix is a part at the END. /ful/ means full of. /less/ means without. /ness/ means being. /est/ means the most. /able/ means can be.', 'Find the parts. Read each part. Then read the whole word: /un/ + lock = unlock.'],
-      examples: ['un|lock', 're|tell', 'help|ful', 'end|less']
-    },
+    // Learn, one idea per screen (Marcos 10/30, "accept all"). label is for Mr. O only: never shown or read.
+    // recap: only for a student whose starting stop (login.js TRACKS) is this one.
+    learn: { screens: [
+      { label: 'Prefix and suffix',
+        lines: ['A prefix is a part at the start of a word, like /un/ in unkind.', 'A suffix is a part at the end of a word, like /ful/ in helpful.'],
+        examples: ['un|kind', 'help|ful'] },
+      { label: 'One chop: after the prefix',
+        lines: ['On this stop, you make ONE chop. The chop goes right after the prefix: /un/ + kind = unkind.', 'Kind is the base word. The base word is a word by itself.'],
+        examples: ['un|kind', 're|tell'] },
+      { label: 'One chop: before the suffix',
+        lines: ['On a word with a suffix, the ONE chop goes right before the suffix: help + /ful/ = helpful. Help is the base word.'],
+        examples: ['help|ful', 'end|less'] },
+      { label: 'un and re',
+        lines: ['/un/ means not. Unkind means not kind.', '/re/ means again. Retell means tell again.'],
+        examples: ['un|kind', 'un|safe', 're|tell', 're|fill'] },
+      { label: 'pre and dis',
+        lines: ['/pre/ means before. Preschool is the school before kindergarten.', '/dis/ means not. Dislike means to not like.'],
+        examples: ['pre|school', 'pre|heat', 'dis|like', 'dis|trust'] },
+      { label: 'non and in',
+        lines: ['/non/ means not. Nonfiction is not fiction.', '/in/ can mean not, too. Incorrect means not correct.'],
+        examples: ['non|fiction', 'non|fat', 'in|correct', 'in|complete'] },
+      { label: 'con',
+        lines: ['/con/ is a prefix, too. Read /con/ as one part. Contest. Context.'],
+        examples: ['con|test', 'con|text'] },
+      { label: 'ful and less',
+        lines: ['/ful/ means full of. Helpful means full of help.', '/less/ means without. Endless means without an end.'],
+        examples: ['help|ful', 'care|ful', 'end|less', 'pain|less'] },
+      { label: 'ness',
+        lines: ['/ness/ means being. Sadness means being sad. Kindness means being kind.'],
+        examples: ['sad|ness', 'kind|ness', 'dark|ness'] },
+      { label: 'est',
+        lines: ['/est/ means the most. Softest means the most soft. Coldest means the most cold.'],
+        examples: ['soft|est', 'cold|est', 'quick|est'] },
+      { label: 'able',
+        lines: ['/able/ means can be. A washable shirt can be washed. A breakable glass can be broken.'],
+        examples: ['wash|able', 'break|able', 'bend|able'] },
+      { label: 'ment',
+        lines: ['/ment/ turns a word into a thing. A payment is money you pay.'],
+        examples: ['pay|ment', 'move|ment', 'ship|ment'] },
+      { label: 'ous',
+        lines: ['/ous/ means full of. Poisonous means full of poison.'],
+        examples: ['poison|ous', 'danger|ous', 'marvel|ous'] },
+      { label: 'ary',
+        lines: ['The letters {ary} at the end of a word say /ary/. Legendary. Secondary.'],
+        examples: ['legend|ary', 'second|ary', 'planet|ary'] }
+    ] },
     big: true, parts: true,
-    real: ['un|lock','un|fit','re|tell','pre|heat','dis|trust','non|fat','thank|ful','help|ful','sad|ness','soft|est','quick|est','fix|able','end|less','pain|less','ac|tion','joy|ful',
-           // added 10/20
-           'un|pack','un|wrap','un|plug','re|fill','pre|pay','non|stick','dark|ness','sick|ness','rest|ful','wish|ful','cold|est','dark|est','bend|able'],
-    split: { lock: 'l|o|ck', fit: 'f|i|t', tell: 't|e|ll', heat: 'h|ea|t', trust: 't|r|u|s|t', fat: 'f|a|t', thank: 'th|a|n|k', help: 'h|e|l|p', sad: 's|a|d', soft: 's|o|f|t', quick: 'qu|i|ck', fix: 'f|i|x', end: 'e|n|d', pain: 'p|ai|n', ac: 'a|c',
-             pack: 'p|a|ck', wrap: 'wr|a|p', plug: 'p|l|u|g', fill: 'f|i|ll', pay: 'p|ay', stick: 's|t|i|ck', dark: 'd|ar|k',
-             sick: 's|i|ck', rest: 'r|e|s|t', wish: 'w|i|sh', cold: 'c|ol|d', bend: 'b|e|n|d' }
+    real: ['un|kind','un|safe','un|lock','un|pack','re|tell','re|fill','re|build','pre|heat','pre|game',
+           'pre|school','dis|trust','dis|like','dis|agree','non|fat','non|fiction','in|correct','in|active','in|complete',
+           'con|test','con|text','thank|ful','help|ful','care|ful','hope|ful','end|less','pain|less','help|less',
+           'sad|ness','dark|ness','kind|ness','soft|est','cold|est','quick|est','bend|able','wash|able','break|able',
+           'pay|ment','ship|ment','move|ment','poison|ous','marvel|ous','danger|ous','second|ary','legend|ary','planet|ary',
+           'non|living'],
+    split: {'active': 'a|c|t|i|v|e', 'agree': 'a|g|r|e|e', 'bend': 'b|e|n|d', 'break': 'b|r|ea|k', 'build': 'b|u|i|l|d', 'care': 'c|ar|e', 'cold': 'c|o|l|d', 'complete': 'c|o|m|p|l|e|t|e', 'correct': 'c|or|r|e|c|t', 'danger': 'd|a|ng|er', 'dark': 'd|ar|k', 'end': 'e|n|d', 'fat': 'f|a|t', 'fiction': 'f|i|c|t|i|o|n', 'fill': 'f|i|ll', 'game': 'g|a|m|e', 'heat': 'h|ea|t', 'help': 'h|e|l|p', 'hope': 'h|o|p|e', 'kind': 'k|i|n|d', 'legend': 'l|e|g|e|n|d', 'like': 'l|i|k|e', 'living': 'l|i|v|i|ng', 'lock': 'l|o|ck', 'marvel': 'm|ar|v|e|l', 'move': 'm|o|v|e', 'pack': 'p|a|ck', 'pain': 'p|ai|n', 'pay': 'p|ay', 'planet': 'p|l|a|n|e|t', 'poison': 'p|oi|s|o|n', 'quick': 'qu|i|ck', 'sad': 's|a|d', 'safe': 's|a|f|e', 'school': 's|ch|oo|l', 'second': 's|e|c|o|n|d', 'ship': 'sh|i|p', 'soft': 's|o|f|t', 'tell': 't|e|ll', 'test': 't|e|s|t', 'text': 't|e|x|t', 'thank': 'th|a|n|k', 'trust': 't|r|u|s|t', 'wash': 'w|a|sh'}
   }
 ];
+// A stop with Learn screens also gets learn.lines and learn.examples (every screen's), for the tools and tests that read those.
+PRACTICE_STOPS.forEach(st => {
+  if (!st.learn.screens) return;
+  st.learn.lines = st.learn.screens.flatMap(sc => sc.lines);
+  st.learn.examples = [...new Set(st.learn.screens.flatMap(sc => sc.examples))];
+});

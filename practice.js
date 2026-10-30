@@ -93,8 +93,17 @@
       return speakComputer(realWords.has(word) || !window.Respell ? word : Respell.respell(soundParts(chunks)));
     });
   }
-  function sayChunk(chunk) {
+  // A part that says something other than its letters (an·i·mal: the i says "uh") has a sound note on its
+  // stop (practice-data.js sounds, named in SOUND_NAMES): the tile shows the letters, this recording plays.
+  function partFile(chunks, i) {
+    const notes = stop && stop.sounds && stop.sounds[chunks.join('|')];
+    const n = notes && notes[chunks[i]];
+    return n ? (SOUND_NAMES[n] || n) : null;
+  }
+  const sayPart = (chunks, i) => sayChunk(chunks[i], partFile(chunks, i));
+  function sayChunk(chunk, file) {
     return guarded(async () => {
+      if (file) { const buf = await buildBlend([file]); return buf ? playBuffer(buf) : speakComputer(chunk); }
       if (stop && stop.split && stop.split[chunk]) {            // a base word like lock (or the ac in action)
         const rec = await loadBuffer(chunk.toLowerCase());
         if (rec) return playBuffer(rec);
@@ -358,7 +367,7 @@
     const segs = [];
     let text = null;                                  // the current run of spoken words
     const flushText = () => { text = null; };
-    line.split(/(\/[a-z]+\/|\{[a-z]+\}|\[[a-z|]+\])/).forEach(tok => {
+    line.split(/(\/[a-z]+(?:~[a-z]+)?\/|\{[a-z]+\}|\[[a-z|]+\])/).forEach(tok => {
       if (!tok) return;
       // [c|a|t] (corrections, 10/26): a whole word, said like every word on the stop (made-up ones respelled)
       const word = tok.match(/^\[([a-z|]+)\]$/);
@@ -370,11 +379,14 @@
         flushText();
         return;
       }
-      const sound = tok.match(/^\/([a-z]+)\/$/);
+      // /i~uh/ shows i and plays Mr. O's "uh"; /uh/ /ee/ /air/ … are SOUND_NAMES (stops 9a–9c, 10/30)
+      const sound = tok.match(/^\/([a-z]+)(?:~([a-z]+))?\/$/);
       if (sound) {
-        const chip = speaker('p-sound', sound[1], () => sayChunk(sound[1]), `Hear the sound ${sound[1]}`);
+        const snd = sound[2] || sound[1];
+        const file = SOUND_NAMES[snd] || (sound[2] ? fileFor(snd) : null);
+        const chip = speaker('p-sound', sound[1], () => sayChunk(sound[1], file), `Hear the sound ${snd}`);
         p.append(chip);
-        segs.push({ kind: 'sound', chunk: sound[1], el: chip });
+        segs.push({ kind: 'sound', chunk: sound[1], file, el: chip });
         flushText();
         return;
       }
@@ -409,7 +421,7 @@
       for (const [k, sg] of line.segs.entries()) {
         if (mine !== lessonRun) return false;
         if (sg.kind === 'sound') {
-          await lightWhile([sg.el], () => inSequence(() => sayChunk(sg.chunk)));
+          await lightWhile([sg.el], () => inSequence(() => sayChunk(sg.chunk, sg.file)));
         } else if (sg.kind === 'word') {
           await lightWhile([sg.el], () => inSequence(() => sayWord(sg.chunks)));
         } else if (/[a-z0-9]/i.test(sg.el.dataset.say)) {
@@ -514,72 +526,101 @@
     step();
   }
 
+  // A signed-in student's starting stop (login.js TRACKS) — recap screens are for them. A guest or Mr. O sees all.
+  function startsHere() {
+    const tracks = window.QPSLogin && QPSLogin._tracks, who = window.QPS_STUDENT;
+    return !tracks || !who || !(who in tracks) || tracks[who] === stop.id;
+  }
+  // One Learn screen: its lines are read when the student taps Hear the lesson (heard to the end), then every
+  // example is heard to the end; then finished(). n of total screens shows as dots.
+  function learnScreen(area, screen, n, total, finished) {
+    const card = el('div', 'p-learn');
+    const lines = screen.lines.map(lessonLine);
+    // The lesson is this step's directions: its sound tiles and examples open once it is heard.
+    const lockables = () => [ex, tapDir.row, ...card.querySelectorAll('.p-sound')];
+    const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => {
+      if (!(await readLesson(lines))) return;
+      lockables().forEach(e => { e.inert = false; e.classList.remove('p-locked'); });
+      sayBtn.classList.remove('p-pulse');
+      if (note.isConnected) note.remove();
+      nextExample();
+      if (window.QPSRead && exBtns.some(b => !heard.has(b))) QPSRead.say(tapDir.p);   // Marcos 10/26: "tap a word to hear it should be said aloud"
+    });
+    const note = el('p', 'p-hear-note', '👆 Tap Hear the lesson first.');
+    sayBtn.classList.add('p-pulse');                    // pulses until the lesson is heard (Marcos 10/19)
+    card.append(el('h2', 'p-learn-title', `Learn: ${stop.name}`));
+    if (total > 1) progress(card, n, total);           // which screen of the lesson
+    lines.forEach(l => card.append(l.el));
+    card.append(sayBtn, note);
+    const tapDir = direction(card, 'Tap each word to hear it.');
+    const ex = el('div', 'p-examples');
+    // Next waits until every example was heard to the end (Marcos 10/26: "shouldn't the student be forced to
+    // click and hear each one before hitting next"). One cut off by another tap is not heard yet.
+    // The next one to hear glows; a heard one gets a ✓.
+    const exBtns = [], heard = new Set();
+    const nextExample = () => {
+      exBtns.forEach(x => x.classList.remove('p-pulse'));
+      const left = exBtns.find(x => !heard.has(x));
+      if (left) left.classList.add('p-pulse');
+      else finished();
+    };
+    // "a>b" shows a before-and-after pair, like mat → mate.
+    screen.examples.forEach(w => {
+      const words = w.split('>').map(split);
+      const rows = words.map(chunks => tiles(chunks));
+      // m · a · t … mat → m · ate … mate, with a beat between sounds, before the word, and between words;
+      // each tile lights while its sound is said, the whole word while the word is said
+      const b = button('p-example', '', async () => {
+        if (window.stopSounds) stopSounds();
+        if (window.QPSRead) QPSRead.stop();
+        lessonRun++;
+        const mine = ++exampleRun;                       // another tap ends this example
+        const still = () => mine === exampleRun;
+        for (const [k, chunks] of words.entries()) {
+          const parts = [...rows[k].children];
+          if (k) await wait(900);
+          if (chunks.length > 1) {
+            for (const [i] of chunks.entries()) { if (!still()) return; await lightWhile([parts[i]], () => inSequence(() => sayPart(chunks, i))); await wait(350); }
+            await wait(150);
+          }
+          if (!still()) return;
+          await lightWhile(parts, () => inSequence(() => sayWord(chunks)));
+        }
+        if (!still()) return;
+        heard.add(b);
+        b.classList.add('heard');
+        nextExample();
+      }, `Hear ${words.map(join).join(' and ')}`);
+      rows.forEach((row, k) => { if (k) b.append(el('span', 'p-arrow', '→')); b.append(row); });
+      exBtns.push(b);
+      ex.append(b);
+    });
+    card.append(ex);
+    lockables().forEach(e => { e.inert = true; e.classList.add('p-locked'); });
+    area.append(card);
+  }
+
   /* ---------- activities ---------- */
   const ACTIVITIES = {
     learn(area, done) {
-      const card = el('div', 'p-learn');
-      const lines = stop.learn.lines.map(lessonLine);
-      // The lesson is this step's directions: its sound tiles and examples open once it is heard.
-      const lockables = () => [ex, tapDir.row, ...card.querySelectorAll('.p-sound')];
-      const sayBtn = button('p-btn p-hear', '🔊 Hear the lesson', async () => {
-        if (!(await readLesson(lines))) return;
-        lockables().forEach(e => { e.inert = false; e.classList.remove('p-locked'); });
-        sayBtn.classList.remove('p-pulse');
-        if (note.isConnected) note.remove();
-        nextExample();
-        if (window.QPSRead && exBtns.some(b => !heard.has(b))) QPSRead.say(tapDir.p);   // Marcos 10/26: "tap a word to hear it should be said aloud"
-      });
-      const note = el('p', 'p-hear-note', '👆 Tap Hear the lesson first.');
-      sayBtn.classList.add('p-pulse');                    // pulses until the lesson is heard (Marcos 10/19)
-      card.append(el('h2', 'p-learn-title', `Learn: ${stop.name}`));
-      lines.forEach(l => card.append(l.el));
-      card.append(sayBtn, note);
-      const tapDir = direction(card, 'Tap each word to hear it.');
-      const ex = el('div', 'p-examples');
-      // Next waits until every example was heard to the end (Marcos 10/26: "shouldn't the student be forced to
-      // click and hear each one before hitting next"). One cut off by another tap is not heard yet.
-      // The next one to hear glows; a heard one gets a ✓.
-      const exBtns = [], heard = new Set();
-      const nextExample = () => {
-        exBtns.forEach(x => x.classList.remove('p-pulse'));
-        const left = exBtns.find(x => !heard.has(x));
-        if (left) left.classList.add('p-pulse');
-        else done();
+      // Big-word stops teach one idea per screen (Marcos 10/30, "accept all"). A recap screen is only for a student
+      // who starts on this stop, not one coming up from the stop before. A screen's label is for Mr. O only.
+      const screens = stop.learn.screens ? stop.learn.screens.filter(sc => !sc.recap || startsHere())
+        : [{ lines: stop.learn.lines, examples: stop.learn.examples }];
+      let at = 0;
+      const show = () => {
+        area.innerHTML = '';
+        let ended = false;
+        learnScreen(area, screens[at], at, screens.length, () => {
+          if (ended) return;                               // an example heard again calls this again
+          ended = true;
+          if (++at >= screens.length) return done();
+          const go = button('p-btn p-go', 'Next ➡️', () => { hush(); show(); window.scrollTo(0, 0); });
+          area.querySelector('.p-learn').append(go);
+          go.focus();
+        });
       };
-      // "a>b" shows a before-and-after pair, like mat → mate.
-      stop.learn.examples.forEach(w => {
-        const words = w.split('>').map(split);
-        const rows = words.map(chunks => tiles(chunks));
-        // m · a · t … mat → m · ate … mate, with a beat between sounds, before the word, and between words;
-        // each tile lights while its sound is said, the whole word while the word is said
-        const b = button('p-example', '', async () => {
-          if (window.stopSounds) stopSounds();
-          if (window.QPSRead) QPSRead.stop();
-          lessonRun++;
-          const mine = ++exampleRun;                       // another tap ends this example
-          const still = () => mine === exampleRun;
-          for (const [k, chunks] of words.entries()) {
-            const parts = [...rows[k].children];
-            if (k) await wait(900);
-            if (chunks.length > 1) {
-              for (const [i, c] of chunks.entries()) { if (!still()) return; await lightWhile([parts[i]], () => inSequence(() => sayChunk(c))); await wait(350); }
-              await wait(150);
-            }
-            if (!still()) return;
-            await lightWhile(parts, () => inSequence(() => sayWord(chunks)));
-          }
-          if (!still()) return;
-          heard.add(b);
-          b.classList.add('heard');
-          nextExample();
-        }, `Hear ${words.map(join).join(' and ')}`);
-        rows.forEach((row, k) => { if (k) b.append(el('span', 'p-arrow', '→')); b.append(row); });
-        exBtns.push(b);
-        ex.append(b);
-      });
-      card.append(ex);
-      lockables().forEach(e => { e.inert = true; e.classList.add('p-locked'); });
-      area.append(card);
+      show();
     },
 
     blend(area, done) {
@@ -596,12 +637,12 @@
         chunks.forEach((c, i) => {
           const t = button('p-tile tap' + (i === 0 ? ' glow' : ''), c, async () => {
             if (i > next) return;                           // not yet: the sounds go in order
-            if (i < next) return lightWhile([t], () => sayChunk(c));   // a sound already heard: hear it again (Marcos 10/19)
+            if (i < next) return lightWhile([t], () => sayPart(chunks, i));   // a sound already heard: hear it again (Marcos 10/19)
             // the tap moves on at once, so a quick next tap is taken (and cuts this sound off)
             t.classList.remove('glow'); t.classList.add('heard');
             next++;
             if (next < chunks.length) row.children[next].classList.add('glow');
-            await lightWhile([t], () => sayChunk(c));
+            await lightWhile([t], () => sayPart(chunks, i));
             if (next >= chunks.length) blendBtn.disabled = false;
           }, `Sound ${i + 1}: ${c}`);
           row.append(t);
@@ -722,8 +763,8 @@
     chop(area, done) {
       const words = pick(stop.real, stop.id === '9c' ? 5 : 6).map(split);
       rounds(area, words, (box, chunks, finish) => chopRound(box, chunks, finish, false), done,
-        stop.parts ? 'Find the prefix or the suffix. Tap the gap between the parts to chop the word. Then tap Check.'
-                   : 'Tap the gaps to chop the word into parts. Each part has one vowel sound. Then tap Check.');
+        stop.parts ? 'Find the prefix or the suffix. Make one chop: tap the gap right after the prefix or right before the suffix. Then tap Check.'
+                   : 'Tap Hear the word. Then tap the gaps to chop the word into parts. Each part has one vowel sound. Then tap Check.');
     },
 
     letterRead(area, done) {
@@ -797,7 +838,7 @@
     const filled = chunks.map(() => null);
     const decoys = decoysFor(chunks);
     // Load every part's recording now, so the first tap on a part plays without waiting for it
-    if (window.loadBuffer) [...chunks, ...decoys].forEach(c => { if (!(stop.split && stop.split[c])) loadBuffer(fileFor(c)); });
+    if (window.loadBuffer) [...chunks, ...decoys].forEach((c, i) => { if (!(stop.split && stop.split[c])) loadBuffer((i < chunks.length && partFile(chunks, i)) || fileFor(c)); });
     const cards = shuffle([...chunks.map((c, i) => ({ c, id: 'w' + i })), ...decoys.map((c, i) => ({ c, id: 'd' + i }))]);
     const slotEls = chunks.map((_, i) => {
       const s = button('p-tile slot', '', () => { if (filled[i]) { filled[i].btn.style.visibility = 'visible'; filled[i] = null; s.textContent = ''; s.classList.add('slot'); } }, `Box ${i + 1}`);
@@ -811,7 +852,7 @@
         filled[at] = { c: card.c, btn: b };
         slotEls[at].textContent = card.c; slotEls[at].classList.remove('slot');
         b.style.visibility = 'hidden';
-        if (!graded) lightWhile([slotEls[at]], () => sayChunk(card.c));   // the box the part went into
+        if (!graded) lightWhile([slotEls[at]], () => (card.id[0] === 'w' ? sayPart(chunks, +card.id.slice(1)) : sayChunk(card.c)));   // the box the part went into
       });
       pool.append(b);
     });
@@ -824,7 +865,7 @@
       setTimeout(() => slotEls[wrongAt].classList.remove('wrong-slot'), 1500);
       for (let i = wrongAt; i < filled.length; i++) { if (filled[i]) { filled[i].btn.style.visibility = 'visible'; filled[i] = null; slotEls[i].textContent = ''; slotEls[i].classList.add('slot'); } }
       await tell(fb, `Look at box ${wrongAt + 1}. Listen to that part again and try again.`, [slots, pool, check],
-        () => lightWhile([slotEls[wrongAt]], () => sayChunk(chunks[wrongAt])));   // that box's part
+        () => lightWhile([slotEls[wrongAt]], () => sayPart(chunks, wrongAt)));   // that box's part
     });
     hear.locks(slots, pool, check);                       // the word is not on screen: nothing before it was heard
     box.append(el('p', 'p-small', 'Your word:'), slots, el('p', 'p-small', 'Parts:'), pool, check, fb);
@@ -899,6 +940,11 @@
     const cuts = new Set();
     let pos = 0;
     const answer = new Set(chunks.slice(0, -1).map(c => (pos += c.length)));
+    // a second chop that sounds right too (practice-data.js chop2, Marcos 10/30: "accept all"), like an·im·al
+    const alt = stop.chop2 && stop.chop2[chunks.join('|')] ? split(stop.chop2[chunks.join('|')]) : null;
+    pos = 0;
+    const altCuts = alt && new Set(alt.slice(0, -1).map(c => (pos += c.length)));
+    const same = (set) => !!set && cuts.size === set.size && [...set].every(a => cuts.has(a));
     const row = el('div', 'p-chop');
     const gaps = [], letters = [];
     [...word].forEach((ch, i) => {
@@ -910,22 +956,32 @@
         row.append(g);
       }
     });
-    box.append(button('p-btn p-hear', '🔊 Hear the word', () => lightWhile([...letters, ...gaps], () => sayWord(chunks))), row);   // the word is on screen
+    // 9a–9c: the word is heard before any chop (Marcos 10/30, "accept all"); stop 10's base words are read by sight
+    const sayIt = () => lightWhile([...letters, ...gaps], () => sayWord(chunks));
+    const hear = stop.parts ? button('p-btn p-hear', '🔊 Hear the word', sayIt) : mustHear('p-btn p-hear', '🔊 Hear the word', sayIt);
+    box.append(hear, row);
     const check = button('p-btn p-check', 'Check ✅', async () => {
-      const ok = cuts.size === answer.size && [...answer].every(a => cuts.has(a));
-      if (graded) { check.disabled = true; return finish(ok); }
+      const ok = same(answer), okAlt = !ok && same(altCuts);
+      if (graded) { check.disabled = true; return finish(ok || okAlt); }
       check.disabled = true;
-      gaps.forEach((g, i) => { g.classList.toggle('cut', answer.has(i + 1)); g.disabled = true; });
+      gaps.forEach(g => { g.disabled = true; });
+      if (okAlt) {                                         // their chop stays; its parts may have no recordings, so the word
+        fb.textContent = `✅ Yes! ${alt.join(' · ')} works too.`;
+        await sayIt();
+        return finish();
+      }
+      gaps.forEach((g, i) => g.classList.toggle('cut', answer.has(i + 1)));
       fb.textContent = ok ? `✅ Yes! ${chunks.join(' · ')}` : `Here are the parts: ${chunks.join(' · ')}. Listen to each part.`;
       // each part lights while it is said (its letters and the gaps between them), then the whole word
       let at = 0;
-      for (const c of chunks) {
+      for (const [k, c] of chunks.entries()) {
         const n = at; at += c.length;
-        await lightWhile([...letters.slice(n, at), ...gaps.slice(n, at - 1)], () => sayChunk(c));
+        await lightWhile([...letters.slice(n, at), ...gaps.slice(n, at - 1)], () => sayPart(chunks, k));
       }
-      await lightWhile([...letters, ...gaps], () => sayWord(chunks));
+      await sayIt();
       finish();
     });
+    if (hear.locks) hear.locks(row, check);               // nothing to chop before the word was heard
     box.append(check, fb);
   }
 
