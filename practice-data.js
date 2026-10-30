@@ -28,6 +28,10 @@ const PRACTICE_STOPS = [
     },
     real: ['c|a|p','b|e|d','f|i|x','h|o|t','s|u|n','r|i|p','j|o|g','w|e|t','m|u|d','t|a|g','p|e|n','l|i|d','b|u|s','f|a|n','k|i|t','r|u|b'],
     sort: {
+      // The Listen directions: [on screen, said] (Marcos 10/29: "these instructions aren't clear enough").
+      // Letters are said as letter names (A, E…); keep the same number of words in both so the highlight follows.
+      directions: ['The word is hidden. Tap Hear the word. Listen for the vowel sound in the middle. Then tap the vowel you hear: a, e, i, o or u.',
+                   'The word is hidden. Tap Hear the word. Listen for the vowel sound in the middle. Then tap the vowel you hear: A, E, I, O or U.'],
       prompt: 'Which vowel sound do you hear?',
       bins: [{ label: 'a', key: 'a' }, { label: 'e', key: 'e' }, { label: 'i', key: 'i' }, { label: 'o', key: 'o' }, { label: 'u', key: 'u' }],
       words: [['c|a|p','a'],['f|a|n','a'],['b|e|d','e'],['w|e|t','e'],['r|i|p','i'],['k|i|t','i'],['h|o|t','o'],['j|o|g','o'],['s|u|n','u'],['m|u|d','u']]
@@ -47,6 +51,8 @@ const PRACTICE_STOPS = [
     },
     real: ['sh|i|p','ch|o|p','th|i|n','wh|e|n','d|u|ck','s|i|ng','sh|o|p','ch|i|n','m|a|th','w|i|sh','r|i|ch','b|a|ck','r|i|ng','wh|i|p','b|a|th','m|u|ch'],
     sort: {
+      directions: ['The word is hidden. Tap Hear the word. Listen for the sound that two letters make. Then tap the letters that make that sound: sh, ch or th.',
+                   'The word is hidden. Tap Hear the word. Listen for the sound that two letters make. Then tap the letters that make that sound: S-H, C-H or T-H.'],
       prompt: 'Which sound do you hear?',
       bins: [{ label: 'sh', key: 'sh' }, { label: 'ch', key: 'ch' }, { label: 'th', key: 'th' }],
       words: [['sh|i|p','sh'],['w|i|sh','sh'],['f|i|sh','sh'],['d|i|sh','sh'],['ch|o|p','ch'],['ch|i|n','ch'],['r|i|ch','ch'],['m|u|ch','ch'],['th|i|n','th'],['m|a|th','th'],['b|a|th','th'],['m|o|th','th']]
@@ -81,6 +87,7 @@ const PRACTICE_STOPS = [
     },
     real: ['g|ate','l|ate','s|k|ate','p|l|ate','sh|ade','g|r|ade','l|ane','c|r|ane','n|ice','m|ice','r|ice','n|ine','sh|ine','m|ile','s|m|ile','h|ole','p|ole','v|ote','d|une','t|une','f|r|oze'],
     sort: {
+      directions: ['The word is hidden. Tap Hear the word. Listen to the vowel. Is the vowel short, like in cap? Or long, like in cape? Then tap Short or Long.'],
       prompt: 'Is the vowel short or long?',
       bins: [{ label: 'Short — like cap', key: 'short' }, { label: 'Long — like cape', key: 'long' }],
       words: [['m|a|t','short'],['m|ate','long'],['p|i|n','short'],['p|ine','long'],['c|a|n','short'],['c|ane','long'],['n|o|t','short'],['n|ote','long'],['h|a|t','short'],['h|ate','long'],['f|i|n','short'],['f|ine','long']]
@@ -100,6 +107,8 @@ const PRACTICE_STOPS = [
     },
     real: ['c|ar','f|ar|m','s|t|ar','t|er|m','f|er|n','b|ir|d','g|ir|l','sh|ir|t','c|or|n','c|or|d','s|t|or|m','t|ur|n','h|ur|t','b|ur|n','p|ar|k','s|p|or|t'],
     sort: {
+      directions: ['The word is hidden. Tap Hear the word. Listen for the Bossy R sound. Then tap the sound you hear: ar like car, or like for, or er like her.',
+                   'The word is hidden. Tap Hear the word. Listen for the Bossy R sound. Then tap the sound you hear: A-R like car, O-R like for, or E-R like her.'],
       prompt: 'Which sound do you hear?',
       bins: [{ label: 'ar — like car', key: 'ar' }, { label: 'or — like for', key: 'or' }, { label: 'er ir ur — like her', key: 'er' }],
       words: [['f|ar|m','ar'],['s|t|ar','ar'],['p|ar|k','ar'],['d|ar|k','ar'],['c|or|n','or'],['s|t|or|m','or'],['s|p|or|t','or'],['h|or|n','or'],['f|er|n','er'],['b|ir|d','er'],['g|ir|l','er'],['t|ur|n','er']]
@@ -133,6 +142,7 @@ const PRACTICE_STOPS = [
     },
     real: ['r|ai|n','t|ai|l','p|l|ay','d|ay','s|ea|t','t|ea|m','b|oa|t','s|oa|p','m|oo|n','f|oo|d','ou|t','l|ou|d','c|oi|n','b|oi|l','t|oy','h|au|l','s|aw','l|aw|n','p|aw','n|ew','n|igh|t','l|igh|t'],
     sort: {
+      directions: ['Read the word. Is the word a real word or a made-up word? Tap Hear the word to check your reading. Then tap Real word or Made-up word.'],
       prompt: 'Is it a real word or a made-up word?', seeWord: true,
       bins: [{ label: 'Real word', key: 'real' }, { label: 'Made-up word', key: 'made' }],
       words: [['r|ai|n','real'],['z|ai|t','made'],['s|ea|t','real'],['d|ea|p','made'],['b|oa|t','real'],['k|oa|m','made'],['m|oo|n','real'],['z|oo|t','made'],['c|oi|n','real'],['d|oi|l','made'],['n|ew','real'],['t|r|ew','made']]

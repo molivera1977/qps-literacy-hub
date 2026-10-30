@@ -410,11 +410,13 @@
   }
 
   /* ---------- shared pieces ---------- */
-  function direction(area, text) {
+  // said = what the voice says when it differs from the screen (letter names: "S-H" for sh)
+  function direction(area, text, said) {
     const row = el('div', 'p-direction');
     const p = window.QPSRead ? QPSRead.wrap(el('p', ''), text) : el('p', '', text);
+    if (said) p.dataset.say = said;
     // A speaker always answers: it stops whatever is being read and reads this line.
-    const btn = button('p-say', '🔊', () => { takeOver(); return window.QPSRead ? QPSRead.say(p) : sayText(text); }, 'Hear the directions');
+    const btn = button('p-say', '🔊', () => { takeOver(); return window.QPSRead ? QPSRead.say(p) : sayText(said || text); }, 'Hear the directions');
     row.append(btn, p);
     area.append(row);
     return { row, btn, p, text };
@@ -443,7 +445,7 @@
       if (reading) return;                                // a second tap must not cut the reading off
       reading = true;
       takeOver();
-      const how = window.QPSRead ? await QPSRead.say(dir.p) : (await sayText(dir.text), 'end');
+      const how = window.QPSRead ? await QPSRead.say(dir.p) : (await sayText(dir.p.dataset.say || dir.text), 'end');
       reading = false;
       if (open) return;
       if (how === 'end') return unlock();
@@ -477,10 +479,10 @@
     return row;
   }
   // Runs `count` rounds of one activity; `round(box, index, finish)` draws one item.
-  function rounds(area, items, round, done, introText) {
+  function rounds(area, items, round, done, introText, introSaid) {
     let i = 0;
     const box = el('div', 'p-round');
-    const dir = direction(area, introText);
+    const dir = direction(area, introText, introSaid);
     area.append(box);
     lockUntilHeard(dir, box);
     const step = () => {
@@ -627,7 +629,7 @@
           bins.append(bin);
         });
         box.append(s.prompt ? el('p', 'p-small', s.prompt) : '', bins, fb);
-      }, done, s.seeWord ? 'Read the word. Tap Hear the word to check. Then pick the box it goes in.' : 'Tap Hear the word and listen. The word is hidden. Pick the box it goes in.');
+      }, done, ...(s.directions || [s.seeWord ? 'Read the word. Tap Hear the word to check. Then tap the box the word goes in.' : 'The word is hidden. Tap Hear the word. Then tap the box the word goes in.']));
     },
 
     chains(area, done) {
