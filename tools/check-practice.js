@@ -67,6 +67,15 @@ for (const stop of stops) {
     if (word.split('|').filter(x => x === c).length !== 1) errors.push(`${stop.id}: the sound note on "${c}" in "${word}" must name one part of the word`);
     if (!recordings.has(SOUND_NAMES[n] || n)) errors.push(`${stop.id}: the sound note "${c}=${n}" in "${word}" has no recording`);
   }
+  // Try it after a teaching screen: a word the stop already says (its list or its lesson words), never a test word
+  const said = new Set([...(stop.real || []), ...stop.learn.examples]);
+  for (const sc of stop.learn.screens || []) {
+    if (!sc.try) { if (!sc.recap) warnings.push(`${stop.id}: Learn screen "${sc.label}" has no Try it`); continue; }
+    const w = typeof sc.try === 'string' ? sc.try : sc.try.word;
+    if (!said.has(w)) errors.push(`${stop.id}: Try it "${w}" (screen "${sc.label}") is not one of the stop's words`);
+    checkChunks(stop, w, 'try');
+    if (typeof sc.try !== 'string' && !(sc.try.ask && sc.try.choices && sc.try.choices.length === 2)) errors.push(`${stop.id}: Try it on "${sc.label}" needs ask and 2 choices`);
+  }
   for (const [word, alt] of Object.entries(stop.chop2 || {})) {
     if (!(stop.real || []).includes(word)) errors.push(`${stop.id}: second chop for "${word}", which is not on the list`);
     if (alt.replace(/\|/g, '') !== word.replace(/\|/g, '') || alt === word) errors.push(`${stop.id}: second chop "${alt}" is not another chop of "${word}"`);

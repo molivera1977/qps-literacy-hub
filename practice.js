@@ -539,6 +539,45 @@
   }
   // One Learn screen: its lines are read when the student taps Hear the lesson (heard to the end), then every
   // example is heard to the end; then finished(). n of total screens shows as dots.
+  /* Try it (Marcos 10/30: "shouldn't there be some questions in each section so kids can practice a little within the
+     long learning section?"): after a teaching screen's words, one practice item — chop a word (9a–9c; stop 10's
+     chop screens: one chop) or, on stop 10, what a word means. Not graded. Its line is read first and the item waits
+     until it was heard; then finished() (Next). */
+  function tryIt(card, t, finished) {
+    const box = el('div', 'p-round p-try'), said = el('div', 'p-feedback p-item-line'), work = el('div');
+    box.append(said, work);
+    card.append(box);
+    if (typeof t === 'string') {
+      chopRound(work, split(t), finished, false);
+      tell(said, stop.parts ? 'Try it. Make one chop.' : 'Try it. Chop this word.', [work]);
+    } else {
+      const order = meaningRound(work, t, finished);
+      tell(said, `Try it. ${t.ask}: ${order[0]}, or ${order[1]}?`, [work]);
+    }
+    box.scrollIntoView({ block: 'nearest' });
+  }
+  // Stop 10: what a word means — two choices (the first in the data is right), read in the line above, one tap.
+  // The answer is told aloud either way. Returns the choices in screen order.
+  function meaningRound(box, t, finish) {
+    mark(box, t.choices[0]);
+    box.append(tiles(split(t.word), { big: true }));
+    const fb = feedback(box);
+    const opts = el('div', 'p-options');
+    const order = shuffle(t.choices);
+    order.forEach(c => {
+      const b = button('p-option', c, async () => {
+        if (opts.dataset.done) return;
+        opts.dataset.done = '1';
+        const ok = c === t.choices[0];
+        b.classList.add(ok ? 'right' : 'wrong');
+        await tell(fb, `${ok ? 'Yes!' : 'Not that one.'} ${t.ask} ${t.choices[0]}.`, [opts]);
+        finish();
+      });
+      opts.append(b);
+    });
+    box.append(opts, fb);
+    return order;
+  }
   function learnScreen(area, screen, n, total, finished) {
     const card = el('div', 'p-learn');
     const lines = screen.lines.map(lessonLine);
@@ -564,11 +603,13 @@
     // click and hear each one before hitting next"). One cut off by another tap is not heard yet.
     // The next one to hear glows; a heard one gets a ✓.
     const exBtns = [], heard = new Set();
+    let tried = false;
     const nextExample = () => {
       exBtns.forEach(x => x.classList.remove('p-pulse'));
       const left = exBtns.find(x => !heard.has(x));
       if (left) left.classList.add('p-pulse');
-      else finished();
+      else if (!screen.try) finished();
+      else if (!tried) { tried = true; tryIt(card, screen.try, finished); }   // an example heard again: no second Try it
     };
     // "a>b" shows a before-and-after pair, like mat → mate.
     screen.examples.forEach(w => {
