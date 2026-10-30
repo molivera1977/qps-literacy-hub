@@ -666,6 +666,17 @@
           area.querySelector('.p-learn').append(go);
           go.focus();
         });
+        // Mr. O in teacher mode (Marcos 10/30: "in teacher mode, should i be able to tap these dots to move through
+        // each sub section"): each dot jumps to that Learn screen, nothing to finish first and nothing saved.
+        // Students and guests keep plain dots.
+        if (screens.length > 1 && document.body.classList.contains('teacher-mode')) {
+          const here = at;
+          [...area.querySelectorAll('.p-learn .p-dots span')].forEach((d, k) => {
+            const b = button('p-dot-jump' + (k === here ? ' here' : ''), '', () => { hush(); at = k; show(); window.scrollTo(0, 0); }, `Screen ${k + 1} of ${screens.length}`);
+            d.replaceWith(b);
+            b.append(d);
+          });
+        }
       };
       show();
     },
