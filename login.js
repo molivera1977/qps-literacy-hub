@@ -178,7 +178,8 @@
   }
 
   function showLogin() {
-    ['welcomeView', 'appView', 'practiceView', 'compView'].forEach(id => { const e = $(id); if (e) e.style.display = 'none'; });
+    // every screen off, the Teacher screen's too (teacher.js, 11/10): signing out from it must not leave it showing
+    ['welcomeView', 'appView', 'practiceView', 'compView', 'teacherView', 'slideView', 'keyView'].forEach(id => { const e = $(id); if (e) e.style.display = 'none'; });
     $('loginView').style.display = 'block';
     $('qpsName').value = ''; $('qpsPin').value = ''; $('qpsGuestName').value = '';
     onNamePick();
@@ -200,6 +201,8 @@
     // Comprehension students on a new or wiped device get their level back from the sheet.
     if (TRACKS[name] === 'comp' && window.Comp) Comp.restore(name).then(got => { if (got && student === name) renderPlan(); });
     window.scrollTo(0, 0);
+    // Mr. O goes to his Teacher screen (teacher.js), not the student home (Marcos 11/10: "update to new teacher mode")
+    if (name === TEACHER && !SHARE && window.QPSTeacher) QPSTeacher.open();
   }
 
   function signOut() {
@@ -433,6 +436,9 @@
   // Any row to the sheet, for the signed-in student. A guest's work is never sent.
   function send(row) {
     if (SHARE || !student || !row || !row.game) return;
+    // Mr. O signed in (Teacher screen, Marcos 11/10: nothing saved when he practices): only the Assessment's rows go
+    // out, and they carry the student's name. His own practice never reaches the sheet.
+    if (student === TEACHER && !(row.name && row.name !== TEACHER)) return;
     const body = { action: 'submit', name: student, ...row };
     window.QPS_LAST_SENT = body;                             // for testing
     try {
@@ -527,6 +533,7 @@
   }
 
   window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, movesOn, rosterNames, testsDue, recordTest, _tracks: TRACKS,
+    who: () => student, TEACHER,
     _rules: { parseProgress, formOf, effectiveStop, afterPass } };
 
   if (SHARE) { signIn('Guest'); return; }

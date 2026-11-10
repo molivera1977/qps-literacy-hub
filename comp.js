@@ -505,9 +505,17 @@
     open(id);
   }
 
+  // 👀 Try it as a student (Teacher screen, Marcos 11/10): a course at any level, straight into Learn, Practice or the
+  // Check. Only the share guest view on a teacher's &teach= link calls this (nothing saved).
+  function teach(id, level, part) {
+    openAt(id, level);
+    if (part === 'learn') learn();
+    else if (part === 'practice' || part === 'check') run(part);
+  }
+
   // For the plan card: level, passes, finished
   function progressOf(name, id) { const sk = skillState(name, id); return { level: sk.level, passes: sk.passes || 0, finished: !!sk.finished }; }
-  window.Comp = { open, openAt, levelOf, progressOf, restore, maxLevel: MAX_LEVEL, skills: () => COMP_SKILLS, _rules: { afterCheck, freshSkill },
+  window.Comp = { open, openAt, teach, stopSpeaking: () => stopSpeaking(), levelOf, progressOf, restore, maxLevel: MAX_LEVEL, skills: () => COMP_SKILLS, _rules: { afterCheck, freshSkill },
     // for maze.js: the same course (state, the sheet, the screens) with its own story screen
     _kit: { who, skillState, putSkill, backupLevels, afterCheck, nextItem: (sk, used, graded) => nextItem(sk, used, graded),
             setSkill: (s) => { skill = s; }, el, btn, block, speaker, header, levelDots, passMeter, show, stopSpeaking, backToPlan,

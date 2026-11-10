@@ -1,0 +1,67 @@
+/* The Teacher screen (teacher.js, Marcos 11/10) — the same look as the teacher screens on his other sites,
+   in the hub's own colors. */
+.t-view { max-width: 980px; }
+.t-bar, .sl-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 16px; margin: 0 0 14px;
+  background: var(--test-tint); border: 2px solid var(--test); border-radius: var(--radius-md); }
+.t-title, .sl-title { font-size: 1.25rem; font-weight: 700; color: var(--test-dark); }
+.t-note { color: var(--ink-soft); font-size: 0.95rem; flex: 1; }
+.t-exit { font: inherit; font-size: 0.95rem; font-weight: 600; padding: 7px 14px; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.t-exit:hover { border-color: var(--test); }
+.t-h { font-size: 1.05rem; font-weight: 700; color: var(--ink); margin: 16px 0 8px; }
+.t-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.t-btn { font: inherit; font-size: 0.98rem; font-weight: 600; padding: 8px 14px; border-radius: 12px; cursor: pointer;
+  border: 2px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.t-btn:hover { border-color: var(--test); }
+.t-btn.on { background: var(--test); border-color: var(--test-dark); color: #fff; }
+.t-btn:focus-visible, .t-act:focus-visible, .t-exit:focus-visible { outline: 3px solid var(--learning); outline-offset: 2px; }
+.t-picked { margin: 18px 0 10px; font-weight: 700; color: var(--ink); font-size: 1.05rem; }
+.t-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.t-act { display: block; font: inherit; font-size: 1.08rem; font-weight: 700; text-align: left; padding: 14px 16px; border-radius: 14px;
+  cursor: pointer; border: 2px solid var(--line-strong); background: var(--surface); color: var(--ink); text-decoration: none; }
+.t-act:hover { background: var(--test-tint); border-color: var(--test); }
+.t-act span { display: block; margin-top: 6px; font-size: 0.88rem; font-weight: 400; color: var(--ink-soft); line-height: 1.4; }
+
+/* 🖥️ Slide Mode: the Learn lesson, big */
+.sl-view { max-width: 1100px; }
+.sl-go { display: inline-flex; align-items: center; gap: 6px; flex: 1; }
+.sl-go button, .teach-go button { font: inherit; font-size: 1rem; padding: 5px 12px; border-radius: 8px; cursor: pointer;
+  border: 2px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.sl-go button:disabled, .teach-go button:disabled { opacity: 0.4; cursor: default; }
+.sl-go select, .teach-go select { font: inherit; font-size: 0.95rem; padding: 5px 30px 5px 8px; border-radius: 8px; border: 2px solid var(--line-strong); max-width: 60vw; }
+.sl-stage .p-slide { font-size: 1.45rem; }
+.sl-stage .p-slide .p-learn-title { font-size: 2.1rem; }
+.sl-stage .p-slide .p-learn-line { font-size: 1.9rem; line-height: 1.6; }
+.sl-stage .p-slide .p-example .p-tile { font-size: 2.2rem; }
+.p-slide-note { color: var(--ink-soft); font-size: 1.05rem; font-style: italic; margin: 0 0 8px; }
+
+/* ✅ Answer key */
+.key-view { max-width: 980px; }
+.key-sec, .key-sec h3, .key-sec ul, .key-note, .key-story { text-align: left; }
+.key-title { font-size: 1.4rem; margin: 6px 0 10px; color: var(--ink); }
+.key-sec { margin: 14px 0; padding: 12px 16px; border: 2px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); break-inside: avoid; }
+.key-sec h3 { margin: 0 0 6px; font-size: 1.08rem; }
+.key-sec ul { margin: 0; padding-left: 20px; line-height: 1.7; }
+.key-note { color: var(--ink-soft); font-size: 0.93rem; }
+.key-said { color: var(--ink-soft); font-size: 0.9rem; }
+.key-wrong { color: var(--ink-faint); text-decoration: line-through; margin-left: 4px; }
+.key-right { color: var(--success-dark); }
+.key-story { font-family: var(--font-read); font-size: 1.05rem; line-height: 1.7; margin: 4px 0 8px; }
+@media print {
+  body * { visibility: hidden; }
+  #keyView, #keyView * { visibility: visible; }
+  #keyView { position: absolute; left: 0; top: 0; width: 100%; }
+  #keyView .key-bar { display: none; }
+}
+
+/* 👀 Try it as a student: the start card and the teacher's bar on the share view */
+.teach-ready { text-align: center; padding: 28px 12px; }
+.teach-ready-h { font-size: 1.4rem; font-weight: 700; color: var(--test-dark); margin: 0 0 8px; }
+.teach-ready-what { font-size: 1.15rem; font-weight: 700; margin: 0 0 10px; }
+.teach-ready-note { color: var(--ink-soft); margin: 0 0 18px; }
+.teach-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9998; display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 8px 12px; padding: 8px 12px; background: #fff8dc; border-top: 2px solid #d4a106; font-size: 0.95rem; }
+.teach-bar-what { font-weight: 700; color: #856404; }
+.teach-go { display: inline-flex; align-items: center; gap: 6px; }
+.teach-bar > button { font: inherit; padding: 5px 12px; border-radius: 8px; border: 1px solid #d4a106; background: #fff; color: #856404; cursor: pointer; }
+body.teach-on { padding-bottom: 72px; }

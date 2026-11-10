@@ -141,18 +141,23 @@
   function takeOver() { cutRun++; lessonRun++; exampleRun++; if (window.stopSounds) stopSounds(); }
   const lockEl = (e) => { e.inert = true; e.classList.add('p-locked'); };
   const openEl = (e) => { e.inert = false; e.classList.remove('p-locked'); };
+  /* ⏩ Skip the wait (Teacher screen → Try it as a student, Marcos 11/10 "update to new teacher mode"): every lock on
+     the screen leaves its opener here; skipWait() opens them all at once. Only the teacher's bar calls it. */
+  const waits = new Set();
+  const waitFor = (open) => { waits.add(open); return () => waits.delete(open); };
+  function skipWait() { hush(); [...waits].forEach(open => { waits.delete(open); try { open(); } catch (e) { /* a screen already gone */ } }); }
 
   // 1. A word that is not on screen is heard before any answer (the 🔊 glows, the answers are dimmed until then).
   //    hear.locks(...els) names what waits. Hearing it again later is always open.
   function mustHear(cls, text, play, label) {
-    let heard = false, locked = [];
+    let heard = false, locked = [], drop = () => {};
+    const openNow = () => { if (heard) return; heard = true; drop(); b.classList.remove('p-pulse'); locked.forEach(openEl); };
     const b = button(cls + ' p-pulse', text, async () => {
       if (!(await lightWhile([b], () => playedThrough(play))) || heard) return;
-      heard = true;
-      b.classList.remove('p-pulse');
-      locked.forEach(openEl);
+      openNow();
     }, label);
     b.locks = (...els) => { locked = els; if (!heard) els.forEach(lockEl); return b; };
+    drop = waitFor(openNow);
     return b;
   }
 
@@ -164,6 +169,8 @@
   function hearEach(opts, check, fb, pickLine) {
     const heard = new Set();
     let picking = false, picked = null;
+    const openAll = () => { [...opts.children].forEach(b => heard.add(b)); picking = true; show(); };
+    let drop = waitFor(openAll);
     const show = () => {
       const btns = [...opts.children];
       const left = btns.find(b => !heard.has(b));
@@ -178,8 +185,9 @@
       if (picking || heard.size < opts.children.length) return;
       await tell(fb, pickLine, [opts]);
       picking = true;
+      drop();
     };
-    return { tap, picked: () => picked, reset: () => { heard.clear(); picking = false; picked = null; show(); }, show };
+    return { tap, picked: () => picked, reset: () => { heard.clear(); picking = false; picked = null; drop(); drop = waitFor(openAll); show(); }, show };
   }
 
   // 3. A correction is read aloud — its sounds in Mr. O's recordings, its words by the voice (lesson-line marks:
@@ -191,10 +199,12 @@
       const line = lessonLine(text);
       line.el.classList.add('p-told-line');
       lock.forEach(lockEl);
+      const drop = waitFor(() => { again.classList.remove('p-pulse'); lock.forEach(openEl); resolve(); });
       const run = async () => {
         again.classList.remove('p-pulse');
         const ok = (await readLesson([line])) && (!then || await playedThrough(then));
         if (!ok) { again.classList.add('p-pulse'); return; }
+        drop();
         lock.forEach(openEl);
         resolve();
       };
@@ -314,6 +324,7 @@
 
   function backToStops() {
     hush();
+    waits.clear();
     $('practiceView').style.display = 'none';
     $('welcomeView').style.display = 'block';
     document.title = 'QPS Literacy Hub';
@@ -336,6 +347,7 @@
 
   function showStep() {
     hush();
+    waits.clear();
     renderChips();
     const area = $('practiceArea');
     area.innerHTML = '';
@@ -465,13 +477,16 @@
     const note = el('p', 'p-hear-note', '👆 Tap 🔊 to hear the directions first.');
     dir.row.after(note);
     const unlock = () => {
+      if (open) return;
       open = true;
+      drop();
       work.inert = false;
       work.classList.remove('p-locked');
       dir.row.classList.remove('p-must-hear');
       note.remove();
       if (onOpen) onOpen();
     };
+    const drop = waitFor(unlock);
     dir.btn.onclick = async () => {
       if (reading) return;                                // a second tap must not cut the reading off
       reading = true;
@@ -645,6 +660,69 @@
     card.append(ex);
     lockables().forEach(e => { e.inert = true; e.classList.add('p-locked'); });
     area.append(card);
+    // ⏩ (teacher's Try it): the lesson counts as heard and every example as heard
+    waitFor(() => {
+      lessonRun++;
+      lockables().forEach(openEl);
+      sayBtn.classList.remove('p-pulse');
+      if (note.isConnected) note.remove();
+      exBtns.forEach(b => { heard.add(b); b.classList.add('heard'); });
+      nextExample();
+    });
+  }
+
+  /* ---------- the Teacher screen (Marcos 11/10: "update to new teacher mode") ---------- */
+  // 👀 Try it as a student: open a stop at any step — every step is open, nothing has to be passed first.
+  // Only the share guest view (nothing saved, its own share_ storage) on a teacher's &teach= link calls this.
+  function openAt(id, at) {
+    openStop(id);
+    saveStopRecord(stop.id, { reached: steps.length - 1 });
+    stepIndex = Math.max(0, Math.min(steps.length - 1, at));
+    showStep();
+    window.scrollTo(0, 0);
+  }
+  // 🖥️ Slide Mode = the teaching only (the 10/30 standard): each Learn screen of a stop, big — its lines (Mr. O's
+  // sounds in them) and its examples to tap and hear. Never a Try it, a practice item or the Check.
+  function useStop(id) { stop = PRACTICE_STOPS.find(s => s.id === id); steps = buildSteps(stop); realWords = collectReal(stop); }
+  const slideScreens = (st) => st.learn.screens ? st.learn.screens : [{ lines: st.learn.lines, examples: st.learn.examples }];
+  function slideCount(id) { const st = PRACTICE_STOPS.find(s => s.id === id); return st ? slideScreens(st).length : 0; }
+  function renderSlide(id, k, host) {
+    hush();
+    useStop(id);
+    const sc = slideScreens(stop)[k];
+    host.innerHTML = '';
+    const card = el('div', 'p-learn p-slide');
+    card.append(el('h2', 'p-learn-title', `Learn: ${stop.name}`));
+    if (sc.recap) card.append(el('p', 'p-slide-note', 'A reminder screen: a student who starts on this stop sees it first.'));
+    const lines = sc.lines.map(lessonLine);
+    lines.forEach(l => card.append(l.el));
+    card.append(button('p-btn p-hear', '🔊 Hear this slide', () => { takeOver(); readLesson(lines); }));
+    const ex = el('div', 'p-examples');
+    (sc.examples || []).forEach(w => {
+      const words = w.split('>').map(split);
+      const rows = words.map(chunks => tiles(chunks));
+      const b = button('p-example', '', async () => {
+        if (window.stopSounds) stopSounds();
+        if (window.QPSRead) QPSRead.stop();
+        lessonRun++;
+        const mine = ++exampleRun;
+        const still = () => mine === exampleRun;
+        for (const [n, chunks] of words.entries()) {
+          const parts = [...rows[n].children];
+          if (n) await wait(900);
+          if (chunks.length > 1) {
+            for (const [i] of chunks.entries()) { if (!still()) return; await lightWhile([parts[i]], () => inSequence(() => sayPart(chunks, i))); await wait(350); }
+            await wait(150);
+          }
+          if (!still()) return;
+          await lightWhile(parts, () => inSequence(() => sayWord(chunks)));
+        }
+      }, `Hear ${words.map(join).join(' and ')}`);
+      rows.forEach((row, n) => { if (n) b.append(el('span', 'p-arrow', '→')); b.append(row); });
+      ex.append(b);
+    });
+    if (ex.children.length) card.append(ex);
+    host.append(card);
   }
 
   /* ---------- activities ---------- */
@@ -657,6 +735,7 @@
       let at = 0;
       const show = () => {
         area.innerHTML = '';
+        waits.clear();
         let ended = false;
         learnScreen(area, screens[at], at, screens.length, () => {
           if (ended) return;                               // an example heard again calls this again
@@ -669,7 +748,7 @@
         // Mr. O in teacher mode (Marcos 10/30: "in teacher mode, should i be able to tap these dots to move through
         // each sub section"): each dot jumps to that Learn screen, nothing to finish first and nothing saved.
         // Students and guests keep plain dots.
-        if (screens.length > 1 && document.body.classList.contains('teacher-mode')) {
+        if (screens.length > 1 && (document.body.classList.contains('teacher-mode') || window.QPS_TEACH)) {
           const here = at;
           [...area.querySelectorAll('.p-learn .p-dots span')].forEach((d, k) => {
             const b = button('p-dot-jump' + (k === here ? ' here' : ''), '', () => { hush(); at = k; show(); window.scrollTo(0, 0); }, `Screen ${k + 1} of ${screens.length}`);
@@ -810,10 +889,13 @@
           line.append(speaker('p-sword rw', word, () => sayText(word.replace(/[.,?!]/g, '')), `Hear ${word}`));
         });
         line.dataset.say = sentence;
+        let over = false;
+        const end = () => { if (over) return; over = true; drop(); finish(); };
+        const drop = waitFor(end);
         box.append(line, button('p-btn p-hear', '🔊 Hear the sentence', async () => {
           // cut off by a tap on a word = not heard yet; tap Hear the sentence again
           if (window.QPSRead) { if ((await QPSRead.say(line)) === 'stopped') return; } else await sayText(sentence);
-          finish();
+          end();
         }));
       }, done, 'Read the sentence out loud. Tap a word if you need help. Then tap Hear the sentence to check yourself.');
     },
@@ -1184,6 +1266,8 @@
     box.append(again);
     ready();
     readResult();
+    // ⏩ (teacher's Try it): the result and every missed word count as heard, so the buttons show
+    waitFor(() => { resultHeard = true; hear.classList.remove('p-pulse'); wordBtns.forEach(b => { heardWords.add(b); b.classList.add('heard'); }); ready(); });
     done();
     // After any Check the practice steps come first again (the Check reopens after the last practice step),
     // so a second pass is a whole second run of the stop, not a retake. Set after done(), which marks the
@@ -1202,7 +1286,8 @@
     return { start, newLen: part.length, newPart: part.join('|') };
   }
 
-  window.Practice = { renderStops, openStop, backToStops, nextStep, nearMisses, buildSteps, diff, _sayWord: sayWord, _sayChunk: sayChunk, _state: () => ({ stop, steps, stepIndex }) };
+  window.Practice = { renderStops, openStop, backToStops, nextStep, nearMisses, buildSteps, diff, _sayWord: sayWord, _sayChunk: sayChunk, _state: () => ({ stop, steps, stepIndex }),
+    openAt, skipWait, slideCount, renderSlide, hush, STEP_NAMES };
   document.addEventListener('DOMContentLoaded', renderStops);
   if (document.readyState !== 'loading') renderStops();
 })();

@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="teacher.css?v=t3">
     <style>
         /* Lexend for the interface (built for reading ease); Andika for the words
            students read — single-story a and g, the shapes early readers learn. */
@@ -1018,7 +1019,7 @@
 </dialog>
 
 <!-- Guest view (share.js, the same file on every site): runs first, before anything reads or saves progress. -->
-<script src="share.js?v=3"></script>
+<script src="share.js?v=4"></script>
 <script src="next-waits.js?v=1" data-hold='.p-next, .p-go, #nextLearnBtn, #nextBtn1, #nextBtn2'></script>
 <script src="blend-core.js?v=b2"></script>
 <script src="respell.js?v=s5"></script>
@@ -1194,6 +1195,7 @@
         if (mode === 'test' && !TEACHER_MODE) return;
         if (mode === 'test' && !assessmentUnlocked) { askForPin(() => enterApp('test')); return; }
         document.getElementById('welcomeView').style.display = 'none';
+        const tv = document.getElementById('teacherView'); if (tv) tv.style.display = 'none';   // from the Teacher screen (11/10)
         document.getElementById('appView').style.display = 'block';
 
         // FIX: Restore last level from localStorage
@@ -1219,6 +1221,8 @@
         setAssessmentLock(false);
         if (window.Practice) Practice.renderStops();
         resetAll();
+        // Mr. O signed in: back to his Teacher screen (teacher.js, 11/10), not the student home
+        if (window.QPSTeacher && QPSTeacher.active()) QPSTeacher.open();
     }
 
     function switchTab(mode) {
@@ -2073,12 +2077,13 @@
 </script>
 <script src="readaloud.js?v=r7"></script>
 <script src="practice-data.js?v=p18"></script>
-<script src="practice.js?v=p25"></script>
+<script src="practice.js?v=p26"></script>
 <script src="comp-data.js?v=c6"></script>
 <script src="maze-data.js?v=m2"></script>
 <script src="maze2-data.js?v=r1"></script>
-<script src="comp.js?v=c11"></script>
+<script src="comp.js?v=c12"></script>
 <script src="maze.js?v=m3"></script>
-<script src="login.js?v=19"></script>
+<script src="login.js?v=21"></script>
+<script src="teacher.js?v=t2"></script>
 </body>
 </html>
