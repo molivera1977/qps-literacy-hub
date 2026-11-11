@@ -115,7 +115,15 @@
     const test = [...prog.test.filter(x => x !== stopId), stopId];
     return next ? { stop: next, passes: 0, test, t: Date.now() } : { stop: stopId, passes: NEEDED, test, t: Date.now() };
   }
+  // Every stop passed (Marcos 11/11: "why is eric not being moved along, he graduated" → "option 1"): two passed
+  // Checks on the LAST stop make the plan reading for meaning, the same plan as a student who starts on 'comp'. The
+  // row itself stays "stop=10;passes=2" with 10 on Mr. O's test list; his ↩ Back to stop 10 (passes 0) undoes it.
+  const graduated = (p, since) => {
+    const ids = stopIds();
+    return !!p && !!ids.length && p.stop === ids[ids.length - 1] && p.passes >= NEEDED && p.t > (since || 0);
+  };
   let progress = null;                                // the signed-in student's progress
+  let justFinished = false;                           // the last Check passed every stop (practice.js says so)
 
   const SHARE = !!window.SHARE_MODE;
   const TEACHER = 'Mr. O (Teacher)';               // share.js: the code lives there, the same on every site
@@ -197,9 +205,14 @@
     if (progress) seedPasses(name, progress);
     if (window.Practice) Practice.renderStops();      // stars for THIS student, then the plan
     renderPlan();
-    if (onStopTrack(name)) restoreProgress(name).then(got => { if (got && student === name && $('welcomeView').style.display !== 'none') renderPlan(); });
     // Comprehension students on a new or wiped device get their level back from the sheet.
-    if (TRACKS[name] === 'comp' && window.Comp) Comp.restore(name).then(got => { if (got && student === name) renderPlan(); });
+    const levelsBack = () => { if (window.Comp) Comp.restore(name).then(got => { if (got && student === name) renderPlan(); }); };
+    if (onStopTrack(name)) restoreProgress(name).then(got => {
+      if (!got || student !== name) return;
+      if ($('welcomeView').style.display !== 'none') renderPlan();
+      if (onComp(name)) levelsBack();                 // the row says every stop is passed (another Chromebook)
+    });
+    if (onComp(name)) levelsBack();
     window.scrollTo(0, 0);
     // Mr. O goes to his Teacher screen (teacher.js), not the student home (Marcos 11/10: "update to new teacher mode")
     if (name === TEACHER && !SHARE && window.QPSTeacher) QPSTeacher.open();
@@ -249,7 +262,7 @@
 
     const sub = document.querySelector('#welcomeView .welcome-sub');
     const grid = $('stopGrid');
-    if (TRACKS[student] === 'comp' && window.Comp) {
+    if (onComp(student) && window.Comp) {
       renderCompPlan(box, first);
       if (sub) sub.parentElement.hidden = true;
       if (grid) grid.hidden = true;
@@ -419,6 +432,8 @@
       score: 0, correct: 0, total: 0, maxScore: 0, percent: 0, done: false, elapsed: 0, tabSwitches: 0, wrongQuestions: '' });
   }
   const onStopTrack = (name) => stopIds().includes(TRACKS[name]);
+  // On the reading path: started there ('comp'), or (the signed-in student) passed every stop since
+  const onComp = (name) => TRACKS[name] === 'comp' || (name === student && onStopTrack(name) && graduated(progress, TRACK_SINCE[name]));
   // A new or wiped device — or a change Mr. O made on his dashboard — comes back from the sheet.
   async function restoreProgress(name) {
     const rows = await readTab(PROGRESS_TAB);
@@ -461,6 +476,7 @@
 
   // One row per finished Practice Check, on the stop's own tab (qps-5 = Silent e).
   function saveCheck(r) {
+    justFinished = false;
     if (SHARE || !student || !r || !r.stop) return null;     // a guest's work is never sent
     const started = r.started || r.finished;
     const elapsed = Math.max(0, Math.round((r.finished - started) / 1000));
@@ -481,7 +497,9 @@
     // Moving on: a passed Check on the student's own stop. Returns the stop they moved to (or null).
     if (!r.passed || !onStopTrack(student) || r.stop.id !== trackFor(student).id) return null;
     const fresh = progress && progress.t > (TRACK_SINCE[student] || 0) ? progress : { stop: r.stop.id, passes: 0, test: [], t: 0 };
+    const wasDone = graduated(fresh, TRACK_SINCE[student]);
     progress = afterPass(fresh, r.stop.id, r.passes || 0);
+    justFinished = !wasDone && graduated(progress, TRACK_SINCE[student]);
     keepProgress(student, progress);
     sendProgress(student, progress);
     return progress.stop !== r.stop.id ? trackFor(student) : null;
@@ -533,8 +551,8 @@
   }
 
   window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, movesOn, rosterNames, testsDue, recordTest, _tracks: TRACKS,
-    who: () => student, TEACHER,
-    _rules: { parseProgress, formOf, effectiveStop, afterPass } };
+    who: () => student, TEACHER, onComp: (name) => onComp(name || student), finishedEveryStop: () => justFinished,
+    _rules: { parseProgress, formOf, effectiveStop, afterPass, graduated } };
 
   if (SHARE) { signIn('Guest'); return; }
   let saved = '';

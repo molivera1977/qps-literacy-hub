@@ -1204,7 +1204,10 @@
       missed: missed.map(it => `${join(it.chunks)} (${STEP_NAMES[it.kind] || it.kind})`)
     }) : null;
     const got = `You got ${pct}%.`;
+    // the last stop passed twice (Marcos 11/11 "option 1"): every QPS stop is done, the plan is now reading for meaning
+    const finishedAll = !moved && !!(window.QPSLogin && QPSLogin.finishedEveryStop && QPSLogin.finishedEveryStop());
     const msg = moved ? `${got} You passed again! That is 2 of 2 passes. You move on to stop ${moved.num}, ${moved.name}! Mr. O will check stop ${stop.num} with you soon.`
+      : finishedAll ? `${got} You passed again! That is 2 of 2 passes. You passed every QPS stop! Next you work on reading for meaning. Mr. O will check stop ${stop.num} with you soon.`
       : passed && passes >= PASSES_NEEDED ? `${got} You passed! That is 2 of 2 passes. You are ready for Mr. O's check!`
       : passed ? `${got} You passed! That is 1 of 2 passes. Do the whole stop one more time and pass the Check again ${movesOn ? 'to move on to the next stop' : 'to be ready for Mr. O\'s check'}.`
       : passes >= PASSES_NEEDED ? `${got} You need ${PASS}% to pass. You still have your 2 of 2 passes.`
@@ -1260,6 +1263,7 @@
     const again = el('div', 'p-end-buttons');
     const restart = () => { stepIndex = 1; showStep(); window.scrollTo(0, 0); };
     if (moved) again.append(button('p-btn p-next-big', `▶ Start stop ${moved.num}, ${moved.name}`, () => openStop(moved.id)), button('p-btn p-again', '🏠 Back to all stops', backToStops));
+    else if (finishedAll) again.append(button('p-btn p-next-big', '▶ Go to reading for meaning', backToStops));   // the plan now shows the reading path
     else if (passed && passes < PASSES_NEEDED) again.append(button('p-btn p-next-big', '▶ Start pass 2', restart), button('p-btn p-again', '🏠 Back to all stops', backToStops));
     else if (!passed && passes < PASSES_NEEDED) again.append(button('p-btn p-next-big', '▶ Practice again', restart), button('p-btn p-again', '🏠 Back to all stops', backToStops));
     else again.append(button('p-btn p-go', '🏠 Back to all stops', backToStops), button('p-btn p-again', '🔁 Do this stop again', restart));
