@@ -1023,6 +1023,11 @@
     </form>
 </dialog>
 
+<!-- Ava for every line the computer voice read (Marcos 11/12: "I want Ava saying everything where computer voice was"):
+     ava-voice.js stands in for the browser's voice and plays Ava's recording of a line (ava-lines.js → ava/s/), the
+     device's voice only for a line with no recording. Before next-waits.js and readaloud.js, so both use it. -->
+<script src="ava-lines.js?v=l1"></script>
+<script src="ava-voice.js?v=v1"></script>
 <!-- Guest view (share.js, the same file on every site): runs first, before anything reads or saves progress. -->
 <script src="share.js?v=4"></script>
 <script src="next-waits.js?v=1" data-hold='.p-next, .p-go, #nextLearnBtn, #nextBtn1, #nextBtn2'></script>
@@ -2082,7 +2087,7 @@
 </script>
 <script src="readaloud.js?v=r7"></script>
 <script src="practice-data.js?v=p18"></script>
-<script src="ava-list.js?v=a1"></script>
+<script src="ava-list.js?v=a2"></script>
 <script src="practice.js?v=p29"></script>
 <script src="comp-data.js?v=c6"></script>
 <script src="maze-data.js?v=m2"></script>
