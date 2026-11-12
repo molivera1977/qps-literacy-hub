@@ -463,6 +463,11 @@
         /* question vs answers (10/21): the question in its own tinted box with a label; answers lettered */
         .c-tag { display: inline-block; font-size: 1rem; font-weight: 800; letter-spacing: .02em; border-radius: 999px; padding: 3px 12px; margin: 0 0 6px; }
         .c-tag-read { background: #fff3d6; color: #7a5200; align-self: flex-start; }
+        /* Read first (11/11): the reminder and the bar that fills before the question shows */
+        .c-readwait { background: #fffaf0; border: 2px dashed #e7c77a; border-radius: 16px; padding: 12px 16px 16px; margin: 0 0 16px; }
+        .c-readwait-line { margin: 0 0 10px; font-size: 1.15rem; font-weight: 700; color: #7a5200; }
+        .c-readbar { height: 14px; background: #f3e6c4; border-radius: 999px; overflow: hidden; }
+        .c-readbar-fill { display: block; height: 100%; width: 0; background: #e2a92e; border-radius: 999px; transition: width .2s linear; }
         .c-tag-q { background: var(--test, #2f6fde); color: #fff; }
         .c-tag-pick { display: block; text-align: left; background: transparent; color: var(--ink-soft); padding-left: 2px; margin-top: 8px; }
         .c-ask-box { text-align: left; background: #eaf1ff; border-left: 6px solid var(--test, #2f6fde); border-radius: 12px; padding: 10px 14px 4px; margin: 6px 0 4px; }
@@ -2081,9 +2086,9 @@
 <script src="comp-data.js?v=c6"></script>
 <script src="maze-data.js?v=m2"></script>
 <script src="maze2-data.js?v=r1"></script>
-<script src="comp.js?v=c12"></script>
+<script src="comp.js?v=c13"></script>
 <script src="maze.js?v=m3"></script>
 <script src="login.js?v=22"></script>
-<script src="teacher.js?v=t2"></script>
+<script src="teacher.js?v=t3"></script>
 </body>
 </html>

@@ -18,6 +18,11 @@
    ===================================================================== */
 (function () {
   const PRACTICE_N = 8, CHECK_N = 5, MAX_LEVEL = 4, DEFAULT_START = 1;
+  // Time to read before the question shows (Marcos 11/11, Words in context kids "flying": "remind them to read, have
+  // the read aloud as option, and put a timer to allow them time to read and slow them down before the choices appear").
+  // The bar fills for the passage's words at this pace; the 🔊 heard to the end opens it sooner. One place to change it.
+  const READ_WORDS_PER_SECOND = 2, READ_MIN_SECONDS = 6;
+  let openRead = null;                                 // ⏩ Skip the wait (Mr. O's Try it) opens the question now
   // Everyone starts over at Level 1 and earns each level (Marcos 10/21: "why not just put them all at Level 1 and let
   // them earn their way up"): progress saved before the restart — on a device or on the sheet — is set aside. Saved
   // progress carries the course version (v); anything without this one is old. (A version, not a time: a device
@@ -158,7 +163,7 @@
   }
   // The shared reader (readaloud.js) lights each word, on voices with or without word events.
   function speak(host) {
-    if (window.QPSRead) { QPSRead.say(host); return; }
+    if (window.QPSRead) return QPSRead.say(host);
     if (!window.speechSynthesis) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(host.dataset.say);
@@ -166,12 +171,16 @@
     speechSynthesis.speak(u);
   }
   // A speaker icon is a span (it can sit inside an answer button); its tap never answers.
-  function speaker(host, label) {
+  function speaker(host, label, onHeard) {
     const s = el('span', 'c-say', '🔊');
     s.setAttribute('role', 'button');
     s.setAttribute('tabindex', '0');
     s.setAttribute('aria-label', label || 'Hear this');
-    const go = (e) => { e.preventDefault(); e.stopPropagation(); speak(host); };
+    const go = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const r = speak(host);
+      if (onHeard && r && r.then) r.then(how => { if (how === 'end') onHeard(); });   // heard to the end
+    };
     s.addEventListener('click', go);
     s.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') go(e); });
     return s;
@@ -182,7 +191,7 @@
     const words = el('span', 'c-words');
     words.dataset.say = plain(text);
     wordsInto(words, text, opts.mark);
-    row.append(speaker(words, opts.label), words);
+    row.append(speaker(words, opts.label, opts.onHeard), words);
     return row;
   }
   // An answer button: speaker + words; tapping the words answers.
@@ -347,12 +356,39 @@
       used.add(item.id);
       const word = targetWord(item);
       const card = el('div', 'c-card');
-      const passage = block('p', 'c-passage', item.passage, { mark: true, label: 'Hear the passage' });
+      let reveal = () => {};
+      const passage = block('p', 'c-passage', item.passage, { mark: true, label: 'Hear the passage', onHeard: () => reveal() });
       card.append(el('div', 'c-tag c-tag-read', '📖 Read'), passage);
       area.append(card);
 
+      // Read first: a reminder and a bar that fills while they read; then the question and its choices show
+      const secs = Math.max(READ_MIN_SECONDS, Math.ceil(plain(item.passage).split(/\s+/).filter(Boolean).length / READ_WORDS_PER_SECOND));
+      const wait = el('div', 'c-readwait');
+      const waitLine = block('p', 'c-readwait-line', 'Read the whole passage. The question comes when the bar is full.', { label: 'Hear what to do' });
+      const bar = el('div', 'c-readbar'), fill = el('span', 'c-readbar-fill');
+      bar.setAttribute('role', 'progressbar'); bar.setAttribute('aria-label', 'Time to read'); bar.append(fill);
+      wait.append(waitLine, bar);
+      area.append(wait);
+
       const q = el('div', 'c-q');
+      q.hidden = true;
       area.append(q);
+      let opened = false;
+      const readFrom = Date.now();
+      const ticker = setInterval(() => {
+        if (!fill.isConnected) { clearInterval(ticker); return; }       // they left this screen
+        const f = Math.min(1, (Date.now() - readFrom) / (secs * 1000));
+        fill.style.width = `${Math.round(f * 100)}%`;
+        if (f >= 1) reveal();
+      }, 200);
+      reveal = () => {
+        if (opened || !q.isConnected) return;
+        opened = true; clearInterval(ticker);
+        if (openRead === reveal) openRead = null;
+        wait.remove(); q.hidden = false;
+      };
+      openRead = reveal;
+      if (i === 0) speak(waitLine.querySelector('.c-words'));           // the reminder is read aloud once, on the first passage
       const fb = el('div', 'p-feedback');
       fb.setAttribute('aria-live', 'polite');
 
@@ -515,7 +551,7 @@
 
   // For the plan card: level, passes, finished
   function progressOf(name, id) { const sk = skillState(name, id); return { level: sk.level, passes: sk.passes || 0, finished: !!sk.finished }; }
-  window.Comp = { open, openAt, teach, stopSpeaking: () => stopSpeaking(), levelOf, progressOf, restore, maxLevel: MAX_LEVEL, skills: () => COMP_SKILLS, _rules: { afterCheck, freshSkill },
+  window.Comp = { open, openAt, teach, stopSpeaking: () => stopSpeaking(), skipWait: () => { if (openRead) openRead(); }, levelOf, progressOf, restore, maxLevel: MAX_LEVEL, skills: () => COMP_SKILLS, _rules: { afterCheck, freshSkill },
     // for maze.js: the same course (state, the sheet, the screens) with its own story screen
     _kit: { who, skillState, putSkill, backupLevels, afterCheck, nextItem: (sk, used, graded) => nextItem(sk, used, graded),
             setSkill: (s) => { skill = s; }, el, btn, block, speaker, header, levelDots, passMeter, show, stopSpeaking, backToPlan,

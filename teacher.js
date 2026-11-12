@@ -342,7 +342,7 @@
     jump.onchange = () => { go(jump.value); jump.blur(); };
     $('teachPrev').onclick = () => { const i = jump.selectedIndex; if (i > 0) go(jump.options[i - 1].value); };
     $('teachNext').onclick = () => { const i = jump.selectedIndex; if (i < jump.options.length - 1) go(jump.options[i + 1].value); };
-    $('teachSkip').onclick = () => { if (window.Practice && Practice.skipWait) Practice.skipWait(); if (window.Comp && Comp.stopSpeaking) Comp.stopSpeaking(); if (window.speechSynthesis) speechSynthesis.cancel(); };
+    $('teachSkip').onclick = () => { if (window.Practice && Practice.skipWait) Practice.skipWait(); if (window.Comp && Comp.skipWait) Comp.skipWait(); if (window.Comp && Comp.stopSpeaking) Comp.stopSpeaking(); if (window.speechSynthesis) speechSynthesis.cancel(); };
     $('teachBack').onclick = () => { quiet(); location.href = location.pathname + '#teacher'; };
     return go;
   }
