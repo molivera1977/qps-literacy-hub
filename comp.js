@@ -73,6 +73,8 @@
       `|p=${ent.map(([k, v]) => `${k}:${v.passes || 0}`).join(',')}` +
       `|f=${ent.filter(([, v]) => v.finished).map(([k]) => k).join(',')}` +
       `|l=${ent.filter(([, v]) => v.learned).map(([k]) => k).join(',')}|v=${COURSE_V}` +
+      // the Practice that opens the Check (11/11: "so no progress is lost anywhere they practice")
+      `|r=${ent.filter(([, v]) => v.practiced).map(([k]) => k).join(',')}` +
       // the passages already seen, so another device doesn't repeat them first (Marcos 10/21)
       `|s=${ent.map(([k, v]) => `${k}:${(v.seen || []).join('.')}`).join(',')}`;
     QPSLogin.send({
@@ -86,7 +88,7 @@
   // A device with nothing saved takes the row; a device with its own progress keeps whichever is further along
   // for each skill (the course only moves forward: finished, then level, then passes, then learned — no clocks
   // to trust), and the passages seen on either device are both kept, so neither repeats them first.
-  const rank = (sk) => (sk.finished ? 1e6 : 0) + sk.level * 100 + (sk.passes || 0) * 10 + (sk.learned ? 1 : 0);
+  const rank = (sk) => (sk.finished ? 1e6 : 0) + sk.level * 100 + (sk.passes || 0) * 10 + (sk.practiced ? 2 : 0) + (sk.learned ? 1 : 0);
   function fromRow(form) {
     const segs = String(form).split('|');
     const get = (key) => (segs.find(x => x.startsWith(key + '=')) || '').slice(key.length + 1);
@@ -94,11 +96,12 @@
     const passes = {}; get('p').split(',').forEach(x => { const [k, n] = x.split(':'); if (k) passes[k] = Math.max(0, Math.min(PASSES_NEEDED, Number(n) || 0)); });
     const seen = {}; get('s').split(',').forEach(x => { const [k, ids] = x.split(':'); if (k) seen[k] = (ids || '').split('.').filter(id => /^[A-Z]\d-\d\d$/.test(id)).slice(-SEEN_KEEP); });
     const finished = new Set(get('f').split(',').filter(Boolean)), learned = new Set(get('l').split(',').filter(Boolean));
+    const practiced = new Set(get('r').split(',').filter(Boolean));
     const skills = {};
     segs[0].split(';').forEach(p => {
       const [k, v] = p.split('=');
       const lv = Number(v);
-      if (k && lv >= 1 && lv <= MAX_LEVEL) skills[k] = { ...freshSkill(lv), passes: passes[k] || 0, finished: finished.has(k), learned: learned.has(k), seen: seen[k] || [] };
+      if (k && lv >= 1 && lv <= MAX_LEVEL) skills[k] = { ...freshSkill(lv), passes: passes[k] || 0, finished: finished.has(k), learned: learned.has(k), practiced: practiced.has(k), seen: seen[k] || [] };
     });
     return Object.keys(skills).length ? { skills, t: Number(get('t')) || Date.now(), v: COURSE_V } : null;
   }

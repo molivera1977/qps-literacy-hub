@@ -45,7 +45,15 @@
   function loadStore() { try { return JSON.parse(localStorage.getItem(storeKey())) || {}; } catch (e) { return {}; } }
   function saveStore(s) { try { localStorage.setItem(storeKey(), JSON.stringify(s)); } catch (e) { /* private window: progress just isn't kept */ } }
   function stopRecord(id) { return loadStore()[id] || { reached: 0, stars: 0 }; }
-  function saveStopRecord(id, rec) { const s = loadStore(); s[id] = { ...stopRecord(id), ...rec }; saveStore(s); }
+  // Marcos 11/11 ("save it all, so no progress is lost anywhere they practice"): a change to the step reached or the
+  // stars gets a time, and login.js puts every stop's record on the sheet ('qps-steps'), so any device picks it up.
+  function saveStopRecord(id, rec) {
+    const s = loadStore(), prev = stopRecord(id), next = { ...prev, ...rec };
+    const moved = ('reached' in rec && rec.reached !== (prev.reached || 0)) || ('stars' in rec && rec.stars !== (prev.stars || 0));
+    if (moved) next.t = Date.now();
+    s[id] = next; saveStore(s);
+    if (moved && window.QPSLogin && QPSLogin.saveSteps) QPSLogin.saveSteps();
+  }
 
   /* ---------- audio ---------- */
   function fileFor(chunk) {

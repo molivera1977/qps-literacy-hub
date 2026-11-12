@@ -85,6 +85,10 @@
   // progress row is then ignored.
   const TRACK_SINCE = {};
   const PROGRESS_TAB = 'qps-progress';
+  // Every stop's step reached and stars, on the sheet too (Marcos 11/11: "save it all, so no progress is lost anywhere
+  // they practice"): ONE row per student on 'qps-steps', updated in place — "6:5:2:<ms>,7:0:0:0|t=<ms>" =
+  // stop:step reached:stars:when. Each stop: the newer step wins (a new pass starts back at Blend); stars, the best.
+  const STEPS_TAB = 'qps-steps';
   const PROGRESS_KEY = 'qps_progress_v1:';
   const NEEDED = 2;                                   // = practice.js PASSES_NEEDED
 
@@ -213,6 +217,8 @@
       if (onComp(name)) levelsBack();                 // the row says every stop is passed (another Chromebook)
     });
     if (onComp(name)) levelsBack();
+    // every stop's step and stars from the sheet (another Chromebook, home): the stop cards and the plan redrawn
+    if (ownSteps(name) && TRACKS[name] !== 'comp') restoreSteps(name).then(got => { if (got && student === name && window.Practice) Practice.renderStops(); });
     window.scrollTo(0, 0);
     // Mr. O goes to his Teacher screen (teacher.js), not the student home (Marcos 11/10: "update to new teacher mode")
     if (name === TEACHER && !SHARE && window.QPSTeacher) QPSTeacher.open();
@@ -427,6 +433,55 @@
       if ((rec.passes || 0) !== p.passes) { store[p.stop] = { ...rec, passes: p.passes }; localStorage.setItem(key, JSON.stringify(store)); }
     } catch (e) { /* private window */ }
   }
+  const storeOf = (name) => { try { return JSON.parse(localStorage.getItem('qps_practice_v1:' + name)) || {}; } catch (e) { return {}; } };
+  function stepsFormOf(store) {
+    const ids = stopIds();
+    return Object.keys(store).filter(id => ids.includes(id))
+      .map(id => { const r = store[id] || {}; return `${id}:${r.reached || 0}:${r.stars || 0}:${r.t || 0}`; }).join(',') + `|t=${Date.now()}`;
+  }
+  function parseSteps(form) {
+    const ids = stopIds(), out = {};
+    String(form || '').split('|t=')[0].split(',').forEach(x => {
+      const [id, reached, stars, t] = x.split(':');
+      if (ids.includes(id)) out[id] = { reached: Math.max(0, Number(reached) || 0), stars: Math.max(0, Math.min(3, Number(stars) || 0)), t: Number(t) || 0 };
+    });
+    return out;
+  }
+  // each stop: the newer step reached; the best stars. Returns the merged store, or null if nothing changed.
+  function mergeSteps(store, theirs) {
+    let changed = false;
+    const next = { ...store };
+    Object.entries(theirs).forEach(([id, r]) => {
+      const mine = next[id] || { reached: 0, stars: 0 };
+      const merged = { ...mine, stars: Math.max(mine.stars || 0, r.stars), ...(r.t > (mine.t || 0) ? { reached: r.reached, t: r.t } : {}) };
+      if (merged.stars !== (mine.stars || 0) || merged.reached !== (mine.reached || 0)) { next[id] = merged; changed = true; }
+    });
+    return changed ? next : null;
+  }
+  let stepsTimer = null;
+  const ownSteps = (name) => !SHARE && !!name && name !== TEACHER && !/ \(Guest\)$/.test(name);   // not a guest: a guest's name is not one person
+  function sendSteps() {
+    stepsTimer = null;
+    if (!ownSteps(student)) return;
+    send({ name: student, game: STEPS_TAB, sessionId: 'steps-' + student.replace(/[^A-Za-z0-9]+/g, '-'), form: stepsFormOf(storeOf(student)),
+      score: 0, correct: 0, total: 0, maxScore: 0, percent: 0, done: false, elapsed: 0, tabSwitches: 0, wrongQuestions: '' });
+  }
+  // gathered for 2 s (a few steps in a row are one row update), and sent at once if the page closes
+  function saveSteps() {
+    if (!ownSteps(student)) return;
+    clearTimeout(stepsTimer);
+    stepsTimer = setTimeout(sendSteps, 2000);
+  }
+  window.addEventListener('pagehide', () => { if (stepsTimer) { clearTimeout(stepsTimer); sendSteps(); } });
+  async function restoreSteps(name) {
+    const rows = await readTab(STEPS_TAB);
+    const row = (rows || []).find(r => r.name === name);
+    if (!row || student !== name) return false;
+    const next = mergeSteps(storeOf(name), parseSteps(row.form));
+    if (!next) return false;
+    try { localStorage.setItem('qps_practice_v1:' + name, JSON.stringify(next)); } catch (e) { return false; }
+    return true;
+  }
   function sendProgress(name, p) {
     send({ name, game: PROGRESS_TAB, sessionId: 'prog-' + name.replace(/[^A-Za-z0-9]+/g, '-'), form: formOf(p),
       score: 0, correct: 0, total: 0, maxScore: 0, percent: 0, done: false, elapsed: 0, tabSwitches: 0, wrongQuestions: '' });
@@ -551,8 +606,8 @@
   }
 
   window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, movesOn, rosterNames, testsDue, recordTest, _tracks: TRACKS,
-    who: () => student, TEACHER, onComp: (name) => onComp(name || student), finishedEveryStop: () => justFinished,
-    _rules: { parseProgress, formOf, effectiveStop, afterPass, graduated } };
+    who: () => student, TEACHER, onComp: (name) => onComp(name || student), finishedEveryStop: () => justFinished, saveSteps,
+    _rules: { parseProgress, formOf, effectiveStop, afterPass, graduated, parseSteps, mergeSteps } };
 
   if (SHARE) { signIn('Guest'); return; }
   let saved = '';
