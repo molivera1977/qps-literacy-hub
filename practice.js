@@ -56,6 +56,14 @@
   }
 
   /* ---------- audio ---------- */
+  // Ava (Marcos 11/12: "switch all computer voices that are waiting for my recordings to Ava"): a word or part with no
+  // recording of Mr. O's plays Microsoft's Ava voice, made ahead from the same text the computer voice was handed
+  // (ava/w/<word>.m4a, ava/p/<part>.m4a, listed in ava-list.js). His recording first, then Ava, the computer voice last.
+  const AVA_W = new Set((window.AVA && window.AVA.w) || []), AVA_P = new Set((window.AVA && window.AVA.p) || []);
+  const avaWord = (word) => { const k = word.toLowerCase(); return AVA_W.has(k) ? loadBuffer('ava/w/' + k) : Promise.resolve(null); };
+  const avaPart = (chunk) => { const k = chunk.toLowerCase(); return AVA_P.has(k) ? loadBuffer('ava/p/' + k) : Promise.resolve(null); };
+  // a part with no recording: Ava's, else the computer voice handed `text`
+  async function partByAva(chunk, text) { const ava = await avaPart(chunk); return ava ? playBuffer(ava) : speakComputer(text); }
   function fileFor(chunk) {
     const c = chunk.toLowerCase();
     if (c === 're') return stop && stop.id === '10' ? 're-long' : 're-short';
@@ -98,6 +106,8 @@
       const own = realWords.has(word) || (stop && (stop.made || []).some(m => m.replace(/\|/g, '') === word));
       const rec = own ? await loadBuffer(word.toLowerCase()) : null;
       if (rec) return playBuffer(rec);
+      const ava = await avaWord(word);
+      if (ava) return playBuffer(ava);
       return speakComputer(realWords.has(word) || !window.Respell ? word : Respell.respell(soundParts(chunks)));
     });
   }
@@ -111,15 +121,15 @@
   const sayPart = (chunks, i) => sayChunk(chunks[i], partFile(chunks, i));
   function sayChunk(chunk, file) {
     return guarded(async () => {
-      if (file) { const buf = await buildBlend([file]); return buf ? playBuffer(buf) : speakComputer(chunk); }
+      if (file) { const buf = await buildBlend([file]); return buf ? playBuffer(buf) : partByAva(chunk, chunk); }
       if (stop && stop.split && stop.split[chunk]) {            // a base word like lock (or the ac in action)
         const rec = await loadBuffer(chunk.toLowerCase());
         if (rec) return playBuffer(rec);
         // two letters like "ac" are read as letter names; hand the voice a spelling it sounds out ("akk")
-        return speakComputer(chunk.length <= 2 && window.Respell ? Respell.respell(split(stop.split[chunk])) : chunk);
+        return partByAva(chunk, chunk.length <= 2 && window.Respell ? Respell.respell(split(stop.split[chunk])) : chunk);
       }
       const buf = await buildBlend([fileFor(chunk)]);
-      return buf ? playBuffer(buf) : speakComputer(chunk);
+      return buf ? playBuffer(buf) : partByAva(chunk, chunk);
     });
   }
   function sayText(text) { return guarded(() => speakComputer(text)); }
