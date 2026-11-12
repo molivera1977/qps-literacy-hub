@@ -1,6 +1,9 @@
 /* Ava's clips (Marcos 11/12: "switch all computer voices that are waiting for my recordings to Ava").
-   Microsoft's Ava voice (en-US-AvaNeural, -12%), made ahead for every word and part that has no recording of Mr. O's,
-   from the same text the computer voice was handed (a made-up word: its respelling). practice.js plays his recording
+   Microsoft's Ava voice (en-US-AvaNeural, -12%), made ahead for every word and part that has no recording of Mr. O's.
+   What Ava reads (ava/texts.json): a real word from his passages or QPS lists as written; a made-up word as respell.js
+   spells it for the computer voice MINUS the tricks he heard sound worse in Ava ("As written, every trick" — he heard:
+   the last letter doubled pag→pagg, the k ending bok→bock, short o + l bol→bahl). The other tricks stay until he hears
+   their sections (QPS voice comparison (11-12)/respell tricks). practice.js plays his recording
    first, then ava/w/<word>.m4a or ava/p/<part>.m4a, and the computer voice only if neither is here.
    1074 words, 42 parts. Not here on purpose: the "ou" made-up words (mout…): Ava reads "mowt" as "mote"; and the letters and letter
    teams in lesson lines ({sh}, {ar}, {qu}), until Mr. O hears Ava's. Both are listed in ava/texts.json. */
