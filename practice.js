@@ -247,7 +247,7 @@
     'fark hor hore whore horz hors muff zit feck fick fak fack frick').split(' '));   // 10/21 stop 6: her→hor, fork→fark, harz→horz
   // …and no choice that ends in a lone vowel: car → "ca", her → "he" read with a LONG vowel (10/20, "sta")
   // …nor w/wh/qu + short a: the voice says "wo" (wat → "what", waf, quap; Marcos 10/20). wack and wap measured right.
-  const VOICE_CANT = new Set(['shin', 'fol']);
+  const VOICE_CANT = new Set(['shin', 'fol', 'son']);   // son: a real word said "sun", offered next to sun (Marcos 11/12: "get rid of this, this is a real word")
   // compared loosely, as the tests do: ph→f, ck/c/q→k, doubled consonants once ("frik" = frick, "shitt" = shit)
   const fold = (w) => String(w).toLowerCase().replace(/ph/g, 'f').replace(/ck/g, 'k').replace(/c(?=[aou]|$)/g, 'k').replace(/q/g, 'k').replace(/([^aeiou])\1+/g, '$1');
   const NEVER_FOLDED = new Set([...NEVER].map(fold));
