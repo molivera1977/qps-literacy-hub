@@ -95,10 +95,10 @@ const PRACTICE_STOPS = [
       words: [['m|a|t','short'],['m|ate','long'],['p|i|n','short'],['p|ine','long'],['c|a|n','short'],['c|ane','long'],['n|o|t','short'],['n|ote','long'],['h|a|t','short'],['h|ate','long'],['f|i|n','short'],['f|ine','long']]
     },
     chains: [['m|a|t','m|ate'],['h|a|t','h|ate'],['r|a|t','r|ate'],['m|a|d','m|ade'],['c|a|n','c|ane'],['p|l|a|n','p|l|ane'],['f|i|n','f|ine'],['p|i|n','p|ine'],['s|p|i|n','s|p|ine'],['sh|i|n','sh|ine'],['t|w|i|n','t|w|ine'],['n|o|t','n|ote']],   // 10/26: shin is Mr. O's recording (a device voice said "sheen")
-    made: ['z|ade','t|ade','h|ane','j|ine','z|ile','b|ice','f|ole','l|oze','z|ote','b|une','p|l|ote','g|r|ine','c|l|ade','ch|ice','sh|ile','th|une',
+    made: ['z|ade','t|ade','h|ane','j|ine','z|ile','b|ice','f|ole','l|oze','z|ote','b|une','p|l|ote','g|r|ine','c|l|ade','ch|ice','sh|ile',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'z|ine','b|r|ate','b|r|ade','h|ote','h|ile','f|r|ade','p|une','b|l|ane','p|l|ine','b|l|ice','f|l|ate','k|ade','b|l|ote','b|r|ile','k|oze','g|r|ote'],
-    contrast: { ate: ['a|t','ote'], ade: ['a|d','ine'], ane: ['a|n','ine'], ine: ['i|n','ane','ile'], ile: ['i|l','ine'], ice: ['i|c','ine'], ole: ['o|l','ile','ate'], oze: ['o|z','ote'], ote: ['o|t','ate'], une: ['u|n','ine'] },
+    contrast: { ate: ['a|t','ote'], ade: ['a|d','ine'], ane: ['a|n','ine','o|ne'], ine: ['i|n','ane','ile'], ile: ['i|l','ine'], ice: ['i|c','ine'], ole: ['o|l','ile','ate'], oze: ['o|z','ote'], ote: ['o|t','ate'], une: ['u|n','ine'] },
     sentences: ['The cat ate a bite of cake.','Five mice hid in a hole.','Dave made a kite with a pole.','Nine kids rode their bikes home.','Kate will use tape on the note.','The dog ran to the gate at the end of the lane.','Can Rose hide the cube in the box?','Mike has a plane and a white kite.']
   },
   {
@@ -128,7 +128,7 @@ const PRACTICE_STOPS = [
       examples: ['c|a|tch', 'b|a|dge', 'kn|o|t', 'wr|a|p', 'gn|a|t', 'qu|i|t', 'f|o|x']
     },
     real: ['c|a|tch','m|a|tch','d|i|tch','b|a|dge','f|u|dge','b|r|i|dge','kn|o|t','kn|i|t','wr|a|p','wr|i|s|t','qu|i|t','qu|a|ck','f|o|x','s|i|x','qu|i|z','gn|a|t'],
-    made: ['z|a|tch','r|i|tch','f|o|dge','l|i|dge','kn|o|p','kn|u|g','kn|o|d','wr|i|d','wr|e|m','k|i|dge','gn|e|t','gn|o|p','qu|e|m','qu|o|t','j|e|x','v|i|x',
+    made: ['z|a|tch','r|i|tch','f|o|dge','l|i|dge','kn|o|p','kn|u|g','kn|o|d','wr|i|d','wr|e|m','k|i|dge','gn|e|t','gn|o|p','qu|e|m','j|e|x','v|i|x',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'l|e|x','h|i|dge','kn|i|k','wr|o|g','gn|a|k','qu|i|f','g|i|tch','g|i|x','h|o|dge','kn|u|f','wr|e|f','gn|a|d','qu|u|n','l|o|tch','m|o|x','kn|e|p'],
     // fillers that sounded like the right one or each other (kneb/meb, gnet/met, jes/jez — Marcos 10/19) → p and t;
@@ -152,7 +152,7 @@ const PRACTICE_STOPS = [
     made: ['z|ai|t','v|ay','d|ea|p','k|oa|m','z|oo|t','m|ou|t','d|oi|l','z|oy','t|oo|z','z|aw','b|oe','t|r|ew','m|igh','sh|oa|m','g|ea|t','n|ol|t',
            // added 10/20 (two passes + new words each Check; site-tests/tools/qps-new-words.js, then by eye)
            'd|ai|k','v|ai|t','g|ea|f','z|ea|k','k|oi|t','l|ol|t','k|oi|p','z|ay','p|oi|p','h|ai|p','j|oo|f','h|oi|g','f|oi|t','v|ol|z','h|ai|d','f|ea|m'],
-    contrast: { ai: ['a','oa'], ay: ['oy','aw'], ea: ['e','oa','ai'], oa: ['o','ea'], oo: ['o','ou'], ou: ['o','oo','oi'], oi: ['o','ai','oa'], oy: ['ay','aw'], au: ['a','ou','oi'], aw: ['ay','ew'], oe: ['ew','oy'], ew: ['e','aw','oy'], igh: ['ay','aw'], ol: ['o','oo'] },
+    contrast: { ai: ['a','oa'], ay: ['oy','aw'], ea: ['e','oa','ai'], oa: ['o','ea'], oo: ['o','ou'], ou: ['o','oo','oi','oa'], oi: ['o','ai','oa'], oy: ['ay','aw'], au: ['a','ou','oi'], aw: ['ay','ew'], oe: ['ew','oy'], ew: ['e','aw','oy'], igh: ['ay','aw'], ol: ['o','oo','ai|l'] },
     sentences: ['The boat sails in the rain.','Roy has a toy coin.','Dad saw the moon at night.','Pay for the soap and the food.','Paul saw a hawk in the light.','We can eat at noon.']
   },
   {
