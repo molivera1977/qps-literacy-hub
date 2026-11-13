@@ -1026,7 +1026,7 @@
 <!-- Ava for every line the computer voice read (Marcos 11/12: "I want Ava saying everything where computer voice was"):
      ava-voice.js stands in for the browser's voice and plays Ava's recording of a line (ava-lines.js → ava/s/), the
      device's voice only for a line with no recording. Before next-waits.js and readaloud.js, so both use it. -->
-<script src="ava-lines.js?v=l3"></script>
+<script src="ava-lines.js?v=l4"></script>
 <script src="ava-voice.js?v=v1"></script>
 <!-- Guest view (share.js, the same file on every site): runs first, before anything reads or saves progress. -->
 <script src="share.js?v=4"></script>
@@ -1814,6 +1814,8 @@
     const stopIdsAll = () => (typeof PRACTICE_STOPS !== 'undefined' ? PRACTICE_STOPS.map(st => st.id) : []);
     // Task 5(a) → stop 5; Task 9(a) → stop 9a; Task 8 → stop 8
     const stopOfTask = (task) => stopIdsAll().includes(task) ? task : String(task).replace(/[ab]$/, '');
+    // a part on a student's test list (Mr. O sent them back to just that part, 11/13): task "7a" = "7:a"
+    const partOf = (task) => /^[2-8][ab]$/.test(String(task)) ? `${String(task)[0]}:${String(task)[1]}` : '';
     async function fillStudentPicker() {
         const sel = document.getElementById('studentName');
         if (!window.QPSLogin || !QPSLogin.rosterNames) return;
@@ -1824,7 +1826,7 @@
         if (testsDue.length) {
             const due = document.createElement('optgroup');
             due.label = '🔔 Needs your test';
-            testsDue.forEach(d => due.append(new Option(`${d.name} — test stop ${d.test.join(', ')}`, d.name)));
+            testsDue.forEach(d => due.append(new Option(`${d.name} — test stop ${d.test.map(x => x.replace(/^(\w+):([ab])$/, '$1($2)')).join(', ')}`, d.name)));   // a part: 7(a)
             sel.append(due);
         }
         const all = document.createElement('optgroup');
@@ -1838,7 +1840,7 @@
     function onStudentPicked() {
         const d = testsDue.find(x => x.name === document.getElementById('studentName').value);
         if (d && !lastResult) {
-            const task = [...document.getElementById('levelPicker').options].map(o => o.value).find(v => stopOfTask(v) === d.test[0]);
+            const task = [...document.getElementById('levelPicker').options].map(o => o.value).find(v => v === d.test[0].replace(':', '') || stopOfTask(v) === d.test[0]);   // a part (7:a) = its task (7a)
             if (task) { const lp = document.getElementById('levelPicker'); lp.value = task; lp.dispatchEvent(new Event('change')); }
         }
         updateSavePanel();
@@ -1854,7 +1856,8 @@
         if (!name) { what.textContent = 'Pick the student above, then save this result.'; btn.disabled = true; return; }
         const due = testsDue.find(x => x.name === name);
         what.textContent = `Save for ${firstLast(name)}: ${lastResult.taskName} · ${lastResult.percent}% ${lastResult.passed ? '✅ Mastery' : '⚠️ Needs practice'}` +
-            (due && due.test.includes(lastResult.stop) ? ` — this takes stop ${lastResult.stop} off their test list.` : '');
+            (due && due.test.includes(partOf(lastResult.task)) ? ` — this takes ${partOf(lastResult.task).replace(':', '(')}) off their test list.`
+             : due && due.test.includes(lastResult.stop) ? ` — this takes stop ${lastResult.stop} off their test list.` : '');
         btn.disabled = lastResult.saved;
         document.getElementById('logStudentName').textContent = name;
     }
@@ -1868,7 +1871,8 @@
         document.getElementById('saveBtn').disabled = true;
         const res = await QPSLogin.recordTest({ ...lastResult, name });
         if (!res) { lastResult.saved = false; document.getElementById('saveBtn').disabled = false; msg.textContent = 'Could not save: sign in as Mr. O first.'; msg.className = 'save-msg bad'; return; }
-        msg.textContent = `✅ Saved to your dashboard.` + (res.tookOff ? ` Stop ${lastResult.stop} is off ${firstLast(name)}'s test list.` : '');
+        const was = (testsDue.find(x => x.name === name) || { test: [] }).test, pt = partOf(lastResult.task);
+        msg.textContent = `✅ Saved to your dashboard.` + (res.tookOff ? ` ${was.includes(pt) ? pt.replace(':', '(') + ')' : `Stop ${lastResult.stop}`} is off ${firstLast(name)}'s test list.` : '');
         msg.className = 'save-msg good';
         fillStudentPicker();
     }
@@ -2088,13 +2092,13 @@
 <script src="readaloud.js?v=r7"></script>
 <script src="practice-data.js?v=p20"></script>
 <script src="ava-list.js?v=a5"></script>
-<script src="practice.js?v=p32"></script>
+<script src="practice.js?v=p33"></script>
 <script src="comp-data.js?v=c6"></script>
 <script src="maze-data.js?v=m2"></script>
 <script src="maze2-data.js?v=r1"></script>
 <script src="comp.js?v=c14"></script>
 <script src="maze.js?v=m3"></script>
-<script src="login.js?v=23"></script>
+<script src="login.js?v=24"></script>
 <script src="teacher.js?v=t3"></script>
 </body>
 </html>

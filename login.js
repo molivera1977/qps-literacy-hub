@@ -100,10 +100,23 @@
       if (k === 'stop') p.stop = v || '';
       if (k === 'passes') p.passes = Math.max(0, Math.min(NEEDED, Number(v) || 0));
       if (k === 'test') p.test = String(v || '').split(',').filter(Boolean);
+      if (k === 'redo' && /^\w+:[ab]:\d$/.test(v || '')) p.redo = v;
     });
     return p;
   }
-  const formOf = (p) => `stop=${p.stop};passes=${p.passes};test=${p.test.join(',')}|t=${p.t}`;
+  const formOf = (p) => `stop=${p.stop};passes=${p.passes};test=${p.test.join(',')}${p.redo ? `;redo=${p.redo}` : ''}|t=${p.t}`;
+  // One part of a stop (Marcos 11/13: "how do i handle a kid needing to do just a part of a level like a, b, or c?" →
+  // "one button per part" + "back on my test list"): his dashboard's ↩ Send back to 7(a) writes "redo=7:a:0" on the
+  // row. The student keeps their own stop; their plan shows the part first. (a) = the made-up words (Build, Read,
+  // Spell, then the Check twice — the Check is all made-up words); (b) = the sentences (the Sentences step).
+  // Done → "7:a" goes on his test list and redo goes away. Stops 2–8 only (his test's (a) Nonsense / (b) Sentences).
+  const PART_STOPS = ['2', '3', '4', '5', '6', '7', '8'];
+  const PART_WHAT = { a: 'the made-up words', b: 'the sentences' };
+  function redoOf(p) {
+    if (!p || !p.redo) return null;
+    const [stop, part, n] = p.redo.split(':');
+    return PART_STOPS.includes(stop) && PART_WHAT[part] ? { stop, part, passes: Math.min(NEEDED, Number(n) || 0) } : null;
+  }
   const stopIds = () => (typeof PRACTICE_STOPS !== 'undefined' ? PRACTICE_STOPS.map(st => st.id) : []);
   // The stop a student works on now: their progress row if it is newer than a hand move, else TRACKS.
   // Only for students on a phonics stop (not 'comp', not "any stop").
@@ -117,7 +130,8 @@
     const ids = stopIds(), next = ids[ids.indexOf(stopId) + 1];
     if (passes < NEEDED) return { ...prog, stop: stopId, passes, t: Date.now() };
     const test = [...prog.test.filter(x => x !== stopId), stopId];
-    return next ? { stop: next, passes: 0, test, t: Date.now() } : { stop: stopId, passes: NEEDED, test, t: Date.now() };
+    const keep = prog.redo ? { redo: prog.redo } : {};                  // a part Mr. O sent them back to stays
+    return next ? { stop: next, passes: 0, test, ...keep, t: Date.now() } : { stop: stopId, passes: NEEDED, test, ...keep, t: Date.now() };
   }
   // Every stop passed (Marcos 11/11: "why is eric not being moved along, he graduated" → "option 1"): two passed
   // Checks on the LAST stop make the plan reading for meaning, the same plan as a student who starts on 'comp'. The
@@ -274,7 +288,35 @@
       if (grid) grid.hidden = true;
       return;
     }
-    if (track) {
+    const redo = track ? currentRedo() : null;
+    const redoStop = redo && typeof PRACTICE_STOPS !== 'undefined' ? PRACTICE_STOPS.find(s => s.id === redo.stop) : null;
+    if (redoStop) {
+      // Mr. O sent them back to one part of a stop: that is the one thing to do now (their own stop waits)
+      const line = `Mr. O wants you to practice stop ${redoStop.num} again: ${PART_WHAT[redo.part]}.`;
+      const dir = document.createElement('div');
+      dir.className = 'p-direction';
+      const sayBtn = document.createElement('button');
+      sayBtn.type = 'button'; sayBtn.className = 'p-say'; sayBtn.textContent = '🔊';
+      sayBtn.setAttribute('aria-label', 'Hear your plan');
+      sayBtn.onclick = () => say(`Hi ${first}. ${line} Tap Start.`);
+      const p = document.createElement('p');
+      p.className = 'plan-line';
+      p.textContent = line;
+      if (window.QPSRead) { QPSRead.wrap(p, line); sayBtn.onclick = () => QPSRead.say(p); }
+      dir.append(sayBtn, p);
+      const card = document.createElement('button');
+      card.type = 'button'; card.className = 'plan-card plan-redo';
+      card.setAttribute('aria-label', `Start stop ${redoStop.num}, ${PART_WHAT[redo.part]}.`);
+      card.onclick = () => Practice.openStop(redoStop.id, redo.part);
+      card.innerHTML = '<span class="stop-num"></span><span class="plan-example"></span><span class="plan-name"></span><span class="plan-pass"></span><span class="plan-go">Start ▶</span>';
+      card.querySelector('.stop-num').textContent = redoStop.num;
+      card.querySelector('.plan-example').textContent = redoStop.example;
+      card.querySelector('.plan-name').textContent = `${redoStop.name}: ${PART_WHAT[redo.part]}`;
+      card.querySelector('.plan-pass').textContent = redo.part === 'a' ? `${redo.passes} of ${NEEDED} passes` : '';
+      box.append(dir, card);
+      if (sub) sub.parentElement.hidden = true;
+      if (grid) grid.hidden = true;
+    } else if (track) {
       const stars = starsFor(track.id);
       const line = `Your stop is number ${track.num}, ${track.sayName || track.name}. Tap Start.`;
       const dir = document.createElement('div');
@@ -489,6 +531,26 @@
   const onStopTrack = (name) => stopIds().includes(TRACKS[name]);
   // On the reading path: started there ('comp'), or (the signed-in student) passed every stop since
   const onComp = (name) => TRACKS[name] === 'comp' || (name === student && onStopTrack(name) && graduated(progress, TRACK_SINCE[name]));
+  // The part of a stop Mr. O sent the signed-in student back to, if any: { stop, part, passes } (see redoOf)
+  const currentRedo = () => (SHARE || !student || !onStopTrack(student) || !progress || progress.t <= (TRACK_SINCE[student] || 0)) ? null : redoOf(progress);
+  function partSave(next) { progress = { ...next, t: Date.now() }; keepProgress(student, progress); sendProgress(student, progress); }
+  // The part is done: it goes on Mr. O's test list ("7:a"), the redo goes away; the student's own stop is unchanged.
+  function partFinish(r) {
+    const id = `${r.stop}:${r.part}`, { redo, ...rest } = progress;
+    partSave({ ...rest, test: [...progress.test.filter(x => x !== id), id] });
+    return { passes: NEEDED, done: true };
+  }
+  // (a) the made-up words: a Check in part mode → its pass counts; two passes finish the part
+  function partCheck(passed) {
+    const r = currentRedo();
+    if (!r || r.part !== 'a') return null;
+    const passes = Math.min(NEEDED, r.passes + (passed ? 1 : 0));
+    if (passes >= NEEDED) return partFinish(r);
+    if (passes !== r.passes) partSave({ ...progress, redo: `${r.stop}:${r.part}:${passes}` });
+    return { passes, done: false };
+  }
+  // (b) the sentences: the Sentences step done once finishes the part
+  function partDone() { const r = currentRedo(); return r && r.part === 'b' ? partFinish(r) : null; }
   // A new or wiped device — or a change Mr. O made on his dashboard — comes back from the sheet.
   async function restoreProgress(name) {
     const rows = await readTab(PROGRESS_TAB);
@@ -600,14 +662,16 @@
       startedAt: started.toISOString(), finishedAt: finished.toISOString()
     });
     const p = progressOfRow(await readTab(PROGRESS_TAB), r.name);
-    const tookOff = !!(p && p.test.includes(r.stop));
-    if (tookOff) sendProgress(r.name, { ...p, test: p.test.filter(x => x !== r.stop), t: Date.now() });
+    const part = /^(\w+?)([ab])$/.exec(String(r.task || '')), partId = part && PART_STOPS.includes(part[1]) ? `${part[1]}:${part[2]}` : null;
+    const tookOff = !!(p && (p.test.includes(r.stop) || (partId && p.test.includes(partId))));
+    if (tookOff) sendProgress(r.name, { ...p, test: p.test.filter(x => x !== r.stop && x !== partId), t: Date.now() });
     return { tookOff };
   }
 
   window.QPSLogin = { renderPlan, signOut, trackFor, saveCheck, send, readTab, movesOn, rosterNames, testsDue, recordTest, _tracks: TRACKS,
+    redo: currentRedo, partCheck, partDone, PART_WHAT,
     who: () => student, TEACHER, onComp: (name) => onComp(name || student), finishedEveryStop: () => justFinished, saveSteps,
-    _rules: { parseProgress, formOf, effectiveStop, afterPass, graduated, parseSteps, mergeSteps } };
+    _rules: { parseProgress, formOf, effectiveStop, afterPass, graduated, parseSteps, mergeSteps, redoOf } };
 
   if (SHARE) { signIn('Guest'); return; }
   let saved = '';

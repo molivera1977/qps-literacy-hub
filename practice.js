@@ -25,6 +25,11 @@
   };
 
   let stop = null, steps = [], stepIndex = 0, busy = false, playRun = 0, checkStarted = null;
+  // One part of a stop Mr. O sent the student back to (login.js redo, Marcos 11/13): 'a' the made-up words, 'b' the
+  // sentences — only that part's steps; the stop's own record (steps reached, passes) is left as it was.
+  let part = null, partReached = 0;
+  const PART_WHAT = { a: 'the made-up words', b: 'the sentences' };
+  const partSteps = (st, pt) => pt === 'a' ? buildSteps(st).filter(x => ['build', 'decode', 'spell', 'check'].includes(x)) : (st.sentences ? ['sentences'] : []);
   let lessonRun = 0, exampleRun = 0, fromSequence = false;
   // A lesson or an example plays its own sounds one after another; those calls are not a student's tap.
   const inSequence = (fn) => { fromSequence = true; try { return fn(); } finally { fromSequence = false; } };
@@ -311,17 +316,20 @@
     if (window.QPSLogin) QPSLogin.renderPlan();      // the signed-in student's own stop
   }
 
-  function openStop(id) {
+  function openStop(id, pt) {
     stop = PRACTICE_STOPS.find(s => s.id === id);
-    steps = buildSteps(stop);
+    part = PART_WHAT[pt] && partSteps(stop, pt).length ? pt : null;
+    steps = part ? partSteps(stop, part) : buildSteps(stop);
     realWords = collectReal(stop);
     const rec = stopRecord(id);
     // A stop in progress picks up where the student stopped (after a Check: back at the practice steps).
-    stepIndex = (rec.reached || 0) >= steps.length ? 0 : (rec.reached || 0);
+    // A part starts at its first step.
+    partReached = 0;
+    stepIndex = part ? 0 : (rec.reached || 0) >= steps.length ? 0 : (rec.reached || 0);
     $('welcomeView').style.display = 'none';
     $('appView').style.display = 'none';
     $('practiceView').style.display = 'block';
-    $('practiceTitle').textContent = `${stop.num} · ${stop.name}`;
+    $('practiceTitle').textContent = `${stop.num} · ${stop.name}${part ? ` — ${PART_WHAT[part]}` : ''}`;
     document.title = `QPS Literacy Hub | Practice ${stop.num}`;
     showStep();
     window.scrollTo(0, 0);
@@ -343,6 +351,7 @@
   function backToStops() {
     hush();
     waits.clear();
+    part = null;
     $('practiceView').style.display = 'none';
     $('welcomeView').style.display = 'block';
     document.title = 'QPS Literacy Hub';
@@ -353,7 +362,7 @@
   function renderChips() {
     const row = $('practiceSteps');
     row.innerHTML = '';
-    const reached = stopRecord(stop.id).reached || 0;
+    const reached = part ? partReached : (stopRecord(stop.id).reached || 0);
     steps.forEach((s, i) => {
       const chip = button('step-chip', STEP_NAMES[s], () => { if (i <= reached) { stepIndex = i; showStep(); } }, `Step ${i + 1}, ${STEP_NAMES[s]}`);
       if (i === stepIndex) chip.classList.add('current');
@@ -372,9 +381,10 @@
     $('practiceNext').style.display = 'none';
     const type = steps[stepIndex];
     const done = () => {
-      const rec = stopRecord(stop.id);
-      saveStopRecord(stop.id, { reached: Math.max(rec.reached || 0, stepIndex + 1) });
+      if (part) partReached = Math.max(partReached, stepIndex + 1);
+      else { const rec = stopRecord(stop.id); saveStopRecord(stop.id, { reached: Math.max(rec.reached || 0, stepIndex + 1) }); }
       renderChips();
+      if (part === 'b' && type === 'sentences') { partSentencesDone(area); return; }
       const next = $('practiceNext');
       next.textContent = `Next: ${STEP_NAMES[steps[stepIndex + 1]] || ''} ➡️`;
       next.style.display = stepIndex + 1 < steps.length ? 'inline-flex' : 'none';
@@ -1208,8 +1218,10 @@
     const stars = pct >= 90 ? 3 : pct >= 70 ? 2 : 1;
     const rec = stopRecord(stop.id);
     const passed = pct >= PASS;
-    const passes = Math.min(PASSES_NEEDED, (rec.passes || 0) + (passed ? 1 : 0));
-    saveStopRecord(stop.id, { stars: Math.max(rec.stars || 0, stars), passes, lastScore: pct });
+    // a part (the made-up words Mr. O sent them back to): its own two passes, kept on the progress row (login.js)
+    const partRes = part === 'a' && window.QPSLogin && QPSLogin.partCheck ? QPSLogin.partCheck(passed) : null;
+    const passes = partRes ? partRes.passes : Math.min(PASSES_NEEDED, (rec.passes || 0) + (passed ? 1 : 0));
+    saveStopRecord(stop.id, partRes ? { stars: Math.max(rec.stars || 0, stars), lastScore: pct } : { stars: Math.max(rec.stars || 0, stars), passes, lastScore: pct });
     // Marcos 10/21: the score as a percent, the same as the 80% they need ("both should be a percentage"),
     // what "pass 1 of 2" means in words, and one clear button for what to do next
     box.append(el('div', 'p-score', `${pct}%`), el('div', 'p-stars', '★★★'.slice(0, stars) + '☆☆☆'.slice(0, 3 - stars)));
@@ -1224,7 +1236,11 @@
     const got = `You got ${pct}%.`;
     // the last stop passed twice (Marcos 11/11 "option 1"): every QPS stop is done, the plan is now reading for meaning
     const finishedAll = !moved && !!(window.QPSLogin && QPSLogin.finishedEveryStop && QPSLogin.finishedEveryStop());
-    const msg = moved ? `${got} You passed again! That is 2 of 2 passes. You move on to stop ${moved.num}, ${moved.name}! Mr. O will check stop ${stop.num} with you soon.`
+    const what = PART_WHAT.a;
+    const msg = partRes ? (partRes.done ? `${got} You passed again! That is 2 of 2 passes. You practiced the made-up words of stop ${stop.num} again. Mr. O will check them with you soon.`
+        : passed ? `${got} You passed! That is 1 of 2 passes. Practice ${what} one more time and pass the Check again.`
+        : `${got} You need ${PASS}% to pass. Not this time. Practice ${what} again, then take the Check again. Passes so far: ${passes} of ${PASSES_NEEDED}.`)
+      : moved ? `${got} You passed again! That is 2 of 2 passes. You move on to stop ${moved.num}, ${moved.name}! Mr. O will check stop ${stop.num} with you soon.`
       : finishedAll ? `${got} You passed again! That is 2 of 2 passes. You passed every QPS stop! Next you work on reading for meaning. Mr. O will check stop ${stop.num} with you soon.`
       : passed && passes >= PASSES_NEEDED ? `${got} You passed! That is 2 of 2 passes. You are ready for Mr. O's check!`
       : passed ? `${got} You passed! That is 1 of 2 passes. Do the whole stop one more time and pass the Check again ${movesOn ? 'to move on to the next stop' : 'to be ready for Mr. O\'s check'}.`
@@ -1279,8 +1295,10 @@
       box.append(list);
     }
     const again = el('div', 'p-end-buttons');
-    const restart = () => { stepIndex = 1; showStep(); window.scrollTo(0, 0); };
-    if (moved) again.append(button('p-btn p-next-big', `▶ Start stop ${moved.num}, ${moved.name}`, () => openStop(moved.id)), button('p-btn p-again', '🏠 Back to all stops', backToStops));
+    const restart = () => { stepIndex = part ? 0 : 1; showStep(); window.scrollTo(0, 0); };
+    if (partRes && partRes.done) again.append(button('p-btn p-next-big', '🏠 Back to my stop', backToStops));
+    else if (partRes) again.append(button('p-btn p-next-big', passed ? '▶ Start pass 2' : '▶ Practice again', restart), button('p-btn p-again', '🏠 Back to all stops', backToStops));
+    else if (moved) again.append(button('p-btn p-next-big', `▶ Start stop ${moved.num}, ${moved.name}`, () => openStop(moved.id)), button('p-btn p-again', '🏠 Back to all stops', backToStops));
     else if (finishedAll) again.append(button('p-btn p-next-big', '▶ Go to reading for meaning', backToStops));   // the plan now shows the reading path
     else if (passed && passes < PASSES_NEEDED) again.append(button('p-btn p-next-big', '▶ Start pass 2', restart), button('p-btn p-again', '🏠 Back to all stops', backToStops));
     else if (!passed && passes < PASSES_NEEDED) again.append(button('p-btn p-next-big', '▶ Practice again', restart), button('p-btn p-again', '🏠 Back to all stops', backToStops));
@@ -1294,8 +1312,25 @@
     // After any Check the practice steps come first again (the Check reopens after the last practice step),
     // so a second pass is a whole second run of the stop, not a retake. Set after done(), which marks the
     // step reached, and the chips redrawn so the Check chip locks at once.
-    saveStopRecord(stop.id, { reached: 1 });
+    if (part) partReached = 0; else saveStopRecord(stop.id, { reached: 1 });
     renderChips();
+  }
+
+  // (b) the sentences of a stop Mr. O sent them back to: the Sentences step done = the part is done (login.js puts it on
+  // his test list). Said aloud like a Check's result; one button back to their own stop.
+  function partSentencesDone(area) {
+    if (window.QPSLogin && QPSLogin.partDone) QPSLogin.partDone();
+    const box = el('div', 'p-part-done');           // its own box, under the step's "Nice work" (not one of its rounds)
+    const msg = `You read the sentences of stop ${stop.num} again! Mr. O will check them with you soon.`;
+    const p = window.QPSRead ? QPSRead.wrap(el('p', 'p-well'), msg) : el('p', 'p-well', msg);
+    const hear = button('p-say', '🔊', () => (window.QPSRead ? QPSRead.say(p) : sayText(msg)), 'Hear how you did');
+    const line = el('div', 'p-result');
+    line.append(hear, p);
+    const again = el('div', 'p-end-buttons');
+    again.append(button('p-btn p-next-big', '🏠 Back to my stop', backToStops));
+    box.append(line, again);
+    area.append(box);
+    if (window.QPSRead) QPSRead.say(p); else sayText(msg);
   }
 
   // Where two chunk lists differ: start index, how many new chunks, and the new part.
