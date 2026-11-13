@@ -1816,6 +1816,8 @@
     const stopOfTask = (task) => stopIdsAll().includes(task) ? task : String(task).replace(/[ab]$/, '');
     // a part on a student's test list (Mr. O sent them back to just that part, 11/13): task "7a" = "7:a"
     const partOf = (task) => /^[2-8][ab]$/.test(String(task)) ? `${String(task)[0]}:${String(task)[1]}` : '';
+    const otherPart = (task) => partOf(task) ? `${String(task)[0]}:${String(task)[1] === 'a' ? 'b' : 'a'}` : '';
+    const partName = (id) => id.replace(/^(\w+):([ab])$/, '$1($2)');
     async function fillStudentPicker() {
         const sel = document.getElementById('studentName');
         if (!window.QPSLogin || !QPSLogin.rosterNames) return;
@@ -1856,7 +1858,8 @@
         if (!name) { what.textContent = 'Pick the student above, then save this result.'; btn.disabled = true; return; }
         const due = testsDue.find(x => x.name === name);
         what.textContent = `Save for ${firstLast(name)}: ${lastResult.taskName} · ${lastResult.percent}% ${lastResult.passed ? '✅ Mastery' : '⚠️ Needs practice'}` +
-            (due && due.test.includes(partOf(lastResult.task)) ? ` — this takes ${partOf(lastResult.task).replace(':', '(')}) off their test list.`
+            (due && due.test.includes(partOf(lastResult.task)) ? ` — this takes ${partName(partOf(lastResult.task))} off their test list.`
+             : due && due.test.includes(lastResult.stop) && partOf(lastResult.task) ? ` — this takes ${partName(partOf(lastResult.task))} off their test list; ${partName(otherPart(lastResult.task))} stays on it.`
              : due && due.test.includes(lastResult.stop) ? ` — this takes stop ${lastResult.stop} off their test list.` : '');
         btn.disabled = lastResult.saved;
         document.getElementById('logStudentName').textContent = name;
@@ -1872,7 +1875,10 @@
         const res = await QPSLogin.recordTest({ ...lastResult, name });
         if (!res) { lastResult.saved = false; document.getElementById('saveBtn').disabled = false; msg.textContent = 'Could not save: sign in as Mr. O first.'; msg.className = 'save-msg bad'; return; }
         const was = (testsDue.find(x => x.name === name) || { test: [] }).test, pt = partOf(lastResult.task);
-        msg.textContent = `✅ Saved to your dashboard.` + (res.tookOff ? ` ${was.includes(pt) ? pt.replace(':', '(') + ')' : `Stop ${lastResult.stop}`} is off ${firstLast(name)}'s test list.` : '');
+        msg.textContent = `✅ Saved to your dashboard.` + (!res.tookOff ? ''
+            : was.includes(pt) ? ` ${partName(pt)} is off ${firstLast(name)}'s test list.`
+            : pt ? ` ${partName(pt)} is off ${firstLast(name)}'s test list; ${partName(otherPart(lastResult.task))} is still on it.`
+            : ` Stop ${lastResult.stop} is off ${firstLast(name)}'s test list.`);
         msg.className = 'save-msg good';
         fillStudentPicker();
     }
@@ -2098,7 +2104,7 @@
 <script src="maze2-data.js?v=r1"></script>
 <script src="comp.js?v=c14"></script>
 <script src="maze.js?v=m3"></script>
-<script src="login.js?v=24"></script>
+<script src="login.js?v=25"></script>
 <script src="teacher.js?v=t3"></script>
 </body>
 </html>

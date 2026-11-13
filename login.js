@@ -100,7 +100,7 @@
       if (k === 'stop') p.stop = v || '';
       if (k === 'passes') p.passes = Math.max(0, Math.min(NEEDED, Number(v) || 0));
       if (k === 'test') p.test = String(v || '').split(',').filter(Boolean);
-      if (k === 'redo' && /^\w+:[ab]:\d$/.test(v || '')) p.redo = v;
+      if (k === 'redo' && /^\w+:[ab]:\d(\+\w+:[ab]:\d)*$/.test(v || '')) p.redo = v;   // one part, or several: "5:a:0+5:b:0"
     });
     return p;
   }
@@ -112,9 +112,11 @@
   // Done → "7:a" goes on his test list and redo goes away. Stops 2–8 only (his test's (a) Nonsense / (b) Sentences).
   const PART_STOPS = ['2', '3', '4', '5', '6', '7', '8'];
   const PART_WHAT = { a: 'the made-up words', b: 'the sentences' };
+  // Several parts can wait ("5:a:0+5:b:0", Marcos 11/13: both parts sent back): the plan shows the first; when it is
+  // done, the next one.
   function redoOf(p) {
     if (!p || !p.redo) return null;
-    const [stop, part, n] = p.redo.split(':');
+    const [stop, part, n] = p.redo.split('+')[0].split(':');
     return PART_STOPS.includes(stop) && PART_WHAT[part] ? { stop, part, passes: Math.min(NEEDED, Number(n) || 0) } : null;
   }
   const stopIds = () => (typeof PRACTICE_STOPS !== 'undefined' ? PRACTICE_STOPS.map(st => st.id) : []);
@@ -536,8 +538,8 @@
   function partSave(next) { progress = { ...next, t: Date.now() }; keepProgress(student, progress); sendProgress(student, progress); }
   // The part is done: it goes on Mr. O's test list ("7:a"), the redo goes away; the student's own stop is unchanged.
   function partFinish(r) {
-    const id = `${r.stop}:${r.part}`, { redo, ...rest } = progress;
-    partSave({ ...rest, test: [...progress.test.filter(x => x !== id), id] });
+    const id = `${r.stop}:${r.part}`, { redo, ...rest } = progress, more = String(redo || '').split('+').slice(1).join('+');
+    partSave({ ...rest, test: [...progress.test.filter(x => x !== id), id], ...(more ? { redo: more } : {}) });
     return { passes: NEEDED, done: true };
   }
   // (a) the made-up words: a Check in part mode → its pass counts; two passes finish the part
@@ -546,7 +548,7 @@
     if (!r || r.part !== 'a') return null;
     const passes = Math.min(NEEDED, r.passes + (passed ? 1 : 0));
     if (passes >= NEEDED) return partFinish(r);
-    if (passes !== r.passes) partSave({ ...progress, redo: `${r.stop}:${r.part}:${passes}` });
+    if (passes !== r.passes) partSave({ ...progress, redo: [`${r.stop}:${r.part}:${passes}`, ...progress.redo.split('+').slice(1)].join('+') });
     return { passes, done: false };
   }
   // (b) the sentences: the Sentences step done once finishes the part
@@ -664,7 +666,9 @@
     const p = progressOfRow(await readTab(PROGRESS_TAB), r.name);
     const part = /^(\w+?)([ab])$/.exec(String(r.task || '')), partId = part && PART_STOPS.includes(part[1]) ? `${part[1]}:${part[2]}` : null;
     const tookOff = !!(p && (p.test.includes(r.stop) || (partId && p.test.includes(partId))));
-    if (tookOff) sendProgress(r.name, { ...p, test: p.test.filter(x => x !== r.stop && x !== partId), t: Date.now() });
+    // the whole stop on the list and he tested one part (Marcos 11/13): the other part stays on the list
+    const other = partId && p && p.test.includes(r.stop) ? `${part[1]}:${part[2] === 'a' ? 'b' : 'a'}` : null;
+    if (tookOff) sendProgress(r.name, { ...p, test: [...p.test.filter(x => x !== r.stop && x !== partId && x !== other), ...(other ? [other] : [])], t: Date.now() });
     return { tookOff };
   }
 
