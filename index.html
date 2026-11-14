@@ -781,6 +781,11 @@
         </div>
     </div>
 
+    <!-- The two guest cards (share.js, 11/13): shown only on the teacher/admin guest link. Student guest closes them;
+         the stops are right below. A student guest and a student never see this. -->
+    <div id="guestChoice" data-guest-slides hidden>
+        <button type="button" class="p-btn p-next" data-guest-start hidden onclick="document.getElementById('guestChoice').remove()">Student guest</button>
+    </div>
     <section id="planBox" class="plan-box" aria-label="My plan" hidden></section>
     <div id="stopGrid" class="stop-grid" aria-label="Practice stops"></div>
 
@@ -1029,7 +1034,7 @@
 <script src="ava-lines.js?v=l4"></script>
 <script src="ava-voice.js?v=v1"></script>
 <!-- Guest view (share.js, the same file on every site): runs first, before anything reads or saves progress. -->
-<script src="share.js?v=4"></script>
+<script src="share.js?v=5"></script>
 <script src="next-waits.js?v=1" data-hold='.p-next, .p-go, #nextLearnBtn, #nextBtn1, #nextBtn2'></script>
 <script src="blend-core.js?v=b2"></script>
 <script src="respell.js?v=s5"></script>
@@ -2105,6 +2110,6 @@
 <script src="comp.js?v=c14"></script>
 <script src="maze.js?v=m3"></script>
 <script src="login.js?v=25"></script>
-<script src="teacher.js?v=t3"></script>
+<script src="teacher.js?v=t3-guest1"></script>
 </body>
 </html>

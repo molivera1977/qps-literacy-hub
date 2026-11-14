@@ -97,7 +97,8 @@
     $('tTry').onclick = tryIt;
     $('tSlides').onclick = slides;
     $('tKey').onclick = key;
-    $('tAssess').onclick = () => { quiet(); if (window.enterApp) window.enterApp('test'); };   // its own PIN box opens over this screen
+    $('tAssess').onclick = () => { quiet(); if (window.enterApp) window.enterApp('test'); };
+    if (window.SHARE_TEACHER) $('tAssess').style.display = 'none';   // the Assessment saves and asks Mr. O's PIN: not for a guest   // its own PIN box opens over this screen
   }
 
   function choice(row, text, on, fn, aria) {
@@ -134,7 +135,12 @@
     document.title = 'QPS Literacy Hub | Teacher';
   }
   const active = () => !SHARE && !!(window.QPSLogin && QPSLogin.who && QPSLogin.who() === QPSLogin.TEACHER);
-  function exit() { quiet(); if (window.QPSLogin) QPSLogin.signOut(); }
+  function exit() {
+    quiet();
+    // a teacher/admin guest is signed in as Guest and can't sign out: ✕ goes back to the two guest cards
+    if (window.SHARE_TEACHER) { location.href = location.pathname + window.SHARE_LINK; return; }
+    if (window.QPSLogin) QPSLogin.signOut();
+  }
 
   /* ---------- 👀 Try it as a student ---------- */
   function tryIt() {
@@ -343,7 +349,7 @@
     $('teachPrev').onclick = () => { const i = jump.selectedIndex; if (i > 0) go(jump.options[i - 1].value); };
     $('teachNext').onclick = () => { const i = jump.selectedIndex; if (i < jump.options.length - 1) go(jump.options[i + 1].value); };
     $('teachSkip').onclick = () => { if (window.Practice && Practice.skipWait) Practice.skipWait(); if (window.Comp && Comp.skipWait) Comp.skipWait(); if (window.Comp && Comp.stopSpeaking) Comp.stopSpeaking(); if (window.speechSynthesis) speechSynthesis.cancel(); };
-    $('teachBack').onclick = () => { quiet(); location.href = location.pathname + '#teacher'; };
+    $('teachBack').onclick = () => { quiet(); location.href = location.pathname + (window.SHARE_TEACHER ? window.SHARE_LINK : '') + '#teacher'; };   // a teacher/admin guest keeps the guest link
     return go;
   }
   // the bar follows the student's own moves (Next, a step chip)
@@ -366,6 +372,8 @@
   }
 
   window.QPSTeacher = { open, active, _pick: () => pick, _encode: encode, _decode: decode };
+  // the teacher/admin guest link (share.js, Marcos 11/13): its 🧑‍🏫 Teacher / admin guest button opens this screen, no PIN
+  if (window.SHARE_TEACHER) window.SHARE_OPEN_TEACHER = open;
 
   function boot() {
     if (TEACH) { const p = decode(TEACH); if (p) teachReady(p); return; }
